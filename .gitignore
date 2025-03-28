@@ -1,0 +1,15 @@
+# .gitignore
+
+# Java / Spring artifacts
+target/
+*.jar
+*.war
+
+# Flutter build artifacts
+build/
+.dart_tool/
+
+# Docker Compose override
+docker-compose.override.yml
+
+# etc.
