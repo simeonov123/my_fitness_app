@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+            http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <!-- ── TRN-1001 : one session ↔ many clients ────────────────────────── -->
+    <changeSet id="2025-05-31-training-session-clients" author="gpt">
+
+        <!-- 1️⃣  Drop the old column + FK (only if they still exist) -->
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists foreignKeyName="fk_ts_client_id"/>
+        </preConditions>
+        <dropForeignKeyConstraint baseTableName="training_sessions"
+                                  constraintName="fk_ts_client_id"/>
+        <dropColumn tableName="training_sessions" columnName="client_id"/>
+
+        <!-- 2️⃣  Join table -->
+        <createTable tableName="training_session_clients">
+            <column name="training_session_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- 3️⃣  Composite PK -->
+        <addPrimaryKey tableName="training_session_clients"
+                       columnNames="training_session_id,client_id"
+                       constraintName="pk_training_session_clients"/>
+
+        <!-- 4️⃣  Foreign-key links -->
+        <addForeignKeyConstraint
+                constraintName="fk_tsc_session"
+                baseTableName="training_session_clients"
+                baseColumnNames="training_session_id"
+                referencedTableName="training_sessions"
+                referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+                constraintName="fk_tsc_client"
+                baseTableName="training_session_clients"
+                baseColumnNames="client_id"
+                referencedTableName="clients"
+                referencedColumnNames="id"/>
+
+        <!-- 5️⃣  Lookup index (Liquibase ≥4.x syntax) -->
+        <createIndex tableName="training_session_clients"
+                     indexName="idx_tsc_client">
+            <column name="client_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,69 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+}
+
+/* ────────────────────────────────────────────────────────────
+   Legacy Flutter build script needs the path to the SDK       */
+import java.util.Properties
+
+def localProperties     = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Add flutter.sdk to local.properties")
+}
+
+/*  Apply Flutter’s legacy Gradle script */
+apply          from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+/* ──────────────────────────────────────────────────────────── */
+
+android {
+    namespace "com.mvfitness.mytrainer2client"
+
+    /* use the constants Flutter injects (works with AGP 7.x) */
+    compileSdkVersion flutter.compileSdkVersion
+    ndkVersion        flutter.ndkVersion
+
+    defaultConfig {
+        applicationId "com.mvfitness.mytrainer2client"
+
+        minSdkVersion     flutter.minSdkVersion
+        targetSdkVersion  flutter.targetSdkVersion
+        versionCode       flutter.versionCode.toInteger()
+        versionName       flutter.versionName
+
+        /* placeholder so ${appAuthRedirectScheme} resolves */
+        manifestPlaceholders = [
+                appAuthRedirectScheme: "com.mvfitness.mytrainer2client"
+        ]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions { jvmTarget = '1.8' }
+
+    buildTypes {
+        release {
+            // TODO: replace with real signing-config for Play Store
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+}
+
+/* Flutter source-dir declaration */
+flutter {
+    source '../..'
+}

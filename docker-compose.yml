@@ -1,0 +1,98 @@
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: my_fitness_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: myfitness
+      MYSQL_USER: fitness_user
+      MYSQL_PASSWORD: userpass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d
+    ports:
+      - "3307:3306"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    build:
+      context: ./keycloak
+    image: my_fitness_keycloak:latest
+    container_name: my_fitness_keycloak
+    depends_on:
+      - mysql
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: adminpass
+      # DB Settings
+      KC_DB: mysql
+      KC_DB_URL_HOST: mysql
+      KC_DB_URL_PORT: 3306
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: keycloakpass
+
+      # ── FOR LOCAL TESTING ON EMULATOR ────────────────────────────────────────────
+      KC_HOSTNAME_PORT: 8081 # <-- Comment when running for emulator otherwise keep it for web
+
+      # -- keep KC_HOSTNAME_STRICT *false* so KC accepts both hosts
+      KC_HOSTNAME_STRICT: "false"
+
+      # -- and add these two so Keycloak trusts the original Host header
+      KC_PROXY: edge
+      KC_HTTP_RELATIVE_PATH: "/"
+      
+    # Mount your SPI listener into the providers folder
+    volumes:
+      - ./db:/opt/keycloak/data/import
+    command: >
+      start-dev --http-port=8081
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+
+  resource-server:
+    build:
+      context: ./resource-server
+      dockerfile: Dockerfile
+    container_name: my_fitness_resource
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/myfitness
+      SPRING_DATASOURCE_USERNAME: fitness_user
+      SPRING_DATASOURCE_PASSWORD: userpass
+      KEYCLOAK_AUTH_URL: http://keycloak:8081/realms/myrealm
+      # SPRING_LIQUIBASE_CLEAR_CHECKSUMS: "true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    ports:
+      - "8080:8080"     # normal app port
+      - "5005:5005"     # <-- debug port
+    restart: unless-stopped
+    command: >
+      java
+        -agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
+        -jar app.jar
+
+  flutter-client:
+    build:
+      context: ./flutter-client
+      dockerfile: Dockerfile
+    container_name: my_fitness_flutter
+    depends_on:
+      - resource-server
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

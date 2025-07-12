@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
+
+    <changeSet id="20250601-add-end-time" author="gpt">
+        <!-- rename old column for clarity -->
+        <renameColumn
+                tableName="training_sessions"
+                oldColumnName="scheduled_date"
+                newColumnName="start_time"
+                columnDataType="timestamp"/>
+
+        <!-- add the missing end_time -->
+        <addColumn tableName="training_sessions">
+            <column name="end_time" type="timestamp" defaultValueDate="2030-01-01T00:00:00"/>
+        </addColumn>
+
+        <!-- optional: drop the default again once data patching is done -->
+        <modifyDataType tableName="training_sessions"
+                        columnName="end_time"
+                        newDataType="timestamp"/>
+    </changeSet>
+</databaseChangeLog>

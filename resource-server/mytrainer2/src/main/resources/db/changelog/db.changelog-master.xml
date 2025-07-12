@@ -1,0 +1,771 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- 1) users -->
+    <changeSet id="1-create-users-table" author="me">
+        <createTable tableName="users">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_users"/>
+            </column>
+            <column name="keycloak_user_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(50)"/>
+            <column name="full_name" type="VARCHAR(100)"/>
+            <column name="email" type="VARCHAR(100)"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="users"
+                             columnNames="keycloak_user_id"
+                             constraintName="uk_users_keycloak_user_id"/>
+    </changeSet>
+
+    <!-- 2) clients -->
+    <changeSet id="2-create-clients-table" author="me">
+        <createTable tableName="clients">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_clients"/>
+            </column>
+            <column name="user_id" type="BIGINT"/>
+            <column name="full_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(100)"/>
+            <column name="phone" type="VARCHAR(30)"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="clients"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_clients_user_id"/>
+    </changeSet>
+
+    <!-- 3) trainer_clients (M:N bridging) -->
+    <changeSet id="3-create-trainer_clients-table" author="me">
+        <createTable tableName="trainer_clients">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_trainer_clients"/>
+            </column>
+            <column name="trainer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="trainer_clients"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_trainer_clients_trainer"/>
+
+        <addForeignKeyConstraint baseTableName="trainer_clients"
+                                 baseColumnNames="client_id"
+                                 referencedTableName="clients"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_trainer_clients_client"/>
+
+        <addUniqueConstraint tableName="trainer_clients"
+                             columnNames="trainer_id, client_id"
+                             constraintName="uk_trainer_clients_pair"/>
+    </changeSet>
+
+    <!-- 4) program_templates -->
+    <changeSet id="4-create-program_templates-table" author="me">
+        <createTable tableName="program_templates">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_program_templates"/>
+            </column>
+            <column name="trainer_id" type="BIGINT"/>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="program_templates"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_progtemp_trainer_id"/>
+    </changeSet>
+
+    <!-- 5) mesocycle_templates -->
+    <changeSet id="5-create-mesocycle_templates-table" author="me">
+        <createTable tableName="mesocycle_templates">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_mesocycle_templates"/>
+            </column>
+            <column name="program_template_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="sequence_order" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="mesocycle_templates"
+                                 baseColumnNames="program_template_id"
+                                 referencedTableName="program_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_mesocycletemp_programtemp"/>
+    </changeSet>
+
+    <!-- 6) microcycle_templates -->
+    <changeSet id="6-create-microcycle_templates-table" author="me">
+        <createTable tableName="microcycle_templates">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_microcycle_templates"/>
+            </column>
+            <column name="mesocycle_template_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="length_in_days" type="INT"/>
+            <column name="sequence_order" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="microcycle_templates"
+                                 baseColumnNames="mesocycle_template_id"
+                                 referencedTableName="mesocycle_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_microtemp_mesotemp"/>
+    </changeSet>
+
+    <!-- 7) workout_templates (Global or trainer-owned) [was #12 originally] -->
+    <changeSet id="7-create-workout_templates-table" author="me">
+        <createTable tableName="workout_templates">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_workout_templates"/>
+            </column>
+            <column name="trainer_id" type="BIGINT"/>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="workout_templates"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wtemplates_trainer_id"/>
+    </changeSet>
+
+    <!-- 8) microcycle_template_workouts [was #7 originally] -->
+    <changeSet id="8-create-microcycle_template_workouts-table" author="me">
+        <createTable tableName="microcycle_template_workouts">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_microcycle_template_workouts"/>
+            </column>
+            <column name="microcycle_template_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="day_index" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workout_template_id" type="BIGINT"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="microcycle_template_workouts"
+                                 baseColumnNames="microcycle_template_id"
+                                 referencedTableName="microcycle_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_mctw_mctemplate"/>
+
+        <addForeignKeyConstraint baseTableName="microcycle_template_workouts"
+                                 baseColumnNames="workout_template_id"
+                                 referencedTableName="workout_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_mctw_wtemplate"/>
+    </changeSet>
+
+    <!-- 9) programs [was #8 originally] -->
+    <changeSet id="9-create-programs-table" author="me">
+        <createTable tableName="programs">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_programs"/>
+            </column>
+            <column name="trainer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="programs"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_programs_trainer_id"/>
+    </changeSet>
+
+    <!-- 10) mesocycles [was #9 originally] -->
+    <changeSet id="10-create-mesocycles-table" author="me">
+        <createTable tableName="mesocycles">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_mesocycles"/>
+            </column>
+            <column name="program_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="start_date" type="DATE"/>
+            <column name="end_date" type="DATE"/>
+            <column name="sequence_order" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="mesocycles"
+                                 baseColumnNames="program_id"
+                                 referencedTableName="programs"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_mesocycles_program_id"/>
+    </changeSet>
+
+    <!-- 11) microcycles [was #10 originally] -->
+    <changeSet id="11-create-microcycles-table" author="me">
+        <createTable tableName="microcycles">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_microcycles"/>
+            </column>
+            <column name="mesocycle_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="start_date" type="DATE"/>
+            <column name="end_date" type="DATE"/>
+            <column name="sequence_order" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="microcycles"
+                                 baseColumnNames="mesocycle_id"
+                                 referencedTableName="mesocycles"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_microcycles_mesocycle_id"/>
+    </changeSet>
+
+    <!-- 12) training_sessions [was #11 originally] -->
+    <changeSet id="12-create-training_sessions-table" author="me">
+        <createTable tableName="training_sessions">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_training_sessions"/>
+            </column>
+            <column name="trainer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="BIGINT"/>
+            <column name="microcycle_id" type="BIGINT"/>
+            <column name="workout_template_id" type="BIGINT"/>
+            <column name="scheduled_date" type="DATETIME"/>
+            <column name="day_index_in_cycle" type="INT"/>
+            <column name="session_name" type="VARCHAR(100)"/>
+            <column name="session_description" type="TEXT"/>
+            <column name="session_type" type="VARCHAR(50)"/>
+            <column name="trainer_notes" type="TEXT"/>
+            <column name="client_feedback" type="TEXT"/>
+            <column name="status" type="VARCHAR(50)" defaultValue="SCHEDULED"/>
+            <column name="is_completed" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="training_sessions"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_ts_trainer_id"/>
+
+        <addForeignKeyConstraint baseTableName="training_sessions"
+                                 baseColumnNames="client_id"
+                                 referencedTableName="clients"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_ts_client_id"/>
+
+        <addForeignKeyConstraint baseTableName="training_sessions"
+                                 baseColumnNames="microcycle_id"
+                                 referencedTableName="microcycles"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_ts_microcycle_id"/>
+
+        <addForeignKeyConstraint baseTableName="training_sessions"
+                                 baseColumnNames="workout_template_id"
+                                 referencedTableName="workout_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_ts_wtemplate_id"/>
+    </changeSet>
+
+    <!-- 13) exercises (Global or trainer-owned) [was #16 originally] -->
+    <changeSet id="13-create-exercises-table" author="me">
+        <createTable tableName="exercises">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_exercises"/>
+            </column>
+            <column name="trainer_id" type="BIGINT"/>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="is_custom" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="exercises"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_exercises_trainer_id"/>
+    </changeSet>
+
+    <!-- 14) workout_template_exercises [was #13 originally] -->
+    <changeSet id="14-create-workout_template_exercises-table" author="me">
+        <createTable tableName="workout_template_exercises">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_workout_template_exercises"/>
+            </column>
+            <column name="workout_template_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exercise_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sequence_order" type="INT"/>
+            <column name="set_type" type="VARCHAR(50)"/>
+            <column name="set_params" type="TEXT"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="workout_template_exercises"
+                                 baseColumnNames="workout_template_id"
+                                 referencedTableName="workout_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wte_wtemplate_id"/>
+
+        <addForeignKeyConstraint baseTableName="workout_template_exercises"
+                                 baseColumnNames="exercise_id"
+                                 referencedTableName="exercises"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wte_exercise_id"/>
+    </changeSet>
+
+    <!-- 15) workout_instances [was #14 originally] -->
+    <changeSet id="15-create-workout_instances-table" author="me">
+        <createTable tableName="workout_instances">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_workout_instances"/>
+            </column>
+            <column name="training_session_id" type="BIGINT"/>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workout_template_id" type="BIGINT"/>
+            <column name="performed_at" type="DATETIME"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="workout_instances"
+                                 baseColumnNames="training_session_id"
+                                 referencedTableName="training_sessions"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wi_session_id"/>
+
+        <addForeignKeyConstraint baseTableName="workout_instances"
+                                 baseColumnNames="client_id"
+                                 referencedTableName="clients"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wi_client_id"/>
+
+        <addForeignKeyConstraint baseTableName="workout_instances"
+                                 baseColumnNames="workout_template_id"
+                                 referencedTableName="workout_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wi_wtemplate_id"/>
+    </changeSet>
+
+    <!-- 16) workout_instance_exercises [was #15 originally] -->
+    <changeSet id="16-create-workout_instance_exercises-table" author="me">
+        <createTable tableName="workout_instance_exercises">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_wi_exercises"/>
+            </column>
+            <column name="workout_instance_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exercise_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sequence_order" type="INT"/>
+            <column name="set_type" type="VARCHAR(50)"/>
+            <column name="set_params" type="TEXT"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="workout_instance_exercises"
+                                 baseColumnNames="workout_instance_id"
+                                 referencedTableName="workout_instances"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wie_wi_id"/>
+
+        <addForeignKeyConstraint baseTableName="workout_instance_exercises"
+                                 baseColumnNames="exercise_id"
+                                 referencedTableName="exercises"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_wie_exercise_id"/>
+    </changeSet>
+
+    <!-- 17) exercise_substitutions [was #17 originally] -->
+    <changeSet id="17-create-exercise_substitutions-table" author="me">
+        <createTable tableName="exercise_substitutions">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_exercise_substitutions"/>
+            </column>
+            <column name="primary_exercise_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="substitute_exercise_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="exercise_substitutions"
+                                 baseColumnNames="primary_exercise_id"
+                                 referencedTableName="exercises"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_exsub_primary_id"/>
+
+        <addForeignKeyConstraint baseTableName="exercise_substitutions"
+                                 baseColumnNames="substitute_exercise_id"
+                                 referencedTableName="exercises"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_exsub_substitute_id"/>
+    </changeSet>
+
+    <!-- 18) nutrition_plan_templates [was #18 originally] -->
+    <changeSet id="18-create-nutrition_plan_templates-table" author="me">
+        <createTable tableName="nutrition_plan_templates">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_nutrition_plan_templates"/>
+            </column>
+            <column name="trainer_id" type="BIGINT"/>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="nutrition_plan_templates"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_npt_trainer_id"/>
+    </changeSet>
+
+    <!-- 19) nutrition_plan_template_items [was #19 originally] -->
+    <changeSet id="19-create-nutrition_plan_template_items-table" author="me">
+        <createTable tableName="nutrition_plan_template_items">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_npt_items"/>
+            </column>
+            <column name="nutrition_plan_template_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_name" type="VARCHAR(100)"/>
+            <column name="details" type="TEXT"/>
+            <column name="sequence_order" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="nutrition_plan_template_items"
+                                 baseColumnNames="nutrition_plan_template_id"
+                                 referencedTableName="nutrition_plan_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_nptitems_nptemplate_id"/>
+    </changeSet>
+
+    <!-- 20) nutrition_plans [was #20 originally] -->
+    <changeSet id="20-create-nutrition_plans-table" author="me">
+        <createTable tableName="nutrition_plans">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_nutrition_plans"/>
+            </column>
+            <column name="trainer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="nutrition_plans"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_nplans_trainer_id"/>
+    </changeSet>
+
+    <!-- 21) nutrition_plan_items [was #21 originally] -->
+    <changeSet id="21-create-nutrition_plan_items-table" author="me">
+        <createTable tableName="nutrition_plan_items">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_nplan_items"/>
+            </column>
+            <column name="nutrition_plan_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_name" type="VARCHAR(100)"/>
+            <column name="details" type="TEXT"/>
+            <column name="sequence_order" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="nutrition_plan_items"
+                                 baseColumnNames="nutrition_plan_id"
+                                 referencedTableName="nutrition_plans"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_npitems_nplan_id"/>
+    </changeSet>
+
+    <!-- 22) client_program_nutrition_plan_association [was #22 originally] -->
+    <changeSet id="22-create-client_program_nutrition_plan_association-table" author="me">
+        <createTable tableName="client_program_nutrition_plan_association">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_cpnpa"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nutrition_plan_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="program_id" type="BIGINT"/>
+            <column name="custom_name" type="VARCHAR(100)"/>
+            <column name="description_override" type="TEXT"/>
+            <column name="assigned_at" type="DATETIME" defaultValueDate="CURRENT_TIMESTAMP"/>
+            <column name="status" type="VARCHAR(50)" defaultValue="ACTIVE"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="client_program_nutrition_plan_association"
+                                 baseColumnNames="client_id"
+                                 referencedTableName="clients"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_cpnpa_client_id"/>
+
+        <addForeignKeyConstraint baseTableName="client_program_nutrition_plan_association"
+                                 baseColumnNames="nutrition_plan_id"
+                                 referencedTableName="nutrition_plans"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_cpnpa_nplan_id"/>
+
+        <addForeignKeyConstraint baseTableName="client_program_nutrition_plan_association"
+                                 baseColumnNames="program_id"
+                                 referencedTableName="programs"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_cpnpa_program_id"/>
+    </changeSet>
+
+    <!-- 23) feedback [was #23 originally] -->
+    <changeSet id="23-create-feedback-table" author="me">
+        <createTable tableName="feedback">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_feedback"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rating" type="INT"/>
+            <column name="comment" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="feedback"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_feedback_user_id"/>
+    </changeSet>
+
+    <!-- 24) change_log [was #24 originally] -->
+    <changeSet id="24-create-change_log-table" author="me">
+        <createTable tableName="change_log">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_change_log"/>
+            </column>
+            <column name="changed_by_user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="change_description" type="TEXT"/>
+            <column name="old_value" type="TEXT"/>
+            <column name="new_value" type="TEXT"/>
+            <column name="created_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="change_log"
+                                 baseColumnNames="changed_by_user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_changelog_user_id"/>
+    </changeSet>
+
+    <!-- 25) aggregated_stats [was #25 originally] -->
+    <changeSet id="25-create-aggregated_stats-table" author="me">
+        <createTable tableName="aggregated_stats">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_aggregated_stats"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_volume" type="INT"/>
+            <column name="average_weight" type="DECIMAL(6,2)"/>
+            <column name="rating_average" type="DECIMAL(3,2)"/>
+            <column name="start_date" type="DATE"/>
+            <column name="end_date" type="DATE"/>
+            <column name="created_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="aggregated_stats"
+                                 baseColumnNames="client_id"
+                                 referencedTableName="clients"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_agstats_client_id"/>
+    </changeSet>
+
+    <!-- 26) achievements [was #26 originally] -->
+    <changeSet id="26-create-achievements-table" author="me">
+        <createTable tableName="achievements">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_achievements"/>
+            </column>
+            <column name="achievement_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="category" type="INT"/>
+            <column name="threshold" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="image_name" type="VARCHAR(50)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 27) user_achievements [was #27 originally] -->
+    <changeSet id="27-create-user_achievements-table" author="me">
+        <createTable tableName="user_achievements">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_achievements"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="achievement_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_achieved" type="DATETIME" defaultValueDate="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_achievements"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_uach_user_id"/>
+
+        <addForeignKeyConstraint baseTableName="user_achievements"
+                                 baseColumnNames="achievement_id"
+                                 referencedTableName="achievements"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_uach_achievement_id"/>
+    </changeSet>
+    <include file="2025-05-25-add-exercise-instance-set-tables.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2025-05-26-add-default-sets-to-exercises.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2025-05-31-training-session-clients.xml"
+             relativeToChangelogFile="true"/>
+    <include file="V2025-06-01-add_end_time_to_training_sessions.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2025-06-04-cascade-training-session-and-workout-template-hierarchy.xml"
+             relativeToChangelogFile="true"/>
+</databaseChangeLog>

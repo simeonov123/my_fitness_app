@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+      http://www.liquibase.org/xml/ns/dbchangelog
+      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <!-- ──────────────────────────────────────────────────────────────── -->
+    <!--  Adding ON DELETE CASCADE for the workout-instance tree  -->
+    <!-- ──────────────────────────────────────────────────────────────── -->
+
+    <!-- A) workout_instances ▼———————————————————————— training_sessions -->
+    <changeSet id="20250604-1-ts-wi-cascade" author="gpt">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists
+                    foreignKeyName="fk_wi_session_id"/>
+        </preConditions>
+
+        <dropForeignKeyConstraint
+                baseTableName="workout_instances"
+                constraintName="fk_wi_session_id"/>
+
+        <addForeignKeyConstraint
+                baseTableName="workout_instances"
+                baseColumnNames="training_session_id"
+                referencedTableName="training_sessions"
+                referencedColumnNames="id"
+                constraintName="fk_wi_session_id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- B) workout_instance_exercises ▼—————————— workout_instances -->
+    <changeSet id="20250604-2-wie-wi-cascade" author="gpt">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists
+                    foreignKeyName="fk_wie_wi_id"/>
+        </preConditions>
+
+        <dropForeignKeyConstraint
+                baseTableName="workout_instance_exercises"
+                constraintName="fk_wie_wi_id"/>
+
+        <addForeignKeyConstraint
+                baseTableName="workout_instance_exercises"
+                baseColumnNames="workout_instance_id"
+                referencedTableName="workout_instances"
+                referencedColumnNames="id"
+                constraintName="fk_wie_wi_id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- C) workout_instance_exercise_has_sets ▼——— workout_instance_exercises -->
+    <changeSet id="20250604-3-wiehs-wie-cascade" author="gpt">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists
+                    foreignKeyName="fk_wiehs_workout_instance_exercise"/>
+        </preConditions>
+
+        <dropForeignKeyConstraint
+                baseTableName="workout_instance_exercise_has_sets"
+                constraintName="fk_wiehs_workout_instance_exercise"/>
+
+        <addForeignKeyConstraint
+                baseTableName="workout_instance_exercise_has_sets"
+                baseColumnNames="workout_instance_exercise_id"
+                referencedTableName="workout_instance_exercises"
+                referencedColumnNames="id"
+                constraintName="fk_wiehs_workout_instance_exercise"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- D) set_data ▼————————————————————————————— workout_instance_exercise_has_sets -->
+    <changeSet id="20250604-4-sd-instance-set-cascade" author="gpt">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists
+                    foreignKeyName="fk_sd_instance_set"/>
+        </preConditions>
+
+        <dropForeignKeyConstraint
+                baseTableName="set_data"
+                constraintName="fk_sd_instance_set"/>
+
+        <addForeignKeyConstraint
+                baseTableName="set_data"
+                baseColumnNames="instance_set_id"
+                referencedTableName="workout_instance_exercise_has_sets"
+                referencedColumnNames="id"
+                constraintName="fk_sd_instance_set"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- ──────────────────────────────────────────────────────────────── -->
+    <!--  TRN-1101 - cascade when a WorkoutTemplate is deleted           -->
+    <!--      workout_template_exercises  +  exercise_has_sets  + set_data-->
+    <!-- ──────────────────────────────────────────────────────────────── -->
+
+    <!-- 5) workout_template_exercises ▼—————————— workout_templates -->
+    <changeSet id="20250604-5-wte-wt-cascade" author="gpt">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists
+                    foreignKeyName="fk_wte_wtemplate_id"/>
+        </preConditions>
+
+        <dropForeignKeyConstraint
+                baseTableName="workout_template_exercises"
+                constraintName="fk_wte_wtemplate_id"/>
+
+        <addForeignKeyConstraint
+                baseTableName="workout_template_exercises"
+                baseColumnNames="workout_template_id"
+                referencedTableName="workout_templates"
+                referencedColumnNames="id"
+                constraintName="fk_wte_wtemplate_id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- 6) exercise_has_sets ▼————————————— workout_template_exercises -->
+    <changeSet id="20250604-6-ehs-wte-cascade" author="gpt">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists
+                    foreignKeyName="fk_ehs_workout_template_exercise"/>
+        </preConditions>
+
+        <dropForeignKeyConstraint
+                baseTableName="exercise_has_sets"
+                constraintName="fk_ehs_workout_template_exercise"/>
+
+        <addForeignKeyConstraint
+                baseTableName="exercise_has_sets"
+                baseColumnNames="workout_exercise_id"
+                referencedTableName="workout_template_exercises"
+                referencedColumnNames="id"
+                constraintName="fk_ehs_workout_template_exercise"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- 7) set_data ▼—————————————————————————————— exercise_has_sets -->
+    <changeSet id="20250604-7-sd-ex-set-cascade" author="gpt">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists
+                    foreignKeyName="fk_sd_exercise_set"/>
+        </preConditions>
+
+        <dropForeignKeyConstraint
+                baseTableName="set_data"
+                constraintName="fk_sd_exercise_set"/>
+
+        <addForeignKeyConstraint
+                baseTableName="set_data"
+                baseColumnNames="exercise_set_id"
+                referencedTableName="exercise_has_sets"
+                referencedColumnNames="id"
+                constraintName="fk_sd_exercise_set"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- 1) Template‐level sets -->
+    <changeSet id="20250525-1" author="assistant">
+        <createTable tableName="exercise_has_sets">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="workout_exercise_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="set_number" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="exercise_has_sets"
+                baseColumnNames="workout_exercise_id"
+                referencedTableName="workout_template_exercises"
+                referencedColumnNames="id"
+                constraintName="fk_ehs_workout_template_exercise"/>
+    </changeSet>
+
+    <!-- 2) Instance-level sets -->
+    <changeSet id="20250525-2" author="assistant">
+        <createTable tableName="workout_instance_exercise_has_sets">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="workout_instance_exercise_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="set_number" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="workout_instance_exercise_has_sets"
+                baseColumnNames="workout_instance_exercise_id"
+                referencedTableName="workout_instance_exercises"
+                referencedColumnNames="id"
+                constraintName="fk_wiehs_workout_instance_exercise"/>
+    </changeSet>
+
+    <!-- 3) The actual numeric/text values for each set -->
+    <changeSet id="20250525-3" author="assistant">
+        <createTable tableName="set_data">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exercise_set_id" type="BIGINT"/>
+            <column name="instance_set_id" type="BIGINT"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="set_data"
+                baseColumnNames="exercise_set_id"
+                referencedTableName="exercise_has_sets"
+                referencedColumnNames="id"
+                constraintName="fk_sd_exercise_set"/>
+
+        <addForeignKeyConstraint
+                baseTableName="set_data"
+                baseColumnNames="instance_set_id"
+                referencedTableName="workout_instance_exercise_has_sets"
+                referencedColumnNames="id"
+                constraintName="fk_sd_instance_set"/>
+    </changeSet>
+</databaseChangeLog>

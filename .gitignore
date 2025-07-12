@@ -1,15 +1,31 @@
-# .gitignore
+# ── root ignores ─────────────────────────────────────────────────────────
+# Secrets and local overrides
+.env
+*.jks
+*.keystore
 
-# Java / Spring artifacts
-target/
-*.jar
-*.war
+# Docker named-volume bind-mounts (you restore from init.sql instead)
+mysql_data/
+kc_data/
 
-# Flutter build artifacts
-build/
-.dart_tool/
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 
-# Docker Compose override
-docker-compose.override.yml
+# Flutter build artefacts
+flutter-client/**/build/
+flutter-client/**/.dart_tool/
+flutter-client/ios/Flutter/ephemeral/
+flutter-client/android/.gradle/
 
-# etc.
+# Java build artefacts
+resource-server/**/target/
+resource-server/**/.classpath
+resource-server/**/.settings/
+resource-server/**/*.iml
+resource-server/**/logs/
+
+# Node/Yarn, if any
+**/node_modules/

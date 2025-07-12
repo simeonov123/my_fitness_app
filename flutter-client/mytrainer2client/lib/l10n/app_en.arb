@@ -1,0 +1,42 @@
+{
+  "@@locale": "en",
+  "brandTitle": "MVFitness",
+  "tagline": "Connect, Coach, and Conquer Your Goals",
+  "description": "Manage clients, workouts, nutrition plans, and feedback—all in one freemium platform powered by achievements and badges.",
+  "signInButton": "Sign In / Sign Up",
+  "learnMoreButton": "Learn More",
+  "localeToggleLabel": "EN",
+  "authenticatingLabel": "Contacting secure login…",
+  "authFailedLabel": "Oops – something went wrong.\nPlease try again.",
+  "tryAgainButton": "Try again",
+  "reorder_exercises": "Reorder Exercises",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "set_number": "Set {number}",
+  "@set_number": {
+    "description": "Label for a specific set number, e.g. “Set 1”",
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "add_set": "Add set",
+  "kg": "kg",
+  "reps": "reps",
+  "time": "time",
+  "km": "km",
+  "weight_reps": "Weight + Reps",
+  "bodyweight_reps": "Bodyweight + Reps",
+  "weighted_bodyweight": "Weighted Bodyweight",
+  "assisted_bodyweight": "Assisted Bodyweight",
+  "duration": "Duration",
+  "duration_weight": "Duration + Weight",
+  "distance_duration": "Distance + Duration",
+  "weight_distance": "Weight + Distance",
+  "unknown": "Unknown type",
+  "unsaved_changes_title": "Unsaved changes",
+  "unsaved_changes_body": "You have unsaved changes. What would you like to do?",
+  "save": "Save",
+  "discard": "Discard",
+  "cancel": "Cancel"
+}

@@ -1,0 +1,4 @@
+# keycloak/.dockerignore
+.git
+.idea
+.vscode

@@ -1,0 +1,42 @@
+{
+  "@@locale": "bg",
+  "brandTitle": "MVФитнес",
+  "tagline": "Свържете се, тренирайте и покорете целите си",
+  "description": "Управлявайте клиенти, тренировки, хранителни планове и обратна връзка—всичко в една фриймиум платформа с постижения и значки.",
+  "signInButton": "Вход / Регистрация",
+  "learnMoreButton": "Научете повече",
+  "localeToggleLabel": "BG",
+  "authenticatingLabel": "Зарежда страница със защитена форма за вписване в приложението…",
+  "authFailedLabel": "Опаля – нещо се прецака.\nМоля опитайте отново.",
+  "tryAgainButton": "Опитайте отново",
+  "reorder_exercises": "Пренареди упражненията",
+  "cancel": "Откажи",
+  "save": "Запази",
+  "delete": "Изтриване",
+  "set_number": "Серия {number}",
+  "@set_number": {
+    "description": "Label for a specific set number, e.g. “Серия 1”",
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "add_set": "Добави серия",
+  "kg": "кг",
+  "reps": "повт",
+  "time": "време",
+  "km": "км",
+  "weight_reps": "Тежест + Повт",
+  "bodyweight_reps": "Собствено тегло + Повт",
+  "weighted_bodyweight": "Утежнено собствено тегло",
+  "assisted_bodyweight": "Асистирано",
+  "duration": "Продължителност",
+  "duration_weight": "Време + Тежест",
+  "distance_duration": "Разстояние + Време",
+  "weight_distance": "Тежест + Разстояние",
+  "unknown": "Непознат тип",
+  "unsaved_changes_title": "Незаписани промени",
+  "unsaved_changes_body": "Имате незаписани промени. Какво искате да направите?",
+  "save": "Запази",
+  "discard": "Отмени",
+  "cancel": "Отказ"
+}

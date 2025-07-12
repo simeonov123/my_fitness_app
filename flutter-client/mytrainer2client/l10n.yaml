@@ -1,0 +1,15 @@
+# File: l10n.yaml  (at the same level as pubspec.yaml)
+
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-dir: lib/l10n
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+
+# IMPORTANT: use this exact key name, not "preferred-supported-locales"
+supported-locales:
+  - en
+  - bg
+
+# turn off the synthetic package so you get a real Dart file under lib/
+synthetic-package: false
