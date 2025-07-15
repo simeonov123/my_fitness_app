@@ -14,12 +14,8 @@ class NutritionTemplateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final createdAt = tpl.createdAt != null
-        ? tpl.createdAt!.toLocal().toString().split('.').first
-        : null;
-    final updatedAt = tpl.updatedAt != null
-        ? tpl.updatedAt!.toLocal().toString().split('.').first
-        : null;
+    final createdAt = tpl.createdAt?.toLocal().toString().split('.').first;
+    final updatedAt = tpl.updatedAt?.toLocal().toString().split('.').first;
 
     return InkWell(
       onTap: onTap,

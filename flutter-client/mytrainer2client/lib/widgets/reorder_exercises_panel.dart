@@ -11,10 +11,10 @@ class ReorderExercisesPanel extends StatefulWidget {
   final List<WorkoutTemplateExercise> initial;
 
   const ReorderExercisesPanel({
-    Key? key,
+    super.key,
     required this.templateId,
     required this.initial,
-  }) : super(key: key);
+  });
 
   @override
   State<ReorderExercisesPanel> createState() => _ReorderExercisesPanelState();
@@ -64,7 +64,8 @@ class _ReorderExercisesPanelState extends State<ReorderExercisesPanel> {
             children: [
               Text(
                 t.reorder_exercises, // make sure this key exists
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(icon: const Icon(Icons.check), onPressed: _onDone),

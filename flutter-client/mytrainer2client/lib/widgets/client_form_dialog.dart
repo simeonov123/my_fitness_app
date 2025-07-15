@@ -11,7 +11,7 @@ class ClientFormDialog extends StatefulWidget {
   /// If [client] is non-null, we’re _editing_; otherwise we’re creating.
   final Client? client;
 
-  const ClientFormDialog({Key? key, this.client}) : super(key: key);
+  const ClientFormDialog({super.key, this.client});
 
   @override
   State<ClientFormDialog> createState() => _ClientFormDialogState();
@@ -30,9 +30,9 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
   void initState() {
     super.initState();
     final c = widget.client;
-    _nameCtrl  = TextEditingController(text: c?.fullName  ?? '');
-    _emailCtrl = TextEditingController(text: c?.email     ?? '');
-    _phoneCtrl = TextEditingController(text: c?.phone     ?? '');
+    _nameCtrl = TextEditingController(text: c?.fullName ?? '');
+    _emailCtrl = TextEditingController(text: c?.email ?? '');
+    _phoneCtrl = TextEditingController(text: c?.phone ?? '');
   }
 
   @override
@@ -49,10 +49,10 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
 
     // Build a Client object, preserving id if editing:
     final newClient = Client(
-      id:       widget.client?.id ?? 0,
+      id: widget.client?.id ?? 0,
       fullName: _nameCtrl.text.trim(),
-      email:    _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
-      phone:    _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+      email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
     );
 
     final token = context.read<AuthProvider>().token!;
@@ -83,7 +83,7 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
                 controller: _nameCtrl,
                 decoration: const InputDecoration(labelText: 'Full name *'),
                 validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                    (v == null || v.trim().isEmpty) ? 'Name is required' : null,
               ),
               TextFormField(
                 controller: _emailCtrl,
@@ -108,7 +108,9 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
           onPressed: _submitting ? null : _submit,
           child: _submitting
               ? const SizedBox(
-              width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : const Text('Save'),
         ),
       ],

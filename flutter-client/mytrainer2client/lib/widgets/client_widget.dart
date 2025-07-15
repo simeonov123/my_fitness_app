@@ -1,6 +1,5 @@
 // File: lib/widgets/client_widget.dart
 
-
 import 'package:flutter/material.dart';
 import 'package:avatar_plus/avatar_plus.dart';
 import '../models/client.dart';
@@ -28,12 +27,8 @@ class _ClientWidgetState extends State<ClientWidget> {
     final seed = c.id != 0 ? c.id.toString() : c.fullName;
 
     // Format timestamps for display (fall back to raw string if needed)
-    final createdAt = c.createdAt != null
-        ? c.createdAt!.toLocal().toString().split('.').first
-        : null;
-    final updatedAt = c.updatedAt != null
-        ? c.updatedAt!.toLocal().toString().split('.').first
-        : null;
+    final createdAt = c.createdAt?.toLocal().toString().split('.').first;
+    final updatedAt = c.updatedAt?.toLocal().toString().split('.').first;
 
     return InkWell(
       onTap: widget.onTap,
@@ -97,4 +92,3 @@ class _ClientWidgetState extends State<ClientWidget> {
     );
   }
 }
-

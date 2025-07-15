@@ -12,7 +12,7 @@ import '../widgets/client_form_dialog.dart';
 class ClientDetailPage extends StatefulWidget {
   final Client client;
 
-  const ClientDetailPage({Key? key, required this.client}) : super(key: key);
+  const ClientDetailPage({super.key, required this.client});
 
   @override
   _ClientDetailPageState createState() => _ClientDetailPageState();
@@ -21,11 +21,11 @@ class ClientDetailPage extends StatefulWidget {
 class _ClientDetailPageState extends State<ClientDetailPage> {
   late Client _client;
   // stub data for stats
-  int _workoutsCompleted = 42;
-  List<String> _activePrograms = ['Strength Training'];
-  List<String> _programHistory = ['Onboarding Program', 'Cardio Blast'];
-  String? _currentNutritionPlan = 'Keto Kickstart';
-  List<String> _nutritionHistory = ['Balanced Diet', 'Low Carb'];
+  final int _workoutsCompleted = 42;
+  final List<String> _activePrograms = ['Strength Training'];
+  final List<String> _programHistory = ['Onboarding Program', 'Cardio Blast'];
+  final String? _currentNutritionPlan = 'Keto Kickstart';
+  final List<String> _nutritionHistory = ['Balanced Diet', 'Low Carb'];
 
   @override
   void initState() {
@@ -56,8 +56,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete client?'),
-        content:
-        Text('Are you sure you want to delete "${_client.fullName}"?'),
+        content: Text('Are you sure you want to delete "${_client.fullName}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -85,7 +84,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
   @override
   Widget build(BuildContext context) {
     final avatarSeed =
-    _client.id != 0 ? _client.id.toString() : _client.fullName;
+        _client.id != 0 ? _client.id.toString() : _client.fullName;
 
     return Scaffold(
       appBar: AppBar(
@@ -172,7 +171,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     if (_activePrograms.isNotEmpty)
                       ..._activePrograms.map(
-                            (p) => ListTile(
+                        (p) => ListTile(
                           leading: const Icon(Icons.fitness_center),
                           title: Text(p),
                         ),
@@ -183,7 +182,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
                     const Text('History',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     ..._programHistory.map(
-                          (p) => ListTile(
+                      (p) => ListTile(
                         leading: const Icon(Icons.history),
                         title: Text(p),
                       ),
@@ -218,7 +217,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
                     const Text('History',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     ..._nutritionHistory.map(
-                          (n) => ListTile(
+                      (n) => ListTile(
                         leading: const Icon(Icons.history),
                         title: Text(n),
                       ),

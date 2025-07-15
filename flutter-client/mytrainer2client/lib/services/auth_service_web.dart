@@ -1,5 +1,7 @@
 /// Web-only AuthService implementation.
 /// Uses `openid_client` + an iframe redirect for silent renew.
+library;
+
 import 'dart:convert';
 import 'dart:html' as html;
 
@@ -34,8 +36,8 @@ class AuthService implements _AuthServiceBase {
   // ===== Keycloak config (DEV — adjust for prod) ============================
   static const issuerUrl = 'http://localhost:8081/realms/myrealm';
 
-  static const clientId  = 'mytrainer2client';
-  static const redirect  = 'http://localhost';
+  static const clientId = 'mytrainer2client';
+  static const redirect = 'http://localhost';
 
   String? _accessToken;
   String? _idToken;
@@ -49,7 +51,7 @@ class AuthService implements _AuthServiceBase {
   @override
   void loadFromStorage() {
     _accessToken = html.window.localStorage['access_token'];
-    _idToken     = html.window.localStorage['id_token'];
+    _idToken = html.window.localStorage['id_token'];
   }
 
   // --------------------------------------------------------------------------
@@ -74,11 +76,11 @@ class AuthService implements _AuthServiceBase {
 
     final token = await cred.getTokenResponse();
     _accessToken = token.accessToken;
-    _idToken     = token.idToken.toCompactSerialization();
+    _idToken = token.idToken.toCompactSerialization();
 
     html.window.localStorage
       ..['access_token'] = _accessToken!
-      ..['id_token']     = _idToken!;
+      ..['id_token'] = _idToken!;
 
     return true;
   }
@@ -100,21 +102,22 @@ class AuthService implements _AuthServiceBase {
     }
 
     // 2️⃣  Check the exp claim – if < 1 min from now, try a silent refresh.
-    bool _isAlmostExpired(String jwt) {
+    bool isAlmostExpired(String jwt) {
       try {
-        final parts   = jwt.split('.');
+        final parts = jwt.split('.');
         if (parts.length != 3) return true;
         final payload = json.decode(
           utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
         ) as Map<String, dynamic>;
-        final expUtc  = DateTime.fromMillisecondsSinceEpoch(payload['exp'] * 1000);
+        final expUtc =
+            DateTime.fromMillisecondsSinceEpoch(payload['exp'] * 1000);
         return expUtc.isBefore(DateTime.now().add(const Duration(minutes: 1)));
       } catch (_) {
         return true; // Parsing failed → treat as expired
       }
     }
 
-    if (_isAlmostExpired(_accessToken!)) {
+    if (isAlmostExpired(_accessToken!)) {
       final ok = await loginOrSignup(interactive: false); // silent renew
       if (!ok) return null;
     }
@@ -141,16 +144,16 @@ class AuthService implements _AuthServiceBase {
       'AUTH_SESSION_ID',
     ]) {
       html.document.cookie =
-      '$name=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          '$name=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT';
     }
 
     // Finally redirect to the Keycloak end-session endpoint
-    final issuer      = await Issuer.discover(Uri.parse(issuerUrl));
-    final endSession  = issuer.metadata.endSessionEndpoint!;
+    final issuer = await Issuer.discover(Uri.parse(issuerUrl));
+    final endSession = issuer.metadata.endSessionEndpoint!;
     final uri = endSession.replace(queryParameters: {
-      'id_token_hint'           : _idToken,
+      'id_token_hint': _idToken,
       'post_logout_redirect_uri': redirect,
-      'client_id'               : clientId,
+      'client_id': clientId,
     });
     html.window.location.href = uri.toString();
   }

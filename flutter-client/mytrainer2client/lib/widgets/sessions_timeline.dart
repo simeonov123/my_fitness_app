@@ -11,10 +11,10 @@ class SessionsTimeline extends StatelessWidget {
 
   /* layout constants */
   static const double _pxPerMin = 1.2;
-  static const double _timeW    = 60;
-  static const double _gap      = 4;
-  static const double _minColW  = 56;
-  static const int    _maxCols  = 4; // 3 cards + pill
+  static const double _timeW = 60;
+  static const double _gap = 4;
+  static const double _minColW = 56;
+  static const int _maxCols = 4; // 3 cards + pill
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class SessionsTimeline extends StatelessWidget {
           ..sort((a, b) => a.start.compareTo(b.start));
 
         final clusters = _clusters(dayEvents);
-        final fullHeight = (24 * 60 * _pxPerMin);
+        const fullHeight = (24 * 60 * _pxPerMin);
 
         return Scrollbar(
           child: SingleChildScrollView(
@@ -48,29 +48,29 @@ class SessionsTimeline extends StatelessWidget {
   /* time ruler & grid */
 
   Widget _timeColumn() => Column(
-    children: List.generate(24, (h) {
-      return SizedBox(
-        height: 60 * _pxPerMin,
-        width:  _timeW,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Text('${h.toString().padLeft(2, '0')}:00',
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        ),
+        children: List.generate(24, (h) {
+          return SizedBox(
+            height: 60 * _pxPerMin,
+            width: _timeW,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Text('${h.toString().padLeft(2, '0')}:00',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ),
+          );
+        }),
       );
-    }),
-  );
 
   Widget _grid() => Column(
-    children: List.generate(24, (_) {
-      return Container(
-        height: 60 * _pxPerMin,
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.grey.shade300)),
-        ),
+        children: List.generate(24, (_) {
+          return Container(
+            height: 60 * _pxPerMin,
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.grey.shade300)),
+            ),
+          );
+        }),
       );
-    }),
-  );
 
   /* real-overlap clusters */
 
@@ -82,7 +82,7 @@ class SessionsTimeline extends StatelessWidget {
         continue;
       }
       final latestEnd =
-      out.last.map((e) => e.end).reduce((a, b) => a.isAfter(b) ? a : b);
+          out.last.map((e) => e.end).reduce((a, b) => a.isAfter(b) ? a : b);
       if (s.start.isBefore(latestEnd)) {
         out.last.add(s);
       } else {
@@ -96,15 +96,15 @@ class SessionsTimeline extends StatelessWidget {
 
   Map<Session, int> _columns(List<Session> cluster) {
     final freeAt = <DateTime>[];
-    final map    = <Session, int>{};
+    final map = <Session, int>{};
 
     for (final ev in cluster) {
       bool placed = false;
       for (var c = 0; c < freeAt.length; c++) {
         if (!ev.start.isBefore(freeAt[c])) {
-          map[ev]   = c;
+          map[ev] = c;
           freeAt[c] = ev.end;
-          placed    = true;
+          placed = true;
           break;
         }
       }
@@ -120,26 +120,25 @@ class SessionsTimeline extends StatelessWidget {
 
   Widget _paint(List<List<Session>> clusters) {
     return LayoutBuilder(builder: (_, constr) {
-      final fullW    = constr.maxWidth;
+      final fullW = constr.maxWidth;
       final children = <Widget>[_grid(), _nowLine()];
 
       for (final cluster in clusters) {
         cluster.sort((a, b) => a.start.compareTo(b.start));
 
-        final colMap  = _columns(cluster);
-        final colUsed =
-        colMap.values.fold(0, (m, v) => v >= m ? v + 1 : m);
+        final colMap = _columns(cluster);
+        final colUsed = colMap.values.fold(0, (m, v) => v >= m ? v + 1 : m);
 
-        final pillNeeded  = colUsed > _maxCols;
-        final totalCols   = pillNeeded ? _maxCols : colUsed;
+        final pillNeeded = colUsed > _maxCols;
+        final totalCols = pillNeeded ? _maxCols : colUsed;
         final visibleCols = pillNeeded ? _maxCols - 1 : colUsed;
 
         final colW =
-        ((fullW - (totalCols - 1) * _gap) / totalCols).floorToDouble();
+            ((fullW - (totalCols - 1) * _gap) / totalCols).floorToDouble();
         final compact = colW < _minColW;
 
-        int   shown   = 0;
-        final hidden  = <Session>[];
+        int shown = 0;
+        final hidden = <Session>[];
 
         /* visible cards */
         for (final ev in cluster) {
@@ -147,14 +146,11 @@ class SessionsTimeline extends StatelessWidget {
             hidden.add(ev);
             continue;
           }
-          final left  = compact ? 0.0 : shown * (colW + _gap);
+          final left = compact ? 0.0 : shown * (colW + _gap);
           final width = compact ? fullW : colW;
 
           children.add(_card(ev,
-              palette: shown,
-              left: left,
-              width: width,
-              compact: compact));
+              palette: shown, left: left, width: width, compact: compact));
           shown++;
         }
 
@@ -163,12 +159,11 @@ class SessionsTimeline extends StatelessWidget {
           final start = hidden
               .map((e) => e.start)
               .reduce((a, b) => a.isBefore(b) ? a : b);
-          final end = hidden
-              .map((e) => e.end)
-              .reduce((a, b) => a.isAfter(b) ? a : b);
+          final end =
+              hidden.map((e) => e.end).reduce((a, b) => a.isAfter(b) ? a : b);
 
           final spanH =
-          (end.difference(start).inMinutes * _pxPerMin).toDouble();
+              (end.difference(start).inMinutes * _pxPerMin).toDouble();
           final pillH = spanH < SessionGroupCard.rowHeight
               ? SessionGroupCard.rowHeight
               : spanH;
@@ -196,9 +191,9 @@ class SessionsTimeline extends StatelessWidget {
 
   Positioned _card(Session s,
       {required int palette,
-        required double left,
-        required double width,
-        required bool compact}) {
+      required double left,
+      required double width,
+      required bool compact}) {
     final y = _y(s.start);
     final h = (s.durationMinutes * _pxPerMin).toDouble();
     return Positioned(
@@ -224,7 +219,7 @@ class SessionsTimeline extends StatelessWidget {
       left: 0,
       right: 0,
       child: Row(children: [
-        Container(width: _timeW, height: 1),
+        SizedBox(width: _timeW, height: 1),
         Expanded(child: Container(height: 1, color: Colors.red)),
       ]),
     );

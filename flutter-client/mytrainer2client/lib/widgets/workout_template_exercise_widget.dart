@@ -10,11 +10,11 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
   final VoidCallback onChanged;
 
   const WorkoutTemplateExerciseWidget({
-    Key? key,
+    super.key,
     required this.templateId,
     required this.wte,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<WorkoutTemplateExerciseWidget> createState() =>
@@ -91,12 +91,13 @@ class _WorkoutTemplateExerciseWidgetState
                   color: Colors.red,
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 16),
-                  child:
-                  Text(loc.delete, style: const TextStyle(color: Colors.white)),
+                  child: Text(loc.delete,
+                      style: const TextStyle(color: Colors.white)),
                 ),
                 onDismissed: (_) => _removeSet(i),
                 child: ListTile(
-                  title: Text(loc.set_number(_localSets[i].setNumber.toString())),
+                  title:
+                      Text(loc.set_number(_localSets[i].setNumber.toString())),
                   subtitle: Row(
                     children: [
                       for (var key in widget.wte.paramKeys)
@@ -105,9 +106,9 @@ class _WorkoutTemplateExerciseWidgetState
                             padding: const EdgeInsets.only(right: 8),
                             child: TextFormField(
                               initialValue:
-                              _localSets[i].values[key]?.toStringAsFixed(0),
+                                  _localSets[i].values[key]?.toStringAsFixed(0),
                               decoration:
-                              InputDecoration(labelText: _label(key, loc)),
+                                  InputDecoration(labelText: _label(key, loc)),
                               keyboardType: TextInputType.number,
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly

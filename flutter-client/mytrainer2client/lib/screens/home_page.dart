@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/training_sessions_provider.dart';
-import '../providers/session_store.dart';
 
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/sessions_calendar.dart';
@@ -91,7 +90,7 @@ class _HomePageState extends State<HomePage> {
           final dto = await showDialog<Map<String, dynamic>>(
             context: context,
             builder: (_) => TrainingSessionFormDialog(
-              initialDay: _selectedDay,   // 🔹 pass current day
+              initialDay: _selectedDay, // 🔹 pass current day
             ),
           );
           if (dto == null) return;
@@ -99,7 +98,7 @@ class _HomePageState extends State<HomePage> {
           final token = await context.read<AuthProvider>().getValidToken();
           if (token == null) return;
 
-          final prov    = context.read<TrainingSessionsProvider>();
+          final prov = context.read<TrainingSessionsProvider>();
           final created = await prov.create(token: token, dto: dto);
 
           // switch to the day/month where the new session was added
@@ -112,36 +111,35 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   /* ───────── App-bar ───────── */
 
   AppBar _appBar(AuthProvider auth) => AppBar(
-    title: const Text('Home'),
-    actions: [
-      if (kDebugMode)
-        IconButton(
-          icon: const Icon(Icons.vpn_key),
-          tooltip: 'Copy access token',
-          onPressed: () async {
-            final token = await auth.getValidToken();
-            if (token == null) return;
-            await Clipboard.setData(ClipboardData(text: token));
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Access token copied')),
-            );
-          },
-        ),
-      IconButton(
-        icon: const Icon(Icons.logout),
-        onPressed: () async {
-          await auth.logout();
-          if (mounted) {
-            Navigator.of(context)
-                .pushNamedAndRemoveUntil('/login', (_) => false);
-          }
-        },
-      ),
-    ],
-  );
+        title: const Text('Home'),
+        actions: [
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.vpn_key),
+              tooltip: 'Copy access token',
+              onPressed: () async {
+                final token = await auth.getValidToken();
+                if (token == null) return;
+                await Clipboard.setData(ClipboardData(text: token));
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Access token copied')),
+                );
+              },
+            ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await auth.logout();
+              if (mounted) {
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/login', (_) => false);
+              }
+            },
+          ),
+        ],
+      );
 }

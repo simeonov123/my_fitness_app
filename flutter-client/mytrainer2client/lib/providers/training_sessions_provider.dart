@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../models/page_response.dart';
 import '../models/session.dart';
 import '../models/training_session.dart';
 import '../providers/session_store.dart';
@@ -18,12 +17,12 @@ class TrainingSessionsProvider extends ChangeNotifier {
   List<TrainingSession> get dayList => List.unmodifiable(_dayList);
 
   /* ───── search list (legacy) ───── */
-  bool   loading    = false;
-  String search     = '';
-  String sort       = 'newest';
-  int    page       = 0;
-  int    size       = 20;
-  int    totalPages = 1;
+  bool loading = false;
+  String search = '';
+  String sort = 'newest';
+  int page = 0;
+  int size = 20;
+  int totalPages = 1;
 
   final List<TrainingSession> _searchList = [];
   List<TrainingSession> get searchList => List.unmodifiable(_searchList);
@@ -36,13 +35,12 @@ class TrainingSessionsProvider extends ChangeNotifier {
   }) async {
     final first = monthFirst.subtract(Duration(days: monthFirst.weekday % 7));
     final lastMonthDay = DateTime(monthFirst.year, monthFirst.month + 1, 0);
-    final last =
-    lastMonthDay.add(Duration(days: 6 - lastMonthDay.weekday % 7));
+    final last = lastMonthDay.add(Duration(days: 6 - lastMonthDay.weekday % 7));
 
     final fresh = await _api.counts(token: token, from: first, to: last);
     _counts
       ..removeWhere((d, _) =>
-      d.isAfter(first.subtract(const Duration())) &&
+          d.isAfter(first.subtract(const Duration())) &&
           d.isBefore(last.add(const Duration(days: 1))))
       ..addAll(fresh);
     notifyListeners();
@@ -64,11 +62,11 @@ class TrainingSessionsProvider extends ChangeNotifier {
   }
 
   Session _dtoToSession(TrainingSession dto) => Session(
-    id: dto.id,
-    start: dto.start,
-    end: dto.end,
-    clients: [dto.sessionName ?? 'Session #${dto.id}'],
-  );
+        id: dto.id,
+        start: dto.start,
+        end: dto.end,
+        clients: [dto.sessionName ?? 'Session #${dto.id}'],
+      );
 
   /* ───────── paged search list ───────── */
 
@@ -79,25 +77,25 @@ class TrainingSessionsProvider extends ChangeNotifier {
     String? newSort,
   }) async {
     loading = true;
-    if (toPage    != null) page   = toPage;
+    if (toPage != null) page = toPage;
     if (newSearch != null) search = newSearch;
-    if (newSort   != null) sort   = newSort;
+    if (newSort != null) sort = newSort;
     notifyListeners();
 
     final resp = await _api.page(
       token: token,
-      page : page,
-      size : size,
-      q    : search,
-      sort : sort,
+      page: page,
+      size: size,
+      q: search,
+      sort: sort,
     );
 
     _searchList
       ..clear()
       ..addAll(resp.items);
-    page       = resp.page;
+    page = resp.page;
     totalPages = resp.totalPages;
-    loading    = false;
+    loading = false;
     notifyListeners();
   }
 
@@ -121,8 +119,7 @@ class TrainingSessionsProvider extends ChangeNotifier {
   }) async {
     // grab the session (if present) **before** we mutate the list
     final int idx = _dayList.indexWhere((s) => s.id == id);
-    final TrainingSession? toRemove =
-    idx == -1 ? null : _dayList[idx];
+    final TrainingSession? toRemove = idx == -1 ? null : _dayList[idx];
 
     // backend call
     await _api.delete(token: token, id: id);

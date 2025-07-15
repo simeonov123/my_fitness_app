@@ -8,7 +8,7 @@ import '../providers/nutrition_templates_provider.dart';
 class NutritionTemplateFormDialog extends StatefulWidget {
   final NutritionPlanTemplate? tpl;
 
-  const NutritionTemplateFormDialog({Key? key, this.tpl}) : super(key: key);
+  const NutritionTemplateFormDialog({super.key, this.tpl});
 
   @override
   State<NutritionTemplateFormDialog> createState() =>
@@ -44,14 +44,11 @@ class _NutritionTemplateFormDialogState
     final tpl = NutritionPlanTemplate(
       id: widget.tpl?.id ?? 0,
       name: _nameCtrl.text.trim(),
-      description:
-      _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
     );
 
     final token = context.read<AuthProvider>().token!;
-    await context
-        .read<NutritionTemplatesProvider>()
-        .save(token: token, t: tpl);
+    await context.read<NutritionTemplatesProvider>().save(token: token, t: tpl);
 
     setState(() => _submitting = false);
     Navigator.of(context).pop(tpl);
@@ -72,7 +69,7 @@ class _NutritionTemplateFormDialogState
                 controller: _nameCtrl,
                 decoration: const InputDecoration(labelText: 'Name *'),
                 validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                    (v == null || v.trim().isEmpty) ? 'Name is required' : null,
               ),
               TextFormField(
                 controller: _descCtrl,
@@ -97,9 +94,9 @@ class _NutritionTemplateFormDialogState
           onPressed: _submitting ? null : _submit,
           child: _submitting
               ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2))
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : const Text('Save'),
         ),
       ],

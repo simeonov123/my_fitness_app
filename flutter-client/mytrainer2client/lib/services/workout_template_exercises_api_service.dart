@@ -40,7 +40,7 @@ class WorkoutTemplateExercisesApiService {
       throw Exception('Failed to load exercises: ${res.statusCode}');
     }
     final body = jsonDecode(res.body);
-    final list = (body is List ? body : <dynamic>[]) as List;
+    final list = (body is List ? body : <dynamic>[]);
     return list
         .cast<Map<String, dynamic>>()
         .map(WorkoutTemplateExercise.fromJson)
@@ -65,7 +65,7 @@ class WorkoutTemplateExercisesApiService {
       throw Exception('Failed to save exercises: ${res.statusCode}');
     }
     final body = jsonDecode(res.body);
-    final list = (body is List ? body : <dynamic>[]) as List;
+    final list = (body is List ? body : <dynamic>[]);
     return list
         .cast<Map<String, dynamic>>()
         .map(WorkoutTemplateExercise.fromJson)

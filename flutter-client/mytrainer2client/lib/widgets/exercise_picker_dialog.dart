@@ -23,40 +23,41 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
         child: prov.loading
             ? const Center(child: CircularProgressIndicator())
             : Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search',
-                prefixIcon: Icon(Icons.search),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Search',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: prov.search,
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: prov.list.length,
+                      itemBuilder: (_, i) {
+                        final ex = prov.list[i];
+                        final selected = _selected.contains(ex);
+                        return CheckboxListTile(
+                          title: Text(ex.name),
+                          value: selected,
+                          onChanged: (chk) {
+                            setState(() {
+                              if (chk == true) {
+                                _selected.add(ex);
+                              } else {
+                                _selected.remove(ex);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-              onChanged: prov.search,
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: prov.list.length,
-                itemBuilder: (_, i) {
-                  final ex = prov.list[i];
-                  final selected = _selected.contains(ex);
-                  return CheckboxListTile(
-                    title: Text(ex.name),
-                    value: selected,
-                    onChanged: (chk) {
-                      setState(() {
-                        if (chk == true)
-                          _selected.add(ex);
-                        else
-                          _selected.remove(ex);
-                      });
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
       ),
       actions: [
         TextButton(

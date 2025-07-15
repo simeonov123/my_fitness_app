@@ -14,7 +14,7 @@ class WorkoutTemplateFormDialog extends StatefulWidget {
 class _WorkoutTemplateFormDialogState extends State<WorkoutTemplateFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameCtrl, _descCtrl;
-  bool _submitting = false;
+  final bool _submitting = false;
 
   @override
   void initState() {
@@ -35,8 +35,7 @@ class _WorkoutTemplateFormDialogState extends State<WorkoutTemplateFormDialog> {
     final tpl = WorkoutTemplate(
       id: widget.tpl?.id ?? 0,
       name: _nameCtrl.text.trim(),
-      description:
-      _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
     );
     Navigator.of(context).pop(tpl);
   }
@@ -55,7 +54,7 @@ class _WorkoutTemplateFormDialogState extends State<WorkoutTemplateFormDialog> {
               controller: _nameCtrl,
               decoration: const InputDecoration(labelText: 'Name *'),
               validator: (v) =>
-              v == null || v.trim().isEmpty ? 'Required' : null,
+                  v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             TextFormField(
               controller: _descCtrl,
