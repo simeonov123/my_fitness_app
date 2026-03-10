@@ -1,34 +1,42 @@
 package com.mvfitness.mytrainer2.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Set;
 
 @Configuration
-@EnableMethodSecurity  // allows @PreAuthorize, @RolesAllowed, etc.
+@EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+    private String jwkSetUri;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1) Enable CORS processing
                 .cors(Customizer.withDefaults())
-
-                // 2) Then your usual security rules
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/trainer/**").hasRole("TRAINER")
-
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -46,28 +54,53 @@ public class SecurityConfig {
         return converter;
     }
 
-    /**
-     * 3) A Bean that defines exactly which origins, headers, and methods
-     *    are allowed. Spring Security will use this to configure CORS
-     *    at runtime.myfitness
-     */
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+        OAuth2TokenValidator<Jwt> withTimestamp = JwtValidators.createDefault();
+        OAuth2TokenValidator<Jwt> withIssuer = jwt -> {
+            String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : null;
+            Set<String> allowedIssuers = Set.of(
+                    "http://localhost:8081/realms/myrealm",
+                    "http://10.0.2.2:8081/realms/myrealm"
+            );
+
+            if (issuer != null && allowedIssuers.contains(issuer)) {
+                return OAuth2TokenValidatorResult.success();
+            }
+
+            return OAuth2TokenValidatorResult.failure(new OAuth2Error(
+                    "invalid_token",
+                    "The token issuer is not allowed",
+                    null
+            ));
+        };
+
+        decoder.setJwtValidator(token -> {
+            OAuth2TokenValidatorResult timestampResult = withTimestamp.validate(token);
+            if (timestampResult.hasErrors()) {
+                return timestampResult;
+            }
+            return withIssuer.validate(token);
+        });
+
+        return decoder;
+    }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        // Adjust these as needed for your environment
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
                 "http://localhost",
                 "http://localhost:80"
-                // Add any other origins (e.g. if you access from 127.0.0.1 or another domain)
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        config.setAllowCredentials(true); // if needed for cookies or auth headers
+        config.setAllowCredentials(true);
 
-        // Apply this config to all endpoints
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
-
 }

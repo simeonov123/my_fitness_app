@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -13,7 +15,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get tagline => 'Свържете се, тренирайте и покорете целите си';
 
   @override
-  String get description => 'Управлявайте клиенти, тренировки, хранителни планове и обратна връзка—всичко в една фриймиум платформа с постижения и значки.';
+  String get description =>
+      'Управлявайте клиенти, тренировки, хранителни планове и обратна връзка—всичко в една фриймиум платформа с постижения и значки.';
 
   @override
   String get signInButton => 'Вход / Регистрация';
@@ -25,10 +28,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get localeToggleLabel => 'BG';
 
   @override
-  String get authenticatingLabel => 'Зарежда страница със защитена форма за вписване в приложението…';
+  String get authenticatingLabel =>
+      'Зарежда страница със защитена форма за вписване в приложението…';
 
   @override
-  String get authFailedLabel => 'Опаля – нещо се прецака.\nМоля опитайте отново.';
+  String get authFailedLabel =>
+      'Опаля – нещо се прецака.\nМоля опитайте отново.';
 
   @override
   String get tryAgainButton => 'Опитайте отново';
@@ -96,7 +101,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get unsaved_changes_title => 'Незаписани промени';
 
   @override
-  String get unsaved_changes_body => 'Имате незаписани промени. Какво искате да направите?';
+  String get unsaved_changes_body =>
+      'Имате незаписани промени. Какво искате да направите?';
 
   @override
   String get discard => 'Отмени';

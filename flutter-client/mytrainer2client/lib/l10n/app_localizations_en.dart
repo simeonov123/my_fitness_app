@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -13,7 +15,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tagline => 'Connect, Coach, and Conquer Your Goals';
 
   @override
-  String get description => 'Manage clients, workouts, nutrition plans, and feedback—all in one freemium platform powered by achievements and badges.';
+  String get description =>
+      'Manage clients, workouts, nutrition plans, and feedback—all in one freemium platform powered by achievements and badges.';
 
   @override
   String get signInButton => 'Sign In / Sign Up';
@@ -28,7 +31,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authenticatingLabel => 'Contacting secure login…';
 
   @override
-  String get authFailedLabel => 'Oops – something went wrong.\nPlease try again.';
+  String get authFailedLabel =>
+      'Oops – something went wrong.\nPlease try again.';
 
   @override
   String get tryAgainButton => 'Try again';
@@ -96,7 +100,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unsaved_changes_title => 'Unsaved changes';
 
   @override
-  String get unsaved_changes_body => 'You have unsaved changes. What would you like to do?';
+  String get unsaved_changes_body =>
+      'You have unsaved changes. What would you like to do?';
 
   @override
   String get discard => 'Discard';

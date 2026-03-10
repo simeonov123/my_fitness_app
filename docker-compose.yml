@@ -39,13 +39,13 @@ services:
       KC_DB_PASSWORD: keycloakpass
 
       # ── FOR LOCAL TESTING ON EMULATOR ────────────────────────────────────────────
-      KC_HOSTNAME_PORT: 8081 # <-- Comment when running for emulator otherwise keep it for web
+      # KC_HOSTNAME_PORT: 8081
 
       # -- keep KC_HOSTNAME_STRICT *false* so KC accepts both hosts
       KC_HOSTNAME_STRICT: "false"
 
-      # -- and add these two so Keycloak trusts the original Host header
-      KC_PROXY: edge
+      # -- local dev over HTTP (no TLS reverse proxy)
+      KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_HTTP_RELATIVE_PATH: "/"
       
     # Mount your SPI listener into the providers folder
@@ -92,6 +92,16 @@ services:
       - resource-server
     ports:
       - "80:80"
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: my_fitness_adminer
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
     restart: unless-stopped
 
 volumes:

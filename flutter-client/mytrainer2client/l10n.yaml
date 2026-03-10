@@ -11,5 +11,3 @@ supported-locales:
   - en
   - bg
 
-# turn off the synthetic package so you get a real Dart file under lib/
-synthetic-package: false
