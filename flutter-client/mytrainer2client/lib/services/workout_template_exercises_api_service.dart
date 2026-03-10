@@ -6,12 +6,13 @@ import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
 import '../models/workout_template_exercise.dart';
+import 'dev_endpoints.dart';
 
 class WorkoutTemplateExercisesApiService {
-  static const _base = String.fromEnvironment(
-    'API_BASE',
-    defaultValue: kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080',
-  );
+  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
+          .isNotEmpty
+      ? const String.fromEnvironment('API_BASE')
+      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 

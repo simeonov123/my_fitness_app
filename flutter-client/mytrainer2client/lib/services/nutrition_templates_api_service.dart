@@ -6,13 +6,14 @@ import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
 import '../models/nutrition_plan_template.dart';
+import 'dev_endpoints.dart';
 
 /// Service for CRUD operations on Trainer → Nutrition Templates
 class NutritionTemplatesApiService {
-  static const _base = String.fromEnvironment(
-    'API_BASE',
-    defaultValue: kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080',
-  );
+  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
+          .isNotEmpty
+      ? const String.fromEnvironment('API_BASE')
+      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 

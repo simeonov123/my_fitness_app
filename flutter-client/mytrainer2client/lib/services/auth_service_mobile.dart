@@ -4,9 +4,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dev_endpoints.dart';
 
 /// OAuth2 / OIDC settings for your Keycloak realm and client.
-const _issuer                = 'http://10.0.2.2:8081/realms/myrealm';
+final _issuer                = keycloakRealmUrl;
 const _clientId              = 'mytrainer2client';
 const _redirectUri           = 'com.mvfitness.mytrainer2client://oauthredirect';
 const _postLogoutRedirectUri = 'com.mvfitness.mytrainer2client://logoutredirect';
@@ -180,9 +181,8 @@ class AuthService {
         idTokenHint: _idToken,
         postLogoutRedirectUrl: _postLogoutRedirectUri,
         allowInsecureConnections: true,
-        serviceConfiguration: const AuthorizationServiceConfiguration(
-          endSessionEndpoint:
-          'http://10.0.2.2:8081/realms/myrealm/protocol/openid-connect/logout',
+        serviceConfiguration: AuthorizationServiceConfiguration(
+          endSessionEndpoint: keycloakLogoutUrl,
           authorizationEndpoint: '',
           tokenEndpoint: '',
         ),

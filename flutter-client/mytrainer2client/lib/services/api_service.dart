@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'auth_service_mobile.dart';
+import 'dev_endpoints.dart';
 
 /// A thin wrapper around HTTP GET that automatically handles:
 ///  • loading the current access token
@@ -11,9 +12,7 @@ import 'auth_service_mobile.dart';
 ///  • returning the response body or `null` on failure
 class ApiService {
   /// Base URL for your Spring Boot backend.
-  static const _baseUrl = kIsWeb
-      ? 'http://localhost:8080'
-      : 'http://10.0.2.2:8080';
+  static final _baseUrl = kIsWeb ? 'http://localhost:8080' : apiBaseUrl;
 
   /// Underlying auth service (singleton) for token management.
   final AuthService _auth = AuthService();

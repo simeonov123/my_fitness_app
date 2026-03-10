@@ -6,10 +6,14 @@ import 'package:http/http.dart' as http;
 import '../models/page_response.dart';
 import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
+import 'dev_endpoints.dart';
 
 class TrainingSessionsApiService {
-  static const _base =
-  kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080';
+  static final _base = kIsWeb
+      ? 'http://localhost:8080'
+      : (const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : apiBaseUrl);
 
   /* ───────── helpers ───────── */
   Map<String, String> _hdr(String tok) => {
