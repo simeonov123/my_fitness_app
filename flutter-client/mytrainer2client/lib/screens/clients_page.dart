@@ -46,15 +46,11 @@ class _ClientsPageState extends State<ClientsPage> {
   }
 
   Future<void> _openCreateDialog() async {
-    final auth = context.read<AuthProvider>();
     final created = await showDialog<Client>(
       context: context,
       builder: (_) => const ClientFormDialog(),
     );
     if (created != null) {
-      await context
-          .read<ClientsProvider>()
-          .save(token: auth.token!, c: created);
       // Refresh to first page so the newly added item appears
       _load(page: 0);
     }

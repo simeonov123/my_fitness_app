@@ -154,6 +154,8 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         /* scalars */
         s.setStartTime(d.startTime());
         s.setEndTime(d.endTime());
+        s.setActualStartTime(d.actualStartTime());
+        s.setActualEndTime(d.actualEndTime());
         s.setDayIndexInCycle(d.dayIndexInCycle());
         s.setSessionName(d.sessionName());
         s.setSessionDescription(d.sessionDescription());
@@ -212,6 +214,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                     WorkoutInstanceExerciseHasSets ies = WorkoutInstanceExerciseHasSets.builder()
                             .workoutInstanceExercise(ie)
                             .setNumber(ehs.getSetNumber())
+                            .completed(ehs.getCompleted())
                             .build();
                     ie.getWorkoutInstanceExerciseHasSets().add(ies);
 

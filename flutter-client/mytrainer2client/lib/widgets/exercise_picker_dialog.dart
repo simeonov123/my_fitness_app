@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/exercises_provider.dart';
+
 import '../models/exercise.dart';
+import '../providers/exercises_provider.dart';
+import 'exercise_form_dialog.dart';
 
 class ExercisePickerDialog extends StatefulWidget {
   const ExercisePickerDialog({super.key});
@@ -13,13 +15,32 @@ class ExercisePickerDialog extends StatefulWidget {
 class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
   final Set<Exercise> _selected = {};
 
+  Future<void> _createExercise() async {
+    final created = await showDialog<Exercise>(
+      context: context,
+      builder: (_) => const ExerciseFormDialog(),
+    );
+    if (created == null || !mounted) return;
+    setState(() => _selected.add(created));
+  }
+
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ExercisesProvider>();
     return AlertDialog(
-      title: const Text('Add Exercises'),
+      title: Row(
+        children: [
+          const Expanded(child: Text('Add Exercises')),
+          IconButton(
+            tooltip: 'Create exercise',
+            onPressed: _createExercise,
+            icon: const Icon(Icons.add_circle_outline),
+          ),
+        ],
+      ),
       content: SizedBox(
-        width: 300,
+        width: 360,
+        height: 420,
         child: prov.loading
             ? const Center(child: CircularProgressIndicator())
             : Column(
@@ -42,6 +63,9 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
                         final selected = _selected.contains(ex);
                         return CheckboxListTile(
                           title: Text(ex.name),
+                          subtitle: ex.description == null || ex.description!.isEmpty
+                              ? Text(ex.isCustom ? 'Custom exercise' : 'Library exercise')
+                              : Text(ex.description!),
                           value: selected,
                           onChanged: (chk) {
                             setState(() {
@@ -56,6 +80,11 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
                       },
                     ),
                   ),
+                  if (!prov.loading && prov.list.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: Text('No exercises found. Create one to get started.'),
+                    ),
                 ],
               ),
       ),

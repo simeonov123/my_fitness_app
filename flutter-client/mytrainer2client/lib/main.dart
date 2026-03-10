@@ -7,6 +7,7 @@ import 'package:mytrainer2client/providers/training_sessions_provider.dart';
 import 'package:mytrainer2client/providers/workout_instance_exercises_provider.dart';
 import 'package:mytrainer2client/providers/workout_template_exercises_provider.dart';
 import 'package:mytrainer2client/providers/workout_templates_provider.dart';
+import 'package:mytrainer2client/providers/social_feed_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:url_strategy/url_strategy.dart';
@@ -18,6 +19,7 @@ import 'providers/api_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/clients_provider.dart';
 import 'services/auth_service.dart';
+import 'services/workout_notification_service.dart';
 import 'routes.dart';
 
 import 'models/client.dart';
@@ -26,6 +28,7 @@ import 'screens/client_detail_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService().loginOrSignup(interactive: false);
+  await WorkoutNotificationService.instance.initialize();
 
   setPathUrlStrategy();
   runApp(
@@ -42,6 +45,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => WorkoutTemplateExercisesProvider()),
         ChangeNotifierProvider(create: (_) => TrainingSessionsProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutInstanceExercisesProvider()),
+        ChangeNotifierProvider(create: (_) => SocialFeedProvider()),
 
 
 

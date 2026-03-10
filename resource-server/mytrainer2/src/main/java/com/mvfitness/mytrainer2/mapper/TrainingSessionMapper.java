@@ -15,6 +15,8 @@ public final class TrainingSessionMapper {
                 t.getId(),
                 t.getStartTime(),
                 t.getEndTime(),
+                t.getActualStartTime(),
+                t.getActualEndTime(),
                 t.getDayIndexInCycle(),
                 t.getSessionName(),
                 t.getSessionDescription(),

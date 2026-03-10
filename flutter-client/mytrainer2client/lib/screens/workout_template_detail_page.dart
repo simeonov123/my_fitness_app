@@ -33,7 +33,7 @@ class _WorkoutTemplateDetailPageState
     _tpl = widget.template;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final token = context.read<AuthProvider>().token!;
-      context.read<ExercisesProvider>().loadCommon();
+      context.read<ExercisesProvider>().loadAvailable();
       context.read<WorkoutTemplateExercisesProvider>().load(
         token: token,
         templateId: _tpl.id,

@@ -6,6 +6,8 @@ class TrainingSession {
   final int          id;
   final DateTime     startTime;
   final DateTime     endTime;
+  final DateTime?    actualStartTime;
+  final DateTime?    actualEndTime;
   final int?         dayIndexInCycle;
   final String?      sessionName;
   final String?      sessionDescription;
@@ -20,11 +22,18 @@ class TrainingSession {
   DateTime get start => startTime;
   DateTime get end   => endTime;
   int get durationMinutes => end.difference(start).inMinutes;
+  Duration get plannedDuration => end.difference(start);
+  Duration? get actualDuration =>
+      actualStartTime != null && actualEndTime != null
+          ? actualEndTime!.difference(actualStartTime!)
+          : null;
 
   const TrainingSession({
     required this.id,
     required this.startTime,
     required this.endTime,
+    this.actualStartTime,
+    this.actualEndTime,
     this.dayIndexInCycle,
     this.sessionName,
     this.sessionDescription,
@@ -40,6 +49,12 @@ class TrainingSession {
     id              : (j['id'] as num).toInt(),
     startTime       : DateTime.parse(j['startTime'] as String),
     endTime         : DateTime.parse(j['endTime']   as String),
+    actualStartTime : j['actualStartTime'] != null
+        ? DateTime.parse(j['actualStartTime'] as String)
+        : null,
+    actualEndTime   : j['actualEndTime'] != null
+        ? DateTime.parse(j['actualEndTime'] as String)
+        : null,
     dayIndexInCycle : j['dayIndexInCycle'] as int?,
     sessionName     : j['sessionName'] as String?,
     sessionDescription : j['sessionDescription'] as String?,
@@ -57,6 +72,8 @@ class TrainingSession {
     'id'              : id,
     'startTime'       : startTime.toIso8601String(),
     'endTime'         : endTime .toIso8601String(),
+    'actualStartTime' : actualStartTime?.toIso8601String(),
+    'actualEndTime'   : actualEndTime?.toIso8601String(),
     'dayIndexInCycle' : dayIndexInCycle,
     'sessionName'     : sessionName,
     'sessionDescription': sessionDescription,

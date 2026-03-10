@@ -8,12 +8,14 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
   final int templateId;
   final WorkoutTemplateExercise wte;
   final VoidCallback onChanged;
+  final bool showCompletion;
 
   const WorkoutTemplateExerciseWidget({
     super.key,
     required this.templateId,
     required this.wte,
     required this.onChanged,
+    this.showCompletion = false,
   });
 
   @override
@@ -43,6 +45,7 @@ class _WorkoutTemplateExerciseWidgetState
         id: 0,
         workoutExerciseId: widget.wte.id,
         setNumber: _localSets.length + 1,
+        completed: false,
         values: defaults,
       );
       _localSets.add(newSet);
@@ -96,8 +99,27 @@ class _WorkoutTemplateExerciseWidgetState
                 ),
                 onDismissed: (_) => _removeSet(i),
                 child: ListTile(
-                  title:
-                      Text(loc.set_number(_localSets[i].setNumber.toString())),
+                  leading: widget.showCompletion
+                      ? Checkbox(
+                          value: _localSets[i].completed,
+                          onChanged: (value) {
+                            setState(() {
+                              _localSets[i].completed = value ?? false;
+                            });
+                            widget.wte.sets = List.from(_localSets);
+                            widget.onChanged();
+                          },
+                        )
+                      : null,
+                  title: Text(
+                    loc.set_number(_localSets[i].setNumber.toString()),
+                    style: TextStyle(
+                      decoration: widget.showCompletion &&
+                              _localSets[i].completed
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
                   subtitle: Row(
                     children: [
                       for (var key in widget.wte.paramKeys)

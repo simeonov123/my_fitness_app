@@ -23,6 +23,10 @@ public class ExerciseHasSets {
     @Column(name = "set_number", nullable = false)
     private Integer setNumber;
 
+    @Column(name = "completed", nullable = false)
+    @Builder.Default
+    private Boolean completed = false;
+
     /**
      * Template‐level per‐set data (e.g. KG / REPS / TIME entries).
      * We initialize the list here so addSetData(...) never NPEs.

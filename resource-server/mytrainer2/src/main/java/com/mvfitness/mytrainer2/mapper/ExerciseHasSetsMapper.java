@@ -19,6 +19,7 @@ public final class ExerciseHasSetsMapper {
         return new ExerciseHasSetsDto(
                 e.getId(),
                 e.getSetNumber(),
+                e.getCompleted(),
                 e.getSetData().stream()
                         .sorted(Comparator.comparing(com.mvfitness.mytrainer2.domain.SetData::getId))
                         .map(SetDataMapper::toDto)
@@ -44,6 +45,7 @@ public final class ExerciseHasSetsMapper {
                 .map(e -> new ExerciseHasSetsDto(
                         e.getId(),
                         e.getSetNumber(),
+                        e.getCompleted(),
                         e.getSetData().stream()
                                 .sorted(Comparator.comparing(
                                         com.mvfitness.mytrainer2.domain.SetData::getId))

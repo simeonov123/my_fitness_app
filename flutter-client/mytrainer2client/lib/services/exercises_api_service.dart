@@ -61,4 +61,28 @@ class ExercisesApiService {
         .map(Exercise.fromJson)
         .toList();
   }
+
+  Future<Exercise> create({
+    required String name,
+    String? description,
+    required String defaultSetType,
+    required String defaultSetParams,
+  }) async {
+    final uri = Uri.parse('$_base/trainer/exercises');
+    final res = await http.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'name': name,
+        'description': description,
+        'isCustom': true,
+        'defaultSetType': defaultSetType,
+        'defaultSetParams': defaultSetParams,
+      }),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('Failed to create exercise: ${res.statusCode}');
+    }
+    return Exercise.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
 }

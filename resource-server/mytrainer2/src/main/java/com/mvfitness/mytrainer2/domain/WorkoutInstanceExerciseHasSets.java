@@ -22,6 +22,10 @@ public class WorkoutInstanceExerciseHasSets {
     @Column(name = "set_number", nullable = false)
     private Integer setNumber;
 
+    @Column(name = "completed", nullable = false)
+    @Builder.Default
+    private Boolean completed = false;
+
     @Builder.Default
     @OneToMany(mappedBy = "instanceSet",
             cascade = CascadeType.ALL,

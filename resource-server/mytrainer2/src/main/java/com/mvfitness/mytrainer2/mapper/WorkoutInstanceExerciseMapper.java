@@ -76,6 +76,7 @@ public final class WorkoutInstanceExerciseMapper {
                         WorkoutInstanceExerciseHasSets.builder()
                                 .workoutInstanceExercise(e)
                                 .setNumber(sDto.setNumber())
+                                .completed(Boolean.TRUE.equals(sDto.completed()))
                                 .build();
 
                 // copy per-set data

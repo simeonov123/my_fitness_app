@@ -10,7 +10,9 @@ import java.util.List;
 public record TrainingSessionDto(
         Long               id,
         LocalDateTime startTime,
-          LocalDateTime endTime,
+        LocalDateTime endTime,
+        LocalDateTime actualStartTime,
+        LocalDateTime actualEndTime,
         Integer            dayIndexInCycle,
         String             sessionName,
         String             sessionDescription,

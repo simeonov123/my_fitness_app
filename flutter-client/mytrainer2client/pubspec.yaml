@@ -16,6 +16,7 @@ dependencies:
   openid_client: ^0.4.9            # web
   flutter_appauth: ^6.0.2          # mobile (>=6 fixes namespace issue)
   flutter_secure_storage: ^9.0.0   # mobile
+  flutter_local_notifications: ^17.2.4
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2

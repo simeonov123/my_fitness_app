@@ -768,4 +768,8 @@
              relativeToChangelogFile="true"/>
     <include file="2025-06-04-cascade-training-session-and-workout-template-hierarchy.xml"
              relativeToChangelogFile="true"/>
+    <include file="2025-06-05-add-completed-to-exercise-sets.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2025-06-06-add-actual-times-to-training-sessions.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>

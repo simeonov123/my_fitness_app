@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.mvfitness.mytrainer2client">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="mytrainer2client"
         android:icon="@mipmap/ic_launcher"

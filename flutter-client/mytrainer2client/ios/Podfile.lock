@@ -9,6 +9,8 @@ PODS:
   - flutter_appauth (0.0.1):
     - AppAuth (= 1.7.4)
     - Flutter
+  - flutter_local_notifications (0.0.1):
+    - Flutter
   - flutter_secure_storage (6.0.0):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -18,6 +20,7 @@ PODS:
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_appauth (from `.symlinks/plugins/flutter_appauth/ios`)
+  - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
 
@@ -30,6 +33,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_appauth:
     :path: ".symlinks/plugins/flutter_appauth/ios"
+  flutter_local_notifications:
+    :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
   path_provider_foundation:
@@ -39,6 +44,7 @@ SPEC CHECKSUMS:
   AppAuth: 182c5b88630569df5acb672720534756c29b3358
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_appauth: b951036a3b715d9e38fe5c0e2eb9aded58383984
+  flutter_local_notifications: ad39620c743ea4c15127860f4b5641649a988100
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
 

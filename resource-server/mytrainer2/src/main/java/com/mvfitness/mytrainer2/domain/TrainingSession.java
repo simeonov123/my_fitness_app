@@ -49,6 +49,10 @@ public class TrainingSession extends BaseTimestampedEntity {
    private LocalDateTime startTime;
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;    private Integer       dayIndexInCycle;
+    @Column(name = "actual_start_time")
+    private LocalDateTime actualStartTime;
+    @Column(name = "actual_end_time")
+    private LocalDateTime actualEndTime;
 
     @Column(length = 100)   private String sessionName;
     @Column(columnDefinition = "TEXT") private String sessionDescription;

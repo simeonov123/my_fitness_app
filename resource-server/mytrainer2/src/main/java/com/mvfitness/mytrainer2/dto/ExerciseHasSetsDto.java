@@ -6,5 +6,6 @@ import java.util.List;
 public record ExerciseHasSetsDto(
         Long id,
         Integer setNumber,
+        Boolean completed,
         List<SetDataDto> data
 ) {}
