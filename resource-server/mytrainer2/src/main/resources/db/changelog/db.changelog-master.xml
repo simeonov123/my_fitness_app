@@ -772,4 +772,12 @@
              relativeToChangelogFile="true"/>
     <include file="2025-06-06-add-actual-times-to-training-sessions.xml"
              relativeToChangelogFile="true"/>
+    <include file="2025-06-07-add-set-context-type.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2025-06-08-add-workout-folders.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2025-06-09-add-client-folders.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2025-06-10-add-set-notes.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>

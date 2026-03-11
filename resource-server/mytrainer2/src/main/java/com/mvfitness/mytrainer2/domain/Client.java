@@ -33,6 +33,13 @@ public class Client extends BaseTimestampedEntity {
     @Column(name = "phone", length = 30)
     private String phone;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id")
+    private ClientFolder folder;
+
+    @Column(name = "sequence_order")
+    private Integer sequenceOrder;
+
     // If you want to see which associations or stats or workouts a client has:
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AggregatedStats> aggregatedStats = new ArrayList<>();

@@ -8,6 +8,9 @@ public record WorkoutTemplateDto(
         Long id,
         String name,
         String description,
+        Long folderId,
+        String folderName,
+        Integer sequenceOrder,
         List<WorkoutTemplateExerciseDto> exercises,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/client.dart';
+import '../models/client_folder.dart';
 import '../providers/auth_provider.dart';
+import '../providers/client_folders_provider.dart';
 import '../providers/clients_provider.dart';
 
 class ClientFormDialog extends StatefulWidget {
@@ -23,6 +25,7 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _emailCtrl;
   late final TextEditingController _phoneCtrl;
+  int? _selectedFolderId;
 
   bool _submitting = false;
 
@@ -33,6 +36,7 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
     _nameCtrl = TextEditingController(text: c?.fullName ?? '');
     _emailCtrl = TextEditingController(text: c?.email ?? '');
     _phoneCtrl = TextEditingController(text: c?.phone ?? '');
+    _selectedFolderId = c?.folderId;
   }
 
   @override
@@ -48,11 +52,21 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
     setState(() => _submitting = true);
 
     // Build a Client object, preserving id if editing:
+    ClientFolder? selectedFolder;
+    for (final folder in context.read<ClientFoldersProvider>().items) {
+      if (folder.id == _selectedFolderId) {
+        selectedFolder = folder;
+        break;
+      }
+    }
     final newClient = Client(
       id: widget.client?.id ?? 0,
       fullName: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
       phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+      folderId: _selectedFolderId,
+      folderName: selectedFolder?.name,
+      sequenceOrder: widget.client?.sequenceOrder,
     );
 
     final token = context.read<AuthProvider>().token!;
@@ -64,6 +78,7 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
       await provider.save(token: token, c: newClient);
     }
 
+    if (!mounted) return;
     setState(() => _submitting = false);
     Navigator.of(context).pop(newClient);
   }
@@ -71,6 +86,7 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.client != null;
+    final folders = context.watch<ClientFoldersProvider>().items;
     return AlertDialog(
       title: Text(isEdit ? 'Edit Client' : 'Add Client'),
       content: Form(
@@ -94,6 +110,24 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
                 controller: _phoneCtrl,
                 decoration: const InputDecoration(labelText: 'Phone'),
                 keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int?>(
+                initialValue: _selectedFolderId,
+                decoration: const InputDecoration(labelText: 'Folder'),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('No folder'),
+                  ),
+                  ...folders.map(
+                    (folder) => DropdownMenuItem<int?>(
+                      value: folder.id,
+                      child: Text(folder.name),
+                    ),
+                  ),
+                ],
+                onChanged: (value) => setState(() => _selectedFolderId = value),
               ),
             ],
           ),

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2025-06-09-create-client-folders" author="codex">
+        <createTable tableName="client_folders">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_client_folders"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sequence_order" type="INT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="client_folders"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_client_folders_user"/>
+    </changeSet>
+
+    <changeSet id="2025-06-09-link-clients-to-folders" author="codex">
+        <addColumn tableName="clients">
+            <column name="folder_id" type="BIGINT"/>
+            <column name="sequence_order" type="INT"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="clients"
+                                 baseColumnNames="folder_id"
+                                 referencedTableName="client_folders"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_clients_folder"/>
+    </changeSet>
+</databaseChangeLog>

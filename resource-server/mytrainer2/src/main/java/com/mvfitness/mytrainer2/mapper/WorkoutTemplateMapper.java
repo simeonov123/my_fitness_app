@@ -20,15 +20,25 @@ public final class WorkoutTemplateMapper {
                 t.getId(),
                 t.getName(),
                 t.getDescription(),
+                t.getFolder() == null ? null : t.getFolder().getId(),
+                t.getFolder() == null ? null : t.getFolder().getName(),
+                t.getSequenceOrder(),
                 list,
                 t.getCreatedAt(),
                 t.getUpdatedAt()
         );
     }
 
-    public static void updateEntity(WorkoutTemplate t, WorkoutTemplateDto d, List<Exercise> exerciseRefs) {
+    public static void updateEntity(
+            WorkoutTemplate t,
+            WorkoutTemplateDto d,
+            WorkoutFolder folder,
+            List<Exercise> exerciseRefs
+    ) {
         t.setName(d.name());
         t.setDescription(d.description());
+        t.setFolder(folder);
+        t.setSequenceOrder(d.sequenceOrder());
 
         if (t.getWorkoutTemplateExercises() == null)
             t.setWorkoutTemplateExercises(new ArrayList<>());

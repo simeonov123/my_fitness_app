@@ -4,6 +4,9 @@ class Client {
   String fullName;
   String? email;
   String? phone;
+  int? folderId;
+  String? folderName;
+  int? sequenceOrder;
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -12,6 +15,9 @@ class Client {
     required this.fullName,
     this.email,
     this.phone,
+    this.folderId,
+    this.folderName,
+    this.sequenceOrder,
     this.createdAt,
     this.updatedAt,
   });
@@ -21,6 +27,9 @@ class Client {
     fullName:  (j['fullName']  ?? '') as String,
     email:      j['email']  as String?,
     phone:      j['phone']  as String?,
+    folderId:   j['folderId'] as int?,
+    folderName: j['folderName'] as String?,
+    sequenceOrder: j['sequenceOrder'] as int?,
     createdAt:  j['createdAt'] != null
         ? DateTime.parse(j['createdAt'] as String)
         : null,
@@ -34,6 +43,9 @@ class Client {
     'fullName': fullName,
     'email'   : email,
     'phone'   : phone,
+    'folderId': folderId,
+    'folderName': folderName,
+    'sequenceOrder': sequenceOrder,
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
   };

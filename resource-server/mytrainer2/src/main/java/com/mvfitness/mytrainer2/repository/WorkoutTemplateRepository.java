@@ -1,11 +1,14 @@
 // src/main/java/com/mvfitness/mytrainer2/repository/WorkoutTemplateRepository.java
 package com.mvfitness.mytrainer2.repository;
 
+import com.mvfitness.mytrainer2.domain.WorkoutFolder;
 import com.mvfitness.mytrainer2.domain.WorkoutTemplate;
 import com.mvfitness.mytrainer2.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
 
 public interface WorkoutTemplateRepository extends JpaRepository<WorkoutTemplate, Long> {
     Page<WorkoutTemplate> findByTrainerAndNameContainingIgnoreCase(
@@ -13,4 +16,6 @@ public interface WorkoutTemplateRepository extends JpaRepository<WorkoutTemplate
             String q,
             Pageable pageable
     );
+
+    List<WorkoutTemplate> findByFolder(WorkoutFolder folder);
 }

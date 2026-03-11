@@ -2,10 +2,12 @@
 package com.mvfitness.mytrainer2.service.client;
 
 import com.mvfitness.mytrainer2.domain.Client;
+import com.mvfitness.mytrainer2.domain.ClientFolder;
 import com.mvfitness.mytrainer2.domain.User;
 import com.mvfitness.mytrainer2.dto.ClientDto;
 import com.mvfitness.mytrainer2.mapper.ClientMapper;
 import com.mvfitness.mytrainer2.repository.ClientRepository;
+import com.mvfitness.mytrainer2.repository.ClientFolderRepository;
 import com.mvfitness.mytrainer2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ClientServiceImpl implements ClientService {
 
     private final ClientRepository repo;
+    private final ClientFolderRepository folders;
     private final UserRepository   users;
 
     // ───────────── helpers ──────────────────────────────────────────
@@ -39,6 +42,14 @@ public class ClientServiceImpl implements ClientService {
             throw new IllegalArgumentException("Client not found or not yours");
 
         return  client;
+    }
+
+    private ClientFolder folderOr404(User trainer, Long folderId) {
+        ClientFolder folder = folders.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Client folder not found"));
+        if (!folder.getUser().getId().equals(trainer.getId()))
+            throw new IllegalArgumentException("Client folder not found");
+        return folder;
     }
     // ───────────────────────────────────────────────────────────────
 
@@ -67,11 +78,15 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public ClientDto create(String kcUserId, ClientDto dto) {
+        User trainer = trainerOr404(kcUserId);
+        ClientFolder folder = dto.folderId() == null ? null : folderOr404(trainer, dto.folderId());
         Client c = Client.builder()
-                .user(trainerOr404(kcUserId))
+                .user(trainer)
                 .fullName(dto.fullName())
                 .email(dto.email())
                 .phone(dto.phone())
+                .folder(folder)
+                .sequenceOrder(dto.sequenceOrder())
                 .build();
         return ClientMapper.toDto(repo.save(c));
     }
@@ -79,7 +94,10 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public ClientDto update(String kcUserId, Long clientId, ClientDto dto) {
         Client c = ownedClientOr404(kcUserId, clientId);
+        User trainer = trainerOr404(kcUserId);
+        ClientFolder folder = dto.folderId() == null ? null : folderOr404(trainer, dto.folderId());
         ClientMapper.updateEntity(c, dto);
+        c.setFolder(folder);
         return ClientMapper.toDto(repo.save(c));
     }
 

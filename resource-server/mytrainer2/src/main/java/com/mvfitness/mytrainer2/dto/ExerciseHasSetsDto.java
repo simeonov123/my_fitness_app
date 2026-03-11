@@ -7,5 +7,7 @@ public record ExerciseHasSetsDto(
         Long id,
         Integer setNumber,
         Boolean completed,
+        String setContextType,
+        String notes,
         List<SetDataDto> data
 ) {}

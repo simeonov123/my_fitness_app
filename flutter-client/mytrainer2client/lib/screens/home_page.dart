@@ -20,27 +20,32 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DateTime _selectedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
 
   /* ───────── backend sync helpers ───────── */
 
   Future<void> _refreshForMonth() async {
-    final monthFirst = DateTime(_selectedDay.year, _selectedDay.month, 1);
+    final monthFirst = DateTime(_focusedDay.year, _focusedDay.month, 1);
 
-    final token = await context.read<AuthProvider>().getValidToken();
+    final auth = context.read<AuthProvider>();
+    if (!mounted) return;
+    final prov = context.read<TrainingSessionsProvider>();
+    final token = await auth.getValidToken();
     if (token == null) return;
+    if (!mounted) return;
 
-    await context
-        .read<TrainingSessionsProvider>()
-        .loadCounts(token: token, monthFirst: monthFirst);
+    await prov.loadCounts(token: token, monthFirst: monthFirst);
   }
 
   Future<void> _refreshForDay() async {
-    final token = await context.read<AuthProvider>().getValidToken();
+    final auth = context.read<AuthProvider>();
+    if (!mounted) return;
+    final prov = context.read<TrainingSessionsProvider>();
+    final token = await auth.getValidToken();
     if (token == null) return;
+    if (!mounted) return;
 
-    await context
-        .read<TrainingSessionsProvider>()
-        .loadDay(token: token, day: _selectedDay);
+    await prov.loadDay(token: token, day: _selectedDay);
   }
 
   @override
@@ -65,13 +70,17 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             SessionsCalendar(
+              focused: _focusedDay,
               selected: _selectedDay,
               onSelect: (d) async {
-                setState(() => _selectedDay = d);
+                setState(() {
+                  _selectedDay = d;
+                  _focusedDay = d;
+                });
                 await _refreshForDay();
               },
               onPageChanged: (focused) async {
-                setState(() => _selectedDay = focused);
+                setState(() => _focusedDay = focused);
                 await _refreshForMonth();
               },
             ),
@@ -87,22 +96,28 @@ class _HomePageState extends State<HomePage> {
         tooltip: 'Add session',
         child: const Icon(Icons.add),
         onPressed: () async {
+          final selectedDay = _selectedDay;
+          final auth = context.read<AuthProvider>();
+          final prov = context.read<TrainingSessionsProvider>();
           final dto = await showDialog<Map<String, dynamic>>(
             context: context,
             builder: (_) => TrainingSessionFormDialog(
-              initialDay: _selectedDay, // 🔹 pass current day
+              initialDay: selectedDay,
             ),
           );
           if (dto == null) return;
 
-          final token = await context.read<AuthProvider>().getValidToken();
+          final token = await auth.getValidToken();
           if (token == null) return;
-
-          final prov = context.read<TrainingSessionsProvider>();
+          if (!mounted) return;
           final created = await prov.create(token: token, dto: dto);
+          if (!mounted) return;
 
           // switch to the day/month where the new session was added
-          setState(() => _selectedDay = created.start);
+          setState(() {
+            _selectedDay = created.start;
+            _focusedDay = created.start;
+          });
           await _refreshForMonth();
           await _refreshForDay();
         },

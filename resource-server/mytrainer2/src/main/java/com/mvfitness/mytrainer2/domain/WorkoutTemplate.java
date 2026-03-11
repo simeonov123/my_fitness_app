@@ -30,6 +30,13 @@ public class WorkoutTemplate extends BaseTimestampedEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id")
+    private WorkoutFolder folder;
+
+    @Column(name = "sequence_order")
+    private Integer sequenceOrder;
+
     @Builder.Default
     @OneToMany(mappedBy = "workoutTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkoutTemplateExercise> workoutTemplateExercises = new ArrayList<>();
@@ -37,9 +44,9 @@ public class WorkoutTemplate extends BaseTimestampedEntity {
     @OneToMany(mappedBy = "workoutTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MicrocycleTemplateWorkouts> microcycleTemplateWorkouts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "workoutTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "workoutTemplate")
     private List<TrainingSession> trainingSessions = new ArrayList<>();
 
-    @OneToMany(mappedBy = "workoutTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "workoutTemplate")
     private List<WorkoutInstance> workoutInstances = new ArrayList<>();
 }

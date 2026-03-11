@@ -21,6 +21,11 @@ class TrainingSessionsApiService {
     'Content-Type': 'application/json',
   };
 
+  Never _fail(String prefix, http.Response res) {
+    final body = res.body.isEmpty ? '<empty body>' : res.body;
+    throw Exception('$prefix (${res.statusCode}): $body');
+  }
+
   /* ───────── calendar counts ───────── */
 
   Future<Map<DateTime, int>> counts({
@@ -38,7 +43,7 @@ class TrainingSessionsApiService {
 
     final res = await http.get(uri, headers: _hdr(token));
     if (res.statusCode != 200) {
-      throw Exception('GET counts failed • ${res.body}');
+      _fail('GET counts failed', res);
     }
 
     final out = <DateTime, int>{};
@@ -67,7 +72,7 @@ class TrainingSessionsApiService {
 
     final res = await http.get(uri, headers: _hdr(token));
     if (res.statusCode != 200) {
-      throw Exception('GET day list failed • ${res.body}');
+      _fail('GET day list failed', res);
     }
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -91,7 +96,7 @@ class TrainingSessionsApiService {
 
     final res = await http.get(uri, headers: _hdr(token));
     if (res.statusCode != 200) {
-      throw Exception('GET sessions failed • ${res.body}');
+      _fail('GET sessions failed', res);
     }
 
     return PageResponse.fromJson(
@@ -109,7 +114,7 @@ class TrainingSessionsApiService {
     final uri = Uri.parse('$_base/trainer/training-sessions/$id');
     final res = await http.get(uri, headers: _hdr(token));
     if (res.statusCode != 200) {
-      throw Exception('GET session failed • ${res.body}');
+      _fail('GET session failed', res);
     }
     return TrainingSession.fromJson(jsonDecode(res.body));
   }
@@ -122,7 +127,7 @@ class TrainingSessionsApiService {
     final res =
     await http.post(uri, headers: _hdr(token), body: jsonEncode(dto));
     if (res.statusCode != 200 && res.statusCode != 201) {
-      throw Exception('POST session failed • ${res.body}');
+      _fail('POST session failed', res);
     }
     return TrainingSession.fromJson(jsonDecode(res.body));
   }
@@ -136,7 +141,7 @@ class TrainingSessionsApiService {
     final res =
     await http.put(uri, headers: _hdr(token), body: jsonEncode(dto));
     if (res.statusCode != 200) {
-      throw Exception('PUT session failed • ${res.body}');
+      _fail('PUT session failed', res);
     }
     return TrainingSession.fromJson(jsonDecode(res.body));
   }
@@ -152,7 +157,7 @@ class TrainingSessionsApiService {
 
     // backend may return 200 *or* 204 depending on Spring config
     if (res.statusCode != 200 && res.statusCode != 204) {
-      throw Exception('DELETE session failed • ${res.body}');
+      _fail('DELETE session failed', res);
     }
   }
 
@@ -166,7 +171,7 @@ class TrainingSessionsApiService {
     Uri.parse('$_base/trainer/training-sessions/$sessionId/instance');
     final res = await http.get(uri, headers: _hdr(token));
     if (res.statusCode != 200) {
-      throw Exception('GET instance failed • ${res.body}');
+      _fail('GET instance failed', res);
     }
     return (jsonDecode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>()
@@ -185,7 +190,7 @@ class TrainingSessionsApiService {
         headers: _hdr(token),
         body: jsonEncode(items.map((e) => e.toJson()).toList()));
     if (res.statusCode != 200) {
-      throw Exception('PUT instance failed • ${res.body}');
+      _fail('PUT instance failed', res);
     }
     return (jsonDecode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>()

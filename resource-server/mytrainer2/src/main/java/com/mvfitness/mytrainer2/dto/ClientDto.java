@@ -8,6 +8,9 @@ public record ClientDto(
         String fullName,
         String email,
         String phone,
+        Long folderId,
+        String folderName,
+        Integer sequenceOrder,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) { }

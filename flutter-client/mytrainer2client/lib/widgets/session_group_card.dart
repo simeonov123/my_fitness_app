@@ -46,7 +46,7 @@ class SessionGroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = _accent.withOpacity(.16);
+    final bg = _accent.withValues(alpha: 0.16);
 
     /* how many rows fit vertically inside pill? */
     final int rowsThatFit = ((height + _rowGap) / (_rowH + _rowGap))
@@ -66,7 +66,7 @@ class SessionGroupCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: bg,
-            border: Border.all(color: _accent.withOpacity(.6)),
+            border: Border.all(color: _accent.withValues(alpha: 0.6)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Column(
@@ -96,9 +96,9 @@ class SessionGroupCard extends StatelessWidget {
       child: Container(
         height: _rowH,
         decoration: BoxDecoration(
-          color: _accent.withOpacity(.12),
+          color: _accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _accent.withOpacity(.6)),
+          border: Border.all(color: _accent.withValues(alpha: 0.6)),
         ),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -121,9 +121,9 @@ class SessionGroupCard extends StatelessWidget {
       child: Container(
         height: _rowH,
         decoration: BoxDecoration(
-          color: _accent.withOpacity(.12),
+          color: _accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _accent.withOpacity(.6)),
+          border: Border.all(color: _accent.withValues(alpha: 0.6)),
         ),
         alignment: Alignment.center,
         child: Text(label, style: Theme.of(ctx).textTheme.titleMedium),
@@ -146,19 +146,20 @@ class SessionGroupCard extends StatelessWidget {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        height: needsScroll ? maxH : listHeight,
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).dialogBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: ListView.separated(
-          physics: needsScroll ? null : const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-          itemCount: hidden.length,
-          separatorBuilder: (_, __) => const SizedBox(height: sepGap),
-          itemBuilder: (_, i) => _dialogTile(ctx, hidden[i]),
+      backgroundColor: Colors.white,
+      builder: (_) => Material(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          height: needsScroll ? maxH : listHeight,
+          child: ListView.separated(
+            physics: needsScroll ? null : const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+            itemCount: hidden.length,
+            separatorBuilder: (_, __) => const SizedBox(height: sepGap),
+            itemBuilder: (_, i) => _dialogTile(ctx, hidden[i]),
+          ),
         ),
       ),
     );
@@ -176,7 +177,7 @@ class SessionGroupCard extends StatelessWidget {
         height: _rowH,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _accent.withOpacity(.6)),
+          border: Border.all(color: _accent.withValues(alpha: 0.6)),
         ),
         child: Row(
           children: [

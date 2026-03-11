@@ -26,6 +26,12 @@ public class WorkoutInstanceExerciseHasSets {
     @Builder.Default
     private Boolean completed = false;
 
+    @Column(name = "set_context_type", length = 32)
+    private String setContextType;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     @Builder.Default
     @OneToMany(mappedBy = "instanceSet",
             cascade = CascadeType.ALL,

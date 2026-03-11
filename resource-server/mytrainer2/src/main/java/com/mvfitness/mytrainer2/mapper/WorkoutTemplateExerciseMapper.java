@@ -56,6 +56,9 @@
                     var ehs = ExerciseHasSets.builder()
                             .workoutExercise(ent)
                             .setNumber(sDto.setNumber())
+                            .completed(Boolean.TRUE.equals(sDto.completed()))
+                            .setContextType(sDto.setContextType())
+                            .notes(sDto.notes())
                             .build();
                     sDto.data().forEach(sdDto -> {
                         var sd = com.mvfitness.mytrainer2.domain.SetData.builder()

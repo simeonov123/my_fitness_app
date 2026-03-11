@@ -108,6 +108,60 @@ class _SocialPostCard extends StatelessWidget {
                 _pill('${post.exerciseCount} exercises'),
               ],
             ),
+            if (post.leaderboard.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Text(
+                'Leaderboard',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...post.leaderboard.take(3).toList().asMap().entries.map(
+                    (entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '#${entry.key + 1}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              entry.value.clientName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${entry.value.totalWeightLifted.toStringAsFixed(0)} kg',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            ],
             const SizedBox(height: 12),
             Text(
               'Completed on ${post.completedAt.toLocal()}',

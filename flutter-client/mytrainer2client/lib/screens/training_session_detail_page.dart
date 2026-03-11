@@ -39,7 +39,7 @@ class _TrainingSessionDetailPageState
   final _activeWorkout = ActiveWorkoutService();
   final _notifications = WorkoutNotificationService.instance;
   TrainingSession? _session;
-  final List<InstanceItem> _items = [];
+  final List<InstanceClientGroup> _groups = [];
   Timer? _ticker;
 
   bool _dirtyMeta = false;
@@ -75,20 +75,28 @@ class _TrainingSessionDetailPageState
   /* ───────── data fetch ───────── */
 
   Future<void> _loadAll() async {
-    final tok  = context.read<AuthProvider>().token!;
-    final api  = context.read<TrainingSessionsProvider>().api;
-    final prov = context.read<WorkoutInstanceExercisesProvider>();
+    try {
+      final tok  = context.read<AuthProvider>().token!;
+      final api  = context.read<TrainingSessionsProvider>().api;
+      final prov = context.read<WorkoutInstanceExercisesProvider>();
 
-    _session = await api.getOne(token: tok, id: widget.sessionId);
-    _start   = _session!.start;
-    _end     = _session!.end;
-    _nameCtl.text = _session!.sessionName ?? '';
+      _session = await api.getOne(token: tok, id: widget.sessionId);
+      _start   = _session!.start;
+      _end     = _session!.end;
+      _nameCtl.text = _session!.sessionName ?? '';
 
-    await prov.load(token: tok, sessionId: widget.sessionId);
-    _buildItemList(prov.items);
-    await _restoreActiveWorkout();
+      await prov.load(token: tok, sessionId: widget.sessionId);
+      _buildItemList(prov.items);
+      await _restoreActiveWorkout();
 
-    if (mounted) setState(() {});
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load session: $e')),
+      );
+      rethrow;
+    }
   }
 
   Future<void> _restoreActiveWorkout() async {
@@ -128,7 +136,15 @@ class _TrainingSessionDetailPageState
 
   double get _totalWeightLifted {
     var total = 0.0;
-    for (final item in _items) {
+    for (final group in _groups) {
+      total += _groupTotalWeightLifted(group);
+    }
+    return total;
+  }
+
+  double _groupTotalWeightLifted(InstanceClientGroup group) {
+    var total = 0.0;
+    for (final item in group.items) {
       for (final set in item.wte.sets) {
         if (!set.completed) continue;
         final kg = set.values['KG'];
@@ -141,10 +157,47 @@ class _TrainingSessionDetailPageState
     return total;
   }
 
+  int _groupCompletedSets(InstanceClientGroup group) {
+    var count = 0;
+    for (final item in group.items) {
+      for (final set in item.wte.sets) {
+        if (set.completed) count++;
+      }
+    }
+    return count;
+  }
+
+  int _groupSetCount(InstanceClientGroup group) {
+    var count = 0;
+    for (final item in group.items) {
+      count += item.wte.sets.length;
+    }
+    return count;
+  }
+
   String get _formattedPlannedDuration => _formatDuration(_plannedDuration);
 
   String get _formattedActualDuration =>
       _actualDuration != null ? _formatDuration(_actualDuration!) : '--:--';
+
+  List<ClientLeaderboardEntry> get _leaderboard {
+    final rows = _groups
+        .map(
+          (group) => ClientLeaderboardEntry(
+            clientName: group.clientName,
+            totalWeightLifted: _groupTotalWeightLifted(group),
+            completedSets: _groupCompletedSets(group),
+            totalSets: _groupSetCount(group),
+          ),
+        )
+        .toList();
+    rows.sort((a, b) {
+      final byWeight = b.totalWeightLifted.compareTo(a.totalWeightLifted);
+      if (byWeight != 0) return byWeight;
+      return a.clientName.toLowerCase().compareTo(b.clientName.toLowerCase());
+    });
+    return rows;
+  }
 
   String _formatDuration(Duration elapsed) {
     final hours = elapsed.inHours;
@@ -168,21 +221,47 @@ class _TrainingSessionDetailPageState
   /// de-duplicate by `sequenceOrder` (backend sometimes gives duplicates
   /// after replaceAll).  We keep the entry that already owns set data.
   void _buildItemList(List<WorkoutInstanceExercise> raw) {
-    final map = <int, InstanceItem>{};
+    final grouped = SplayTreeMap<String, InstanceClientGroup>();
 
     for (final ie in raw) {
-      final seq = ie.sequenceOrder;
-      final candidate = InstanceItem(ie.id, ie.asTemplate());
+      final groupKey =
+          '${ie.workoutInstanceId}:${ie.clientId ?? 0}:${ie.clientName ?? ''}';
+      final group = grouped.putIfAbsent(
+        groupKey,
+        () => InstanceClientGroup(
+          workoutInstanceId: ie.workoutInstanceId,
+          clientId: ie.clientId,
+          clientName: ie.clientName ?? 'Client',
+          items: [],
+        ),
+      );
 
-      if (!map.containsKey(seq) ||
-          map[seq]!.wte.sets.isEmpty && candidate.wte.sets.isNotEmpty) {
-        map[seq] = candidate;
+      final candidate = InstanceItem(
+        ie.id,
+        ie.workoutInstanceId,
+        ie.clientId,
+        ie.clientName,
+        ie.asTemplate(),
+      );
+
+      final existingIndex = group.items.indexWhere(
+        (item) => item.wte.sequenceOrder == ie.sequenceOrder,
+      );
+      if (existingIndex == -1) {
+        group.items.add(candidate);
+      } else if (group.items[existingIndex].wte.sets.isEmpty &&
+          candidate.wte.sets.isNotEmpty) {
+        group.items[existingIndex] = candidate;
       }
     }
 
-    _items
+    for (final group in grouped.values) {
+      group.items.sort((a, b) => a.wte.sequenceOrder.compareTo(b.wte.sequenceOrder));
+    }
+
+    _groups
       ..clear()
-      ..addAll(SplayTreeMap<int, InstanceItem>.from(map).values);
+      ..addAll(grouped.values);
   }
 
   /* ───────── UI ───────── */
@@ -213,17 +292,12 @@ class _TrainingSessionDetailPageState
           const SizedBox(height: 12),
           _activityCard(),
           const SizedBox(height: 12),
-          ..._items.map(
-                (it) => WorkoutTemplateExerciseWidget(
-              key: ValueKey('inst-${it.instanceId}-${it.wte.sequenceOrder}'),
-              templateId: _session!.id,
-              wte: it.wte,
-              showCompletion: true,
-              onChanged: () {
-                setState(() => _dirtyEx = true);
-                _syncActiveWorkoutNotification();
-              },
-            ),
+          if (_groups.length > 1) ...[
+            _leaderboardCard(),
+            const SizedBox(height: 12),
+          ],
+          ..._groups.map(
+                (group) => _clientSection(group),
           ),
           const SizedBox(height: 40),
         ],
@@ -272,6 +346,10 @@ class _TrainingSessionDetailPageState
                   label: 'Total lifted',
                   value: '${_totalWeightLifted.toStringAsFixed(0)} kg',
                 ),
+                _statChip(
+                  label: 'Clients',
+                  value: '${_groups.length}',
+                ),
               ],
             ),
             if (runningElsewhere) ...[
@@ -306,6 +384,93 @@ class _TrainingSessionDetailPageState
                 ],
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _leaderboardCard() {
+    final rows = _leaderboard;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events_outlined),
+                const SizedBox(width: 8),
+                Text(
+                  'Session leaderboard',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...rows.asMap().entries.map(
+                  (entry) => Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: entry.key == 0
+                          ? const Color(0xFFFFF8E1)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: entry.key == 0
+                              ? const Color(0xFFFFC107)
+                              : Colors.grey.shade300,
+                          child: Text(
+                            '${entry.key + 1}',
+                            style: TextStyle(
+                              color: entry.key == 0
+                                  ? Colors.black
+                                  : Colors.grey.shade900,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                entry.value.clientName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                '${entry.value.completedSets}/${entry.value.totalSets} sets completed',
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '${entry.value.totalWeightLifted.toStringAsFixed(0)} kg',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
           ],
         ),
       ),
@@ -428,19 +593,25 @@ class _TrainingSessionDetailPageState
     if (picked == null || picked.isEmpty) return;
 
     setState(() {
-      for (final ex in picked) {
-        _items.add(
-          InstanceItem(
-            0,
-            ex.asTemplate(seq: _items.length + 1),
-          ),
-        );
+      for (final group in _groups) {
+        for (final ex in picked) {
+          group.items.add(
+            InstanceItem(
+              0,
+              group.workoutInstanceId,
+              group.clientId,
+              group.clientName,
+              ex.asTemplate(seq: group.items.length + 1),
+            ),
+          );
+        }
       }
       _dirtyEx = true;
     });
   }
 
   Future<void> _reorder() async {
+    if (_groups.isEmpty) return;
     final updated = await showModalBottomSheet<List<InstanceItem>>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -451,15 +622,25 @@ class _TrainingSessionDetailPageState
           minChildSize: .4,
           expand: false,
           builder: (_, __) =>
-              ReorderInstanceExercisesPanel(initial: List.from(_items)),
+              ReorderInstanceExercisesPanel(initial: List.from(_groups.first.items)),
         ),
       ),
     );
     if (updated != null) {
+      final orderedExerciseIds = updated.map((item) => item.wte.exercise.id).toList();
       setState(() {
-        _items
-          ..clear()
-          ..addAll(updated);
+        for (final group in _groups) {
+          group.items.sort((a, b) {
+            final ai = orderedExerciseIds.indexOf(a.wte.exercise.id);
+            final bi = orderedExerciseIds.indexOf(b.wte.exercise.id);
+            final aIndex = ai == -1 ? 1 << 20 : ai;
+            final bIndex = bi == -1 ? 1 << 20 : bi;
+            return aIndex.compareTo(bIndex);
+          });
+          for (var i = 0; i < group.items.length; i++) {
+            group.items[i].wte.sequenceOrder = i + 1;
+          }
+        }
         _dirtyEx = true;
       });
     }
@@ -468,7 +649,14 @@ class _TrainingSessionDetailPageState
   /* ───────── save ───────── */
 
   Future<void> _saveAll() async {
-    await _saveAllInternal(showFeedback: true);
+    try {
+      await _saveAllInternal(showFeedback: true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Save failed: $e')),
+      );
+    }
   }
 
   Future<void> _saveAllInternal({required bool showFeedback}) async {
@@ -489,13 +677,19 @@ class _TrainingSessionDetailPageState
     }
 
     if (_dirtyEx) {
-      final payload = _items
-          .map((it) => it.wte.toInstance(instanceId: it.instanceId))
+      final groupedPayload = _groups
+          .expand((group) => group.items)
+          .map((it) => it.wte.toInstance(
+                instanceId: it.instanceId,
+                workoutInstanceId: it.workoutInstanceId,
+                clientId: it.clientId,
+                clientName: it.clientName,
+              ))
           .toList();
       await prov.replaceAll(
         token: tok,
         sessionId: _session!.id,
-        newList: payload,
+        newList: groupedPayload,
       );
       _dirtyEx = false;
 
@@ -512,34 +706,42 @@ class _TrainingSessionDetailPageState
   Future<void> _startWorkout() async {
     if (_session == null) return;
 
-    final startedAt = DateTime.now();
-    final snapshot = ActiveWorkoutSnapshot(
-      sessionId: _session!.id,
-      sessionName: _session!.sessionName ?? 'Session ${_session!.id}',
-      startedAt: startedAt,
-    );
+    try {
+      final startedAt = DateTime.now();
+      final snapshot = ActiveWorkoutSnapshot(
+        sessionId: _session!.id,
+        sessionName: _session!.sessionName ?? 'Session ${_session!.id}',
+        startedAt: startedAt,
+      );
 
-    await _activeWorkout.save(snapshot);
-    if (!mounted) return;
+      await _activeWorkout.save(snapshot);
+      if (!mounted) return;
 
-    final tok = context.read<AuthProvider>().token!;
-    final api = context.read<TrainingSessionsProvider>().api;
-    final dto = _session!.toJson()
-      ..addAll({
-        'status': 'IN_PROGRESS',
-        'isCompleted': false,
-        'actualStartTime': startedAt.toIso8601String(),
-        'actualEndTime': null,
+      final tok = context.read<AuthProvider>().token!;
+      final api = context.read<TrainingSessionsProvider>().api;
+      final dto = _session!.toJson()
+        ..addAll({
+          'status': 'IN_PROGRESS',
+          'isCompleted': false,
+          'actualStartTime': startedAt.toIso8601String(),
+          'actualEndTime': null,
+        });
+      _session = await api.update(token: tok, id: _session!.id, dto: dto);
+
+      _activeSnapshot = snapshot;
+      await _syncActiveWorkoutNotification();
+      _ticker?.cancel();
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
       });
-    _session = await api.update(token: tok, id: _session!.id, dto: dto);
-
-    _activeSnapshot = snapshot;
-    await _syncActiveWorkoutNotification();
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
-    });
-    if (mounted) setState(() {});
+    } catch (e) {
+      await _activeWorkout.clear();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start workout: $e')),
+      );
+    }
   }
 
   Future<void> _discardWorkout() async {
@@ -616,7 +818,19 @@ class _TrainingSessionDetailPageState
               completedAt: finishedAt,
               durationSeconds: actualDurationSeconds,
               totalWeightLifted: totalLiftedAtCompletion,
-              exerciseCount: _items.length,
+              exerciseCount: _groups.fold<int>(
+                0,
+                (sum, group) => sum + group.items.length,
+              ),
+              leaderboard: _leaderboard
+                  .take(3)
+                  .map(
+                    (entry) => SocialLeaderboardEntry(
+                      clientName: entry.clientName,
+                      totalWeightLifted: entry.totalWeightLifted,
+                    ),
+                  )
+                  .toList(growable: false),
             ),
           );
 
@@ -660,6 +874,77 @@ class _TrainingSessionDetailPageState
       return 'Trainer';
     }
   }
+
+  Widget _clientSection(InstanceClientGroup group) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  child: Text(_initials(group.clientName)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    group.clientName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${_groupTotalWeightLifted(group).toStringAsFixed(0)} kg',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_groupCompletedSets(group)}/${_groupSetCount(group)} sets',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...group.items.map(
+              (it) => WorkoutTemplateExerciseWidget(
+                key: ValueKey(
+                  'inst-${group.workoutInstanceId}-${it.instanceId}-${it.wte.sequenceOrder}',
+                ),
+                templateId: _session!.id,
+                wte: it.wte,
+                showCompletion: true,
+                onChanged: () {
+                  setState(() => _dirtyEx = true);
+                  _syncActiveWorkoutNotification();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
 }
 
 /* ───────── extension helpers ───────── */
@@ -678,9 +963,17 @@ extension _ExTemplate on Exercise {
 }
 
 extension _ToInstance on WorkoutTemplateExercise {
-  WorkoutInstanceExercise toInstance({required int instanceId}) =>
+  WorkoutInstanceExercise toInstance({
+    required int instanceId,
+    required int workoutInstanceId,
+    int? clientId,
+    String? clientName,
+  }) =>
       WorkoutInstanceExercise(
         id: instanceId,
+        workoutInstanceId: workoutInstanceId,
+        clientId: clientId,
+        clientName: clientName,
         exercise: exercise,
         sequenceOrder: sequenceOrder,
         setType: setType,
@@ -693,9 +986,39 @@ extension _ToInstance on WorkoutTemplateExercise {
             workoutExerciseId: instanceId,
             setNumber: s.setNumber,
             completed: s.completed,
+            setContextType: s.setContextType,
+            notes: s.notes,
             values: Map.of(s.values),
           ),
         )
             .toList(),
       );
+}
+
+class InstanceClientGroup {
+  final int workoutInstanceId;
+  final int? clientId;
+  final String clientName;
+  final List<InstanceItem> items;
+
+  InstanceClientGroup({
+    required this.workoutInstanceId,
+    required this.clientId,
+    required this.clientName,
+    required this.items,
+  });
+}
+
+class ClientLeaderboardEntry {
+  final String clientName;
+  final double totalWeightLifted;
+  final int completedSets;
+  final int totalSets;
+
+  ClientLeaderboardEntry({
+    required this.clientName,
+    required this.totalWeightLifted,
+    required this.completedSets,
+    required this.totalSets,
+  });
 }

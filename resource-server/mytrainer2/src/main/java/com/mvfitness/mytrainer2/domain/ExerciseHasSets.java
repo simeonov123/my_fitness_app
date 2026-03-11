@@ -27,6 +27,12 @@ public class ExerciseHasSets {
     @Builder.Default
     private Boolean completed = false;
 
+    @Column(name = "set_context_type", length = 32)
+    private String setContextType;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     /**
      * Template‐level per‐set data (e.g. KG / REPS / TIME entries).
      * We initialize the list here so addSetData(...) never NPEs.

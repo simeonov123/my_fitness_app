@@ -218,9 +218,9 @@ class SessionsTimeline extends StatelessWidget {
       top: y,
       left: 0,
       right: 0,
-      child: Row(children: [
+      child: const Row(children: [
         SizedBox(width: _timeW, height: 1),
-        Expanded(child: Container(height: 1, color: Colors.red)),
+        Expanded(child: SizedBox(height: 1, child: ColoredBox(color: Colors.red))),
       ]),
     );
   }

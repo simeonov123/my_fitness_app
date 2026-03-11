@@ -28,6 +28,8 @@ public final class WorkoutInstanceExerciseMapper {
         return new WorkoutInstanceExerciseDto(
                 e.getId(),
                 e.getWorkoutInstance().getId(),
+                e.getWorkoutInstance().getClient().getId(),
+                e.getWorkoutInstance().getClient().getFullName(),
                 e.getExercise().getId(),
                 e.getExercise().getName(),
                 e.getSequenceOrder(),
@@ -77,6 +79,8 @@ public final class WorkoutInstanceExerciseMapper {
                                 .workoutInstanceExercise(e)
                                 .setNumber(sDto.setNumber())
                                 .completed(Boolean.TRUE.equals(sDto.completed()))
+                                .setContextType(sDto.setContextType())
+                                .notes(sDto.notes())
                                 .build();
 
                 // copy per-set data

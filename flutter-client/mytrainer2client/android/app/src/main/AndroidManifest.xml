@@ -9,6 +9,7 @@
     <application
         android:label="mytrainer2client"
         android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
 

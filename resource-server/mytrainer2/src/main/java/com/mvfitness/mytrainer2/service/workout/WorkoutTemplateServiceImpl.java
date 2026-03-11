@@ -20,6 +20,9 @@ public class WorkoutTemplateServiceImpl implements WorkoutTemplateService {
     private final UserRepository users;
     private final ExerciseRepository exercises;
     private final WorkoutTemplateExerciseRepository wteRepo;
+    private final WorkoutFolderRepository folderRepo;
+    private final TrainingSessionRepository trainingSessionRepo;
+    private final WorkoutInstanceRepository workoutInstanceRepo;
 
 
     private User trainerOr404(String kcId){
@@ -34,6 +37,15 @@ public class WorkoutTemplateServiceImpl implements WorkoutTemplateService {
         if(!t.getTrainer().getId().equals(tr.getId()))
             throw new IllegalArgumentException("Template not found");
         return t;
+    }
+
+    private WorkoutFolder folderOr404(User trainer, Long folderId) {
+        WorkoutFolder folder = folderRepo.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Workout folder not found"));
+        if (!folder.getTrainer().getId().equals(trainer.getId())) {
+            throw new IllegalArgumentException("Workout folder not found");
+        }
+        return folder;
     }
 
     @Override @Transactional(readOnly = true)
@@ -58,23 +70,26 @@ public class WorkoutTemplateServiceImpl implements WorkoutTemplateService {
     @Override
     public WorkoutTemplateDto create(String kcId, WorkoutTemplateDto dto) {
         User trainer = trainerOr404(kcId);
+        WorkoutFolder folder = dto.folderId() == null ? null : folderOr404(trainer, dto.folderId());
         WorkoutTemplate t = WorkoutTemplate.builder()
                 .trainer(trainer)
                 .build();
         List<Exercise> refs = dto.exercises()==null? List.of() :
                 exercises.findAllById(dto.exercises().stream()
                         .map(WorkoutTemplateExerciseDto::exerciseId).toList());
-        WorkoutTemplateMapper.updateEntity(t,dto,refs);
+        WorkoutTemplateMapper.updateEntity(t,dto,folder,refs);
         return WorkoutTemplateMapper.toDto(repo.save(t));
     }
 
     @Override
     public WorkoutTemplateDto update(String kcId, Long id, WorkoutTemplateDto dto) {
         WorkoutTemplate t = ownedOr404(kcId,id);
+        User trainer = trainerOr404(kcId);
+        WorkoutFolder folder = dto.folderId() == null ? null : folderOr404(trainer, dto.folderId());
         List<Exercise> refs = dto.exercises()==null? List.of() :
                 exercises.findAllById(dto.exercises().stream()
                         .map(WorkoutTemplateExerciseDto::exerciseId).toList());
-        WorkoutTemplateMapper.updateEntity(t,dto,refs);
+        WorkoutTemplateMapper.updateEntity(t,dto,folder,refs);
         return WorkoutTemplateMapper.toDto(repo.save(t));
     }
 
@@ -83,7 +98,11 @@ public class WorkoutTemplateServiceImpl implements WorkoutTemplateService {
         // fetch & verify ownership
         WorkoutTemplate t = ownedOr404(kcId, id);
 
-        // delete all child rows first
+        // Preserve historical sessions/instances by detaching them from the template.
+        trainingSessionRepo.clearWorkoutTemplateByTemplateId(t.getId());
+        workoutInstanceRepo.clearWorkoutTemplateByTemplateId(t.getId());
+
+        // delete template-owned exercise rows first
         wteRepo.deleteByWorkoutTemplateId(t.getId());
 
         // now delete the template

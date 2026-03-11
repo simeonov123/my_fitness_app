@@ -129,11 +129,21 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
 
         /* client list */
         if (d.clientIds() != null) {
-            List<Client> newClients = clients.findAllById(d.clientIds());
-            if (newClients.size() != d.clientIds().size())
-                throw new IllegalArgumentException("One or more clients not found");
-            s.getClients().clear();
-            s.getClients().addAll(newClients);
+            List<Long> currentClientIds = s.getClients().stream()
+                    .map(Client::getId)
+                    .sorted()
+                    .toList();
+            List<Long> requestedClientIds = d.clientIds().stream()
+                    .sorted()
+                    .toList();
+
+            if (!currentClientIds.equals(requestedClientIds)) {
+                List<Client> newClients = clients.findAllById(d.clientIds());
+                if (newClients.size() != d.clientIds().size())
+                    throw new IllegalArgumentException("One or more clients not found");
+                s.getClients().clear();
+                s.getClients().addAll(newClients);
+            }
         }
 
         /* template switch */
@@ -149,6 +159,8 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
             /* rebuild instances */
             s.getWorkoutInstances().clear();
             injectDeepClone(s, tpl);
+        } else if (d.workoutTemplateId() == null && s.getWorkoutTemplate() != null) {
+            s.setWorkoutTemplate(null);
         }
 
         /* scalars */
@@ -215,6 +227,8 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                             .workoutInstanceExercise(ie)
                             .setNumber(ehs.getSetNumber())
                             .completed(ehs.getCompleted())
+                            .setContextType(ehs.getSetContextType())
+                            .notes(ehs.getNotes())
                             .build();
                     ie.getWorkoutInstanceExerciseHasSets().add(ies);
 

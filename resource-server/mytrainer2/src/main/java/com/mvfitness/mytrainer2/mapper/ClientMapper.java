@@ -14,6 +14,9 @@ public final class ClientMapper {
                 c.getFullName(),
                 c.getEmail(),
                 c.getPhone(),
+                c.getFolder() != null ? c.getFolder().getId() : null,
+                c.getFolder() != null ? c.getFolder().getName() : null,
+                c.getSequenceOrder(),
                 c.getCreatedAt(),
                 c.getUpdatedAt()
         );
@@ -23,5 +26,6 @@ public final class ClientMapper {
         c.setFullName(dto.fullName());
         c.setEmail(dto.email());
         c.setPhone(dto.phone());
+        c.setSequenceOrder(dto.sequenceOrder());
     }
 }

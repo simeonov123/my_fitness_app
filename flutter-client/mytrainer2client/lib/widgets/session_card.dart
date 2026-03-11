@@ -32,7 +32,7 @@ class SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = _accent.withOpacity(.18);
+    final bg = _accent.withValues(alpha: 0.18);
     final fmt = DateFormat.Hm();
     final txt = compact
         ? fmt.format(session.start)                           // just start time
@@ -50,7 +50,7 @@ class SessionCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(_r),
-              border: Border.all(color: _accent.withOpacity(.6)),
+              border: Border.all(color: _accent.withValues(alpha: 0.6)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

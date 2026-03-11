@@ -5,6 +5,9 @@ class WorkoutTemplate {
   final int id;
   final String name;
   final String? description;
+  final int? folderId;
+  final String? folderName;
+  final int? sequenceOrder;
   List<WorkoutTemplateExercise> exercises;  // now mutable, non-final
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -13,6 +16,9 @@ class WorkoutTemplate {
     required this.id,
     required this.name,
     this.description,
+    this.folderId,
+    this.folderName,
+    this.sequenceOrder,
     List<WorkoutTemplateExercise>? exercises,
     this.createdAt,
     this.updatedAt,
@@ -23,7 +29,10 @@ class WorkoutTemplate {
         id: j['id'] as int,
         name: j['name'] as String,
         description: j['description'] as String?,
-        exercises: (j['workoutTemplateExercises'] as List<dynamic>?)
+        folderId: j['folderId'] as int?,
+        folderName: j['folderName'] as String?,
+        sequenceOrder: j['sequenceOrder'] as int?,
+        exercises: ((j['exercises'] ?? j['workoutTemplateExercises']) as List<dynamic>?)
             ?.cast<Map<String, dynamic>>()
             .map(WorkoutTemplateExercise.fromJson)
             .toList(),
@@ -39,7 +48,9 @@ class WorkoutTemplate {
     'id': id,
     'name': name,
     'description': description,
-    'workoutTemplateExercises':
-    exercises.map((e) => e.toJson()).toList(),
+    'folderId': folderId,
+    'folderName': folderName,
+    'sequenceOrder': sequenceOrder,
+    'exercises': exercises.map((e) => e.toJson()).toList(),
   };
 }

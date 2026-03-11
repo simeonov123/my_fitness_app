@@ -5,6 +5,8 @@ class WorkoutTemplateExerciseSet {
   int workoutExerciseId;   // now passed in by the caller
   int setNumber;           // 1,2,3,...
   bool completed;
+  String? setContextType;
+  String? notes;
   Map<String, double> values;
 
   WorkoutTemplateExerciseSet({
@@ -12,6 +14,8 @@ class WorkoutTemplateExerciseSet {
     required this.workoutExerciseId,
     required this.setNumber,
     this.completed = false,
+    this.setContextType,
+    this.notes,
     required this.values,
   });
 
@@ -20,6 +24,8 @@ class WorkoutTemplateExerciseSet {
     int? workoutExerciseId,
     int? setNumber,
     bool? completed,
+    String? setContextType,
+    String? notes,
     Map<String, double>? values,
   }) =>
       WorkoutTemplateExerciseSet(
@@ -27,6 +33,8 @@ class WorkoutTemplateExerciseSet {
         workoutExerciseId: workoutExerciseId ?? this.workoutExerciseId,
         setNumber: setNumber ?? this.setNumber,
         completed: completed ?? this.completed,
+        setContextType: setContextType ?? this.setContextType,
+        notes: notes ?? this.notes,
         values: values ?? Map.from(this.values),
       );
 
@@ -41,6 +49,8 @@ class WorkoutTemplateExerciseSet {
       workoutExerciseId: workoutExerciseId,
       setNumber: (j['setNumber'] as num).toInt(),
       completed: j['completed'] as bool? ?? false,
+      setContextType: j['setContextType'] as String?,
+      notes: j['notes'] as String?,
       values: {
         for (final item in dataList.cast<Map<String, dynamic>>())
           (item['type'] as String): (item['value'] as num).toDouble(),
@@ -53,6 +63,8 @@ class WorkoutTemplateExerciseSet {
     'workoutExerciseId': workoutExerciseId,
     'setNumber': setNumber,
     'completed': completed,
+    'setContextType': setContextType,
+    'notes': notes,
     'data': values.entries
         .map((e) => {'type': e.key, 'value': e.value})
         .toList(),

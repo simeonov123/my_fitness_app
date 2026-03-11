@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +50,15 @@ public class WorkoutInstanceExerciseServiceImpl
                 .findByWorkoutInstance_TrainingSession_IdOrderBySequenceOrderAsc(sessionId);
         // pull lazy sets
         list.forEach(e -> e.getWorkoutInstanceExerciseHasSets().forEach(s -> s.getSetData().size()));
-        return WorkoutInstanceExerciseMapper.toDtoList(list);
+        return list.stream()
+                .sorted((a, b) -> {
+                    int byClient = a.getWorkoutInstance().getClient().getFullName()
+                            .compareToIgnoreCase(b.getWorkoutInstance().getClient().getFullName());
+                    if (byClient != 0) return byClient;
+                    return Integer.compare(a.getSequenceOrder(), b.getSequenceOrder());
+                })
+                .map(WorkoutInstanceExerciseMapper::toDto)
+                .toList();
     }
 
     @Override
@@ -55,24 +66,41 @@ public class WorkoutInstanceExerciseServiceImpl
             String kc, Long sessionId, List<WorkoutInstanceExerciseDto> dtos) {
 
         var session = ownedSessionOr404(kc, sessionId);
+        Map<Long, WorkoutInstance> workoutInstancesById = session.getWorkoutInstances().stream()
+                .collect(Collectors.toMap(WorkoutInstance::getId, Function.identity()));
+        Map<Long, WorkoutInstance> workoutInstancesByClientId = session.getWorkoutInstances().stream()
+                .collect(Collectors.toMap(wi -> wi.getClient().getId(), Function.identity()));
 
-        /* 1) nuke existing */
-        repo.deleteByWorkoutInstance_TrainingSession_Id(sessionId);
-
-        /* 2) recreate – iterate over every WorkoutInstance of the session */
+        /* 1) clear managed child collections, then nuke existing rows */
         for (WorkoutInstance wi : session.getWorkoutInstances()) {
-            for (WorkoutInstanceExerciseDto dto : dtos) {
-
-                var ex = exRepo.findById(dto.exerciseId())
-                        .orElseThrow(() -> new IllegalArgumentException("Exercise not found"));
-
-                var ent = WorkoutInstanceExerciseMapper.toEntity(dto, wi);
-                ent.setExercise(ex);
-
-                wi.getWorkoutInstanceExercises().add(ent);
-                repo.save(ent);                                  // cascades OK
-            }
+            wi.getWorkoutInstanceExercises().clear();
         }
+        repo.deleteByWorkoutInstance_TrainingSession_Id(sessionId);
+        repo.flush();
+
+        /* 2) recreate per client-specific WorkoutInstance */
+        for (WorkoutInstanceExerciseDto dto : dtos) {
+            WorkoutInstance wi = null;
+            if (dto.workoutInstanceId() != null) {
+                wi = workoutInstancesById.get(dto.workoutInstanceId());
+            }
+            if (wi == null && dto.clientId() != null) {
+                wi = workoutInstancesByClientId.get(dto.clientId());
+            }
+            if (wi == null) {
+                throw new IllegalArgumentException("Workout instance not found for client entry");
+            }
+
+            var ex = exRepo.findById(dto.exerciseId())
+                    .orElseThrow(() -> new IllegalArgumentException("Exercise not found"));
+
+            var ent = WorkoutInstanceExerciseMapper.toEntity(dto, wi);
+            ent.setExercise(ex);
+
+            wi.getWorkoutInstanceExercises().add(ent);
+            repo.save(ent);
+        }
+        repo.flush();
         return list(kc, sessionId);
     }
 

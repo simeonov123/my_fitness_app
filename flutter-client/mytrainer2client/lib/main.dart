@@ -1,11 +1,13 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:mytrainer2client/providers/client_folders_provider.dart';
 import 'package:mytrainer2client/providers/exercises_provider.dart';
 import 'package:mytrainer2client/providers/nutrition_templates_provider.dart';
 import 'package:mytrainer2client/providers/training_sessions_provider.dart';
 import 'package:mytrainer2client/providers/workout_instance_exercises_provider.dart';
 import 'package:mytrainer2client/providers/workout_template_exercises_provider.dart';
+import 'package:mytrainer2client/providers/workout_folders_provider.dart';
 import 'package:mytrainer2client/providers/workout_templates_provider.dart';
 import 'package:mytrainer2client/providers/social_feed_provider.dart';
 import 'package:provider/provider.dart';
@@ -38,8 +40,10 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ApiProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => ClientFoldersProvider()),
         ChangeNotifierProvider(create: (_) => ClientsProvider()),
         ChangeNotifierProvider(create: (_) => NutritionTemplatesProvider()),
+        ChangeNotifierProvider(create: (_) => WorkoutFoldersProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutTemplatesProvider()),
         ChangeNotifierProvider(create: (_) => ExercisesProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutTemplateExercisesProvider()),

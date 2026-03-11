@@ -6,6 +6,8 @@ import java.util.List;
 public record WorkoutInstanceExerciseDto(
         Long   id,
         Long   workoutInstanceId,
+        Long   clientId,
+        String clientName,
         Long   exerciseId,
         String exerciseName,
         Integer sequenceOrder,

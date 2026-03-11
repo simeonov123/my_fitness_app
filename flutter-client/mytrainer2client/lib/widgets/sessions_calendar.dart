@@ -14,11 +14,13 @@ import '../providers/training_sessions_provider.dart';
 class SessionsCalendar extends StatefulWidget {
   const SessionsCalendar({
     super.key,
+    required this.focused,
     required this.selected,
     required this.onSelect,
     this.onPageChanged,
   });
 
+  final DateTime focused;
   final DateTime selected;
   final ValueChanged<DateTime> onSelect;
   final ValueChanged<DateTime>? onPageChanged;
@@ -40,7 +42,7 @@ class _SessionsCalendarState extends State<SessionsCalendar>
     final calendar = TableCalendar(
       firstDay: DateTime.utc(2020, 1, 1),
       lastDay: DateTime.utc(2030, 12, 31),
-      focusedDay: widget.selected,
+      focusedDay: widget.focused,
       selectedDayPredicate: (d) => isSameDay(d, widget.selected),
       onDaySelected: (d, _) {
         widget.onSelect(d);

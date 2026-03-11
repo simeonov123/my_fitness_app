@@ -65,6 +65,17 @@ class WorkoutTemplatesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetViewState({
+    String newSearch = '',
+    String newSort = 'newest',
+    int newPage = 0,
+  }) {
+    search = newSearch;
+    sort = newSort;
+    page = newPage;
+    notifyListeners();
+  }
+
   /// Called after the user reorders/deletes in the bottom-sheet.
   /// We just update our in-memory list; call `save(...)` to persist.
   void updateExercisesOrder(
