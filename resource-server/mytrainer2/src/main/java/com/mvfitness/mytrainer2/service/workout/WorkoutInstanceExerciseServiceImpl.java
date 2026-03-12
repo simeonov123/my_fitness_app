@@ -5,6 +5,7 @@ import com.mvfitness.mytrainer2.domain.*;
 import com.mvfitness.mytrainer2.dto.WorkoutInstanceExerciseDto;
 import com.mvfitness.mytrainer2.mapper.WorkoutInstanceExerciseMapper;
 import com.mvfitness.mytrainer2.repository.*;
+import com.mvfitness.mytrainer2.service.session.TrainingSessionRealtimeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ public class WorkoutInstanceExerciseServiceImpl
     private final ExerciseRepository                exRepo;
     private final UserRepository                    users;
     private final ClientRepository                  clients;
+    private final TrainingSessionRealtimeService    realtime;
 
     /* ───────── helper guards ───────── */
 
@@ -180,7 +182,9 @@ public class WorkoutInstanceExerciseServiceImpl
             repo.save(ent);
         }
         repo.flush();
-        return list(kc, sessionId);
+        List<WorkoutInstanceExerciseDto> updated = list(kc, sessionId);
+        realtime.publishInstanceUpdated(sessionId, subscriberKc -> list(subscriberKc, sessionId));
+        return updated;
     }
 
     @Override
@@ -202,5 +206,7 @@ public class WorkoutInstanceExerciseServiceImpl
             }
         }
         repo.delete(ent);
+        repo.flush();
+        realtime.publishInstanceUpdated(sessionId, subscriberKc -> list(subscriberKc, sessionId));
     }
 }

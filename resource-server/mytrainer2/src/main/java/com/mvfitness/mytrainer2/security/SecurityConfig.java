@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/trainer/training-sessions/**").hasAnyRole("TRAINER", "CLIENT")
                         .requestMatchers("/trainer/exercises/common").hasAnyRole("TRAINER", "CLIENT")
                         .requestMatchers("/trainer/**").hasRole("TRAINER")

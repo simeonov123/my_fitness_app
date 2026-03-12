@@ -36,6 +36,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     private final WorkoutInstanceExerciseRepository       instanceExRepo;
     private final WorkoutInstanceExerciseHasSetsRepository instanceSetRepo;
     private final SetDataRepository                       setDataRepo;
+    private final TrainingSessionRealtimeService          realtime;
     /* ───────────────── helpers ─────────────────────────────────────── */
 
     private User trainerOr404(String kc) {
@@ -182,7 +183,9 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         }
 
         /* 5) persist (+ cascades) */
-        return TrainingSessionMapper.toDto(sessions.save(session));
+        TrainingSessionDto saved = TrainingSessionMapper.toDto(sessions.save(session));
+        realtime.publishSessionUpdated(saved);
+        return saved;
     }
 
     /* ───────────────── update ──────────────────────────────────────── */
@@ -239,7 +242,9 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         s.setStatus(d.status());
         s.setIsCompleted(d.isCompleted());
 
-        return TrainingSessionMapper.toDto(sessions.save(s));
+        TrainingSessionDto saved = TrainingSessionMapper.toDto(sessions.save(s));
+        realtime.publishSessionUpdated(saved);
+        return saved;
     }
 
     /* ───────────────── delete ───────────────── */

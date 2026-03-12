@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../models/instance_item.dart';
 import '../models/exercise.dart';
+import '../models/training_session_realtime_event.dart';
 import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
 import '../models/workout_instance_exercise_set.dart';
@@ -19,6 +20,7 @@ import '../providers/training_sessions_provider.dart';
 import '../providers/workout_instance_exercises_provider.dart';
 import '../models/social_post.dart';
 import '../services/active_workout_service.dart';
+import '../services/training_session_realtime_service.dart';
 import '../services/workout_notification_service.dart';
 import '../utils/instance_to_template_adapter.dart';
 import '../widgets/workout_template_exercise_widget.dart';
@@ -37,10 +39,12 @@ class TrainingSessionDetailPage extends StatefulWidget {
 class _TrainingSessionDetailPageState
     extends State<TrainingSessionDetailPage> {
   final _activeWorkout = ActiveWorkoutService();
+  final _realtime = TrainingSessionRealtimeService();
   final _notifications = WorkoutNotificationService.instance;
   TrainingSession? _session;
   final List<InstanceClientGroup> _groups = [];
   Timer? _ticker;
+  StreamSubscription? _realtimeSub;
 
   bool _dirtyMeta = false;
   bool _dirtyEx   = false;
@@ -71,6 +75,8 @@ class _TrainingSessionDetailPageState
   @override
   void dispose() {
     _ticker?.cancel();
+    _realtimeSub?.cancel();
+    unawaited(_realtime.disconnect());
     _nameCtl.dispose();
     super.dispose();
   }
@@ -79,7 +85,11 @@ class _TrainingSessionDetailPageState
 
   Future<void> _loadAll() async {
     try {
-      final tok  = context.read<AuthProvider>().token!;
+      final tok  = await context.read<AuthProvider>().getValidToken();
+      if (tok == null) {
+        throw Exception('Missing auth token');
+      }
+      if (!mounted) return;
       final api  = context.read<TrainingSessionsProvider>().api;
       final prov = context.read<WorkoutInstanceExercisesProvider>();
 
@@ -91,6 +101,7 @@ class _TrainingSessionDetailPageState
       await prov.load(token: tok, sessionId: widget.sessionId);
       _buildItemList(prov.items);
       await _restoreActiveWorkout();
+      await _connectRealtime(tok);
 
       if (mounted) setState(() {});
     } catch (e) {
@@ -131,8 +142,13 @@ class _TrainingSessionDetailPageState
     }
     final actualStart = _session?.actualStartTime;
     final actualEnd = _session?.actualEndTime;
-    if (actualStart != null && actualEnd != null) {
-      return actualEnd.difference(actualStart);
+    if (actualStart != null) {
+      if (actualEnd != null) {
+        return actualEnd.difference(actualStart);
+      }
+      if ((_session?.status ?? '').toUpperCase() == 'IN_PROGRESS') {
+        return DateTime.now().difference(actualStart);
+      }
     }
     return null;
   }
@@ -221,6 +237,61 @@ class _TrainingSessionDetailPageState
     );
   }
 
+  Future<void> _connectRealtime(String token) async {
+    await _realtimeSub?.cancel();
+    await _realtime.connect(token: token, sessionId: widget.sessionId);
+    _realtimeSub = _realtime.stream.listen(_handleRealtimeEvent);
+  }
+
+  void _handleRealtimeEvent(TrainingSessionRealtimeEvent event) async {
+    if (!mounted) return;
+    switch (event.type) {
+      case 'SESSION_UPDATED':
+        if (event.session != null) {
+          _applySessionUpdate(TrainingSession.fromJson(event.session!));
+        }
+        break;
+      case 'INSTANCE_UPDATED':
+        if (event.instanceExercises != null) {
+          final items = event.instanceExercises!
+              .map(WorkoutInstanceExercise.fromJson)
+              .toList();
+          _buildItemList(items);
+          _dirtyEx = false;
+          if (mounted) {
+            setState(() {});
+          }
+          await _syncActiveWorkoutNotification();
+        }
+        break;
+    }
+  }
+
+  void _applySessionUpdate(TrainingSession updated) {
+    _session = updated;
+    _start = updated.start;
+    _end = updated.end;
+    _nameCtl.text = updated.sessionName ?? '';
+    _dirtyMeta = false;
+
+    final shouldTick = (_session?.status ?? '').toUpperCase() == 'IN_PROGRESS' &&
+        _session?.actualStartTime != null &&
+        _session?.actualEndTime == null;
+
+    if (shouldTick) {
+      _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      _ticker?.cancel();
+      _ticker = null;
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   /// de-duplicate by `sequenceOrder` (backend sometimes gives duplicates
   /// after replaceAll).  We keep the entry that already owns set data.
   void _buildItemList(List<WorkoutInstanceExercise> raw) {
@@ -287,7 +358,7 @@ class _TrainingSessionDetailPageState
             IconButton(icon: const Icon(Icons.save), onPressed: _saveAll),
         ],
       ),
-      floatingActionButton: clientReadOnly
+      floatingActionButton: (isClient || clientReadOnly)
           ? null
           : FloatingActionButton(
               onPressed: _addExercises,
@@ -776,10 +847,8 @@ class _TrainingSessionDetailPageState
         sessionId: _session!.id,
         newList: groupedPayload,
       );
+      _buildItemList(prov.items);
       _dirtyEx = false;
-
-      // refresh from backend so ids & sets are accurate and duplicates vanish
-      await _loadAll();
     }
 
     if (showFeedback && mounted) {
