@@ -2,20 +2,25 @@
 package com.mvfitness.mytrainer2.service.exercise;
 
 import com.mvfitness.mytrainer2.domain.Exercise;
+import com.mvfitness.mytrainer2.domain.MuscleGroup;
 import com.mvfitness.mytrainer2.domain.User;
 import com.mvfitness.mytrainer2.dto.ExerciseDto;
 import com.mvfitness.mytrainer2.mapper.ExerciseMapper;
 import com.mvfitness.mytrainer2.repository.ExerciseRepository;
+import com.mvfitness.mytrainer2.repository.MuscleGroupRepository;
 import com.mvfitness.mytrainer2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service @RequiredArgsConstructor @Transactional
 public class ExerciseServiceImpl implements ExerciseService {
 
     private final ExerciseRepository repo;
+    private final MuscleGroupRepository muscleGroups;
     private final UserRepository users;
 
     private User trainerOr404(String kcId){
@@ -68,26 +73,49 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     @Override
     public ExerciseDto create(String kcId, ExerciseDto dto) {
+        User trainer = trainerOr404(kcId);
         Exercise e = Exercise.builder()
-                .trainer(trainerOr404(kcId))
+                .trainer(trainer)
                 .name(dto.name())
                 .description(dto.description())
                 .isCustom(dto.isCustom())
                 .defaultSetType(dto.defaultSetType())
                 .defaultSetParams(dto.defaultSetParams())
                 .build();
+        applyMuscleGroups(trainer, e, dto);
         return ExerciseMapper.toDto(repo.save(e));
     }
 
     @Override
     public ExerciseDto update(String kcId, Long id, ExerciseDto dto) {
         Exercise e = ownedOr404(kcId,id);
+        User trainer = trainerOr404(kcId);
         ExerciseMapper.updateEntity(e,dto);
+        applyMuscleGroups(trainer, e, dto);
         return ExerciseMapper.toDto(repo.save(e));
     }
 
     @Override
     public void delete(String kcId, Long id) {
         repo.delete(ownedOr404(kcId,id));
+    }
+
+    private void applyMuscleGroups(User trainer, Exercise e, ExerciseDto dto) {
+        e.getMuscleGroups().clear();
+        if (dto.muscleGroups() == null || dto.muscleGroups().isEmpty()) return;
+
+        List<Long> ids = dto.muscleGroups().stream()
+                .map(mg -> mg.id())
+                .filter(id -> id != null && id > 0)
+                .toList();
+
+        if (ids.isEmpty()) return;
+
+        List<MuscleGroup> groups = muscleGroups.findAllById(ids).stream()
+                .filter(group -> Boolean.FALSE.equals(group.getIsCustom()) ||
+                        (group.getTrainer() != null &&
+                                group.getTrainer().getId().equals(trainer.getId())))
+                .toList();
+        e.getMuscleGroups().addAll(groups);
     }
 }

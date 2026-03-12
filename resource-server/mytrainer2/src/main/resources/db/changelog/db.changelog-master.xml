@@ -780,4 +780,6 @@
              relativeToChangelogFile="true"/>
     <include file="2025-06-10-add-set-notes.xml"
              relativeToChangelogFile="true"/>
+    <include file="2025-06-11-add-muscle-groups.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>

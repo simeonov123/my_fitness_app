@@ -1,0 +1,36 @@
+package com.mvfitness.mytrainer2.domain;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+@Table(name = "muscle_groups")
+public class MuscleGroup extends BaseTimestampedEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trainer_id")
+    private User trainer;
+
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
+
+    @Column(name = "is_custom", nullable = false)
+    @Builder.Default
+    private Boolean isCustom = false;
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "muscleGroups")
+    private List<Exercise> exercises = new ArrayList<>();
+}

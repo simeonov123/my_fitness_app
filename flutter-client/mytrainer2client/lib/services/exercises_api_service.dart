@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
 import '../models/exercise.dart';
+import '../models/muscle_group.dart';
 import 'dev_endpoints.dart';
 
 class ExercisesApiService {
@@ -67,6 +68,7 @@ class ExercisesApiService {
     String? description,
     required String defaultSetType,
     required String defaultSetParams,
+    List<MuscleGroup> muscleGroups = const [],
   }) async {
     final uri = Uri.parse('$_base/trainer/exercises');
     final res = await http.post(
@@ -78,6 +80,15 @@ class ExercisesApiService {
         'isCustom': true,
         'defaultSetType': defaultSetType,
         'defaultSetParams': defaultSetParams,
+        'muscleGroups': muscleGroups
+            .map(
+              (group) => {
+                'id': group.id,
+                'name': group.name,
+                'isCustom': group.isCustom,
+              },
+            )
+            .toList(growable: false),
       }),
     );
     if (res.statusCode != 200) {

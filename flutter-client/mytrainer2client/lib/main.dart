@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:mytrainer2client/providers/client_folders_provider.dart';
 import 'package:mytrainer2client/providers/exercises_provider.dart';
+import 'package:mytrainer2client/providers/muscle_groups_provider.dart';
 import 'package:mytrainer2client/providers/nutrition_templates_provider.dart';
 import 'package:mytrainer2client/providers/training_sessions_provider.dart';
 import 'package:mytrainer2client/providers/workout_instance_exercises_provider.dart';
@@ -46,6 +47,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => WorkoutFoldersProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutTemplatesProvider()),
         ChangeNotifierProvider(create: (_) => ExercisesProvider()),
+        ChangeNotifierProvider(create: (_) => MuscleGroupsProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutTemplateExercisesProvider()),
         ChangeNotifierProvider(create: (_) => TrainingSessionsProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutInstanceExercisesProvider()),

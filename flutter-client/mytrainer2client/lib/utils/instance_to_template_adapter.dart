@@ -19,6 +19,7 @@ extension InstanceAdapter on WorkoutInstanceExercise {
                   setNumber: s.setNumber,
                   completed: s.completed,
                   setContextType: s.setContextType,
+                  notes: s.notes,
                   values: Map.from(s.values),
                 ))
             .toList(),

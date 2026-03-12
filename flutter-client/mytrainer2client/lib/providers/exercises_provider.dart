@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/exercise.dart';
+import '../models/muscle_group.dart';
 import '../services/exercises_api_service.dart';
 
 class ExercisesProvider extends ChangeNotifier {
@@ -64,12 +65,14 @@ class ExercisesProvider extends ChangeNotifier {
     String? description,
     required String defaultSetType,
     required String defaultSetParams,
+    List<MuscleGroup> muscleGroups = const [],
   }) async {
     final created = await _api.create(
       name: name,
       description: description,
       defaultSetType: defaultSetType,
       defaultSetParams: defaultSetParams,
+      muscleGroups: muscleGroups,
     );
     _all = _sortExercises([..._all.where((e) => e.id != created.id), created]);
     notifyListeners();

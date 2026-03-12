@@ -51,4 +51,13 @@ public class Exercise extends BaseTimestampedEntity {
 
     @Column(name="default_set_params", columnDefinition="TEXT")
     private String defaultSetParams;
+
+    @Builder.Default
+    @ManyToMany
+    @JoinTable(
+            name = "exercise_muscle_groups",
+            joinColumns = @JoinColumn(name = "exercise_id"),
+            inverseJoinColumns = @JoinColumn(name = "muscle_group_id")
+    )
+    private List<MuscleGroup> muscleGroups = new ArrayList<>();
 }

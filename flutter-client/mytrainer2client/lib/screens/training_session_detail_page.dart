@@ -521,15 +521,16 @@ class _TrainingSessionDetailPageState
               decoration: const InputDecoration(labelText: 'Name'),
               onChanged: (_) => setState(() => _dirtyMeta = true),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
-                  child: _dtBtn(
-                    'Start',
-                    _start!,
-                    f,
-                        (d) => setState(() {
+                  child: _dateTimeField(
+                    label: 'Start',
+                    value: _start!,
+                    fmt: f,
+                    icon: Icons.play_circle_outline,
+                    onChanged: (d) => setState(() {
                       _start = d;
                       _dirtyMeta = true;
                     }),
@@ -537,11 +538,12 @@ class _TrainingSessionDetailPageState
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _dtBtn(
-                    'End',
-                    _end!,
-                    f,
-                        (d) => setState(() {
+                  child: _dateTimeField(
+                    label: 'End',
+                    value: _end!,
+                    fmt: f,
+                    icon: Icons.flag_outlined,
+                    onChanged: (d) => setState(() {
                       _end = d;
                       _dirtyMeta = true;
                     }),
@@ -555,46 +557,111 @@ class _TrainingSessionDetailPageState
     );
   }
 
-  Widget _dtBtn(
-      String label,
-      DateTime val,
-      DateFormat fmt,
-      ValueChanged<DateTime> cb,
-      ) {
-    return OutlinedButton.icon(
-      icon: const Icon(Icons.schedule),
-      label: Text('$label  ${fmt.format(val)}'),
-      onPressed: () async {
+  Widget _dateTimeField({
+    required String label,
+    required DateTime value,
+    required DateFormat fmt,
+    required IconData icon,
+    required ValueChanged<DateTime> onChanged,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () async {
         final d = await showDatePicker(
           context: context,
           firstDate: DateTime(2020),
           lastDate: DateTime(2030),
-          initialDate: val,
+          initialDate: value,
         );
         if (d == null) return;
         if (!mounted) return;
         final t = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay.fromDateTime(val),
+          initialTime: TimeOfDay.fromDateTime(value),
         );
         if (t == null) return;
-        cb(DateTime(d.year, d.month, d.day, t.hour, t.minute));
+        onChanged(DateTime(d.year, d.month, d.day, t.hour, t.minute));
       },
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDE7F6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 18, color: const Color(0xFF6E59A5)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    fmt.format(value),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade500),
+          ],
+        ),
+      ),
     );
   }
 
   /* ───────── add / reorder ───────── */
 
   Future<void> _addExercises() async {
-    final picked = await showDialog<List<Exercise>>(
+    final picked = await showDialog<TargetedExercisePickerResult>(
       context: context,
-      builder: (_) => const ExercisePickerDialog(),
+      builder: (_) => TargetedExercisePickerDialog(
+        clients: _groups
+            .map(
+              (group) => ExerciseTargetOption(
+                clientId: group.clientId,
+                clientName: group.clientName,
+              ),
+            )
+            .toList(growable: false),
+      ),
     );
-    if (picked == null || picked.isEmpty) return;
+    if (picked == null || picked.exercises.isEmpty) return;
 
     setState(() {
-      for (final group in _groups) {
-        for (final ex in picked) {
+      final targetGroups = picked.applyToAllClients
+          ? _groups
+          : _groups
+              .where(
+                (group) =>
+                    group.clientId != null &&
+                    picked.clientIds.contains(group.clientId),
+              )
+              .toList(growable: false);
+
+      for (final group in targetGroups) {
+        for (final ex in picked.exercises) {
           group.items.add(
             InstanceItem(
               0,

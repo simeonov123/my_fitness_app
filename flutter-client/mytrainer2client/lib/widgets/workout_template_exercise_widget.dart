@@ -89,7 +89,7 @@ class _WorkoutTemplateExerciseWidgetState
             for (final option in _setContextOptions)
               ListTile(
                 leading: _contextChip(option),
-                title: Text(_contextLabel(option)),
+                title: Text(_contextMenuLabel(option)),
                 onTap: () => Navigator.pop(ctx, option),
               ),
           ],
@@ -194,196 +194,235 @@ class _WorkoutTemplateExerciseWidgetState
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // header
-            Row(children: [
-              Expanded(child: Text(widget.wte.exercise.name)),
-              IconButton(
-                tooltip: widget.wte.notes?.trim().isNotEmpty == true
-                    ? 'Edit pinned note'
-                    : 'Add pinned note',
-                onPressed: _editExerciseNote,
-                icon: Icon(
-                  Icons.push_pin_outlined,
-                  color: widget.wte.notes?.trim().isNotEmpty == true
-                      ? const Color(0xFFEF6C00)
-                      : Colors.grey[600],
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.wte.exercise.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if ((widget.wte.setType ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.wte.setType!,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              Text(widget.wte.setType ?? '',
-                  style: TextStyle(color: Colors.grey[600])),
-            ]),
+                IconButton(
+                  tooltip: widget.wte.notes?.trim().isNotEmpty == true
+                      ? 'Edit pinned note'
+                      : 'Add pinned note',
+                  onPressed: _editExerciseNote,
+                  icon: Icon(
+                    Icons.push_pin_outlined,
+                    color: widget.wte.notes?.trim().isNotEmpty == true
+                        ? const Color(0xFFEF6C00)
+                        : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
             if (widget.wte.notes?.trim().isNotEmpty == true) ...[
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 8),
+                margin: const EdgeInsets.only(top: 6, bottom: 12),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF3E0),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFFFCC80)),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 2),
-                      child: Icon(
-                        Icons.push_pin,
-                        size: 16,
-                        color: Color(0xFFEF6C00),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.wte.notes!.trim(),
-                        style: const TextStyle(
-                          color: Color(0xFF7A4A00),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  widget.wte.notes!.trim(),
+                  style: const TextStyle(
+                    color: Color(0xFF7A4A00),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
-            const SizedBox(height: 8),
-
-            // each set row
-            for (var i = 0; i < _localSets.length; i++)
-              Dismissible(
-                key: ValueKey(_setIds[i]),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Text(loc.delete,
-                      style: const TextStyle(color: Colors.white)),
-                ),
-                onDismissed: (_) => _removeSet(i),
-                child: ListTile(
-                  leading: widget.showCompletion
-                      ? Checkbox(
-                          value: _localSets[i].completed,
-                          onChanged: (value) {
-                            setState(() {
-                              _localSets[i].completed = value ?? false;
-                            });
-                            widget.wte.sets = List.from(_localSets);
-                            widget.onChanged();
-                          },
-                        )
-                      : null,
-                  title: Text(
-                    loc.set_number(_localSets[i].setNumber.toString()),
-                    style: TextStyle(
-                      decoration: widget.showCompletion &&
-                              _localSets[i].completed
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBFAFD),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE7E2EF)),
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < _localSets.length; i++) ...[
+                    Dismissible(
+                      key: ValueKey(_setIds[i]),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        onPressed: () => _pickSetContext(i),
-                        icon: _contextChip(_localSets[i].setContextType),
-                        label: Text(
-                          _localSets[i].setContextType == null
-                              ? 'Set marker'
-                              : _contextLabel(_localSets[i].setContextType!),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Text(
+                          loc.delete,
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () => _editSetNote(i),
-                        icon: Icon(
-                          Icons.push_pin_outlined,
-                          color: _localSets[i].notes?.trim().isNotEmpty == true
-                              ? const Color(0xFFEF6C00)
-                              : Colors.grey[600],
-                          size: 18,
-                        ),
-                        label: Text(
-                          _localSets[i].notes?.trim().isNotEmpty == true
-                              ? 'Edit set note'
-                              : 'Add set note',
-                        ),
-                      ),
-                      if (_localSets[i].notes?.trim().isNotEmpty == true)
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8E1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFFFE082)),
+                      onDismissed: (_) => _removeSet(i),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: widget.showCompletion && _localSets[i].completed
+                              ? const Color(0xFFEAF7EE)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: widget.showCompletion && _localSets[i].completed
+                                ? const Color(0xFF9FD3AE)
+                                : const Color(0xFFEAE6F1),
                           ),
-                          child: Text(
-                            _localSets[i].notes!.trim(),
-                            style: const TextStyle(
-                              color: Color(0xFF7A4A00),
-                              fontWeight: FontWeight.w600,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    loc.set_number(_localSets[i].setNumber.toString()),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      decoration: widget.showCompletion &&
+                                              _localSets[i].completed
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () => _editSetNote(i),
+                                  visualDensity: VisualDensity.compact,
+                                  iconSize: 18,
+                                  splashRadius: 18,
+                                  icon: Icon(
+                                    Icons.push_pin_outlined,
+                                    color: _localSets[i].notes?.trim().isNotEmpty == true
+                                        ? const Color(0xFFEF6C00)
+                                        : Colors.grey[600],
+                                  ),
+                                ),
+                                if (widget.showCompletion)
+                                  Checkbox(
+                                    value: _localSets[i].completed,
+                                    visualDensity: VisualDensity.compact,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _localSets[i].completed = value ?? false;
+                                      });
+                                      widget.wte.sets = List.from(_localSets);
+                                      widget.onChanged();
+                                    },
+                                  ),
+                              ],
                             ),
-                          ),
-                        ),
-                      Row(
-                        children: [
-                          for (var key in widget.wte.paramKeys)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: TextFormField(
-                                  initialValue:
-                                      _localSets[i].values[key]?.toStringAsFixed(0),
-                                  decoration:
-                                      InputDecoration(labelText: _label(key, loc)),
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly
-                                  ],
-                                  onChanged: (s) {
-                                    _localSets[i].values[key] =
-                                        double.tryParse(s) ?? 0.0;
-                                    widget.wte.sets = List.from(_localSets);
-                                    widget.onChanged();
-                                  },
+                            const SizedBox(height: 8),
+                            if (_localSets[i].notes?.trim().isNotEmpty == true)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF8E1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFFE082)),
+                                ),
+                                child: Text(
+                                  _localSets[i].notes!.trim(),
+                                  style: const TextStyle(
+                                    color: Color(0xFF7A4A00),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
+                            Row(
+                              children: [
+                                InkWell(
+                                  onTap: () => _pickSetContext(i),
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: _contextChip(_localSets[i].setContextType),
+                                  ),
+                                ),
+                                for (var key in widget.wte.paramKeys)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: TextFormField(
+                                        initialValue:
+                                            _localSets[i].values[key]?.toStringAsFixed(0),
+                                        decoration:
+                                            InputDecoration(labelText: _label(key, loc)),
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly
+                                        ],
+                                        onChanged: (s) {
+                                          _localSets[i].values[key] =
+                                              double.tryParse(s) ?? 0.0;
+                                          widget.wte.sets = List.from(_localSets);
+                                          widget.onChanged();
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
+                    if (i != _localSets.length - 1) const SizedBox(height: 10),
+                  ],
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _addSet,
+                      icon: const Icon(Icons.add),
+                      label: Text(loc.add_set),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFE8DEF8),
+                        foregroundColor: const Color(0xFF4A4458),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-
-            // add button
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _addSet,
-                icon: const Icon(Icons.add),
-                label: Text(loc.add_set),
+                ],
               ),
             ),
           ],
@@ -407,7 +446,7 @@ class _WorkoutTemplateExerciseWidgetState
     }
   }
 
-  String _contextLabel(String type) {
+  String _contextMenuLabel(String type) {
     switch (type) {
       case 'WARMUP':
         return 'Warmup';

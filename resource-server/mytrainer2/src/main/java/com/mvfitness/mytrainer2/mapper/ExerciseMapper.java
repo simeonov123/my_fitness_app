@@ -14,6 +14,9 @@ public class ExerciseMapper {
                 e.getIsCustom(),
                 e.getDefaultSetType(),
                 e.getDefaultSetParams(),
+                e.getMuscleGroups().stream()
+                        .map(MuscleGroupMapper::toDto)
+                        .toList(),
                 e.getCreatedAt(),
                 e.getUpdatedAt()
         );

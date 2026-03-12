@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/muscle_group.dart';
 import '../providers/exercises_provider.dart';
+import '../providers/muscle_groups_provider.dart';
 
 class ExerciseFormDialog extends StatefulWidget {
   const ExerciseFormDialog({super.key});
@@ -17,7 +19,9 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
 
   late final List<_ExercisePreset> _presets;
   late _ExercisePreset _selectedPreset;
+  final Set<MuscleGroup> _selectedMuscleGroups = <MuscleGroup>{};
   bool _submitting = false;
+  bool _creatingMuscleGroup = false;
 
   @override
   void initState() {
@@ -50,6 +54,13 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       ),
     ];
     _selectedPreset = _presets.first;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final provider = context.read<MuscleGroupsProvider>();
+      if (!provider.loading && provider.items.isEmpty) {
+        provider.load();
+      }
+    });
   }
 
   @override
@@ -71,6 +82,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                 : _descCtrl.text.trim(),
             defaultSetType: _selectedPreset.defaultSetType,
             defaultSetParams: _selectedPreset.defaultSetParams,
+            muscleGroups: _selectedMuscleGroups.toList(growable: false),
           );
       if (!mounted) return;
       Navigator.of(context).pop(created);
@@ -83,8 +95,62 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
     }
   }
 
+  Future<void> _createCustomMuscleGroup() async {
+    if (_creatingMuscleGroup) return;
+    final nameCtrl = TextEditingController();
+    try {
+      final name = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('New Muscle Group'),
+          content: TextField(
+            controller: nameCtrl,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Muscle group name',
+              hintText: 'e.g. Short Head of Bicep',
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (value) =>
+                Navigator.of(dialogContext).pop(value.trim()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(nameCtrl.text.trim()),
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || name == null || name.trim().isEmpty) return;
+      setState(() => _creatingMuscleGroup = true);
+      final created = await context.read<MuscleGroupsProvider>().create(
+            name.trim(),
+          );
+      if (!mounted) return;
+      setState(() {
+        _selectedMuscleGroups.add(created);
+        _creatingMuscleGroup = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _creatingMuscleGroup = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create muscle group: $e')),
+      );
+    } finally {
+      nameCtrl.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final muscleGroupsProvider = context.watch<MuscleGroupsProvider>();
     return AlertDialog(
       title: const Text('New Exercise'),
       content: Form(
@@ -121,6 +187,66 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                   setState(() => _selectedPreset = value);
                 },
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Muscle Groups',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _creatingMuscleGroup ? null : _createCustomMuscleGroup,
+                    icon: _creatingMuscleGroup
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add),
+                    label: const Text('Custom'),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _selectedMuscleGroups.isEmpty
+                      ? 'Select one or more muscle groups.'
+                      : '${_selectedMuscleGroups.length} selected',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (muscleGroupsProvider.loading &&
+                  muscleGroupsProvider.items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: muscleGroupsProvider.items
+                      .map(
+                        (group) => FilterChip(
+                          label: Text(group.name),
+                          selected: _selectedMuscleGroups.contains(group),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedMuscleGroups.add(group);
+                              } else {
+                                _selectedMuscleGroups.remove(group);
+                              }
+                            });
+                          },
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
             ],
           ),
         ),
