@@ -24,6 +24,10 @@ public class Client extends BaseTimestampedEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_user_id")
+    private User accountUser;
+
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
@@ -55,6 +59,9 @@ public class Client extends BaseTimestampedEntity {
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TrainerClients> trainerClients = new ArrayList<>();
+
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ClientInvite> invites = new ArrayList<>();
 
     // Timestamps inherited from BaseTimestampedEntity
 }

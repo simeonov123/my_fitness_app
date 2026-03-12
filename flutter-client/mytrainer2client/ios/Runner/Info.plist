@@ -53,6 +53,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.mvfitness.mytrainer2client</string>
+				<string>mytrainer</string>
 			</array>
 		</dict>
 	</array>

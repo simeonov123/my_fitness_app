@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/navigation_provider.dart';
 
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
 
-  static const _items = [
+  static const _trainerItems = [
     _NavTarget(0, '/home',       Icons.home,       'Home'),
     _NavTarget(1, '/workout',    Icons.fitness_center, 'Workout'),
     _NavTarget(2, '/social',     Icons.forum,      'Social'),
@@ -14,19 +15,28 @@ class BottomNavBar extends StatelessWidget {
     _NavTarget(5, '/nutrition',  Icons.restaurant, 'Nutrition'),
   ];
 
+  static const _clientItems = [
+    _NavTarget(0, '/home', Icons.home, 'Home'),
+    _NavTarget(1, '/social', Icons.forum, 'Social'),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     final nav = context.watch<NavigationProvider>();
+    final items = auth.isClient ? _clientItems : _trainerItems;
+    final routeName = ModalRoute.of(context)?.settings.name;
+    final currentIndex = items.indexWhere((item) => item.route == routeName);
 
     return BottomNavigationBar(
-      currentIndex: nav.index,
+      currentIndex: currentIndex >= 0 ? currentIndex : 0,
       type: BottomNavigationBarType.fixed,
       onTap: (idx) {
         nav.setIndex(idx);
         // pushReplacement to avoid stacking many screens
-        Navigator.pushReplacementNamed(context, _items[idx].route);
+        Navigator.pushReplacementNamed(context, items[idx].route);
       },
-      items: _items
+      items: items
           .map((t) => BottomNavigationBarItem(icon: Icon(t.icon), label: t.label))
           .toList(),
     );

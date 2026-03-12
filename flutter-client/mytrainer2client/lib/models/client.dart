@@ -23,13 +23,13 @@ class Client {
   });
 
   factory Client.fromJson(Map<String, dynamic> j) => Client(
-    id:        (j['id']        ?? 0) as int,
+    id:        (j['id'] as num?)?.toInt() ?? 0,
     fullName:  (j['fullName']  ?? '') as String,
     email:      j['email']  as String?,
     phone:      j['phone']  as String?,
-    folderId:   j['folderId'] as int?,
+    folderId:   (j['folderId'] as num?)?.toInt(),
     folderName: j['folderName'] as String?,
-    sequenceOrder: j['sequenceOrder'] as int?,
+    sequenceOrder: (j['sequenceOrder'] as num?)?.toInt(),
     createdAt:  j['createdAt'] != null
         ? DateTime.parse(j['createdAt'] as String)
         : null,

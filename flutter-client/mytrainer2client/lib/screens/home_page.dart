@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../models/training_session.dart';
 import '../providers/auth_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/training_sessions_provider.dart';
@@ -110,7 +111,16 @@ class _HomePageState extends State<HomePage> {
           final token = await auth.getValidToken();
           if (token == null) return;
           if (!mounted) return;
-          final created = await prov.create(token: token, dto: dto);
+          TrainingSession created;
+          try {
+            created = await prov.create(token: token, dto: dto);
+          } catch (e) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to create session: $e')),
+            );
+            return;
+          }
           if (!mounted) return;
 
           // switch to the day/month where the new session was added

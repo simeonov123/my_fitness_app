@@ -22,14 +22,23 @@ import 'providers/api_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/clients_provider.dart';
 import 'services/auth_service.dart';
+import 'services/invite_link_service.dart';
+import 'services/pending_client_invite_service.dart';
 import 'services/workout_notification_service.dart';
 import 'routes.dart';
 
 import 'models/client.dart';
 import 'screens/client_detail_page.dart';
+import 'screens/client_onboarding_page.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final initialInviteToken = await InviteLinkService.instance.captureInitialInviteToken();
+  if (initialInviteToken != null && initialInviteToken.isNotEmpty) {
+    await PendingClientInviteService().saveToken(initialInviteToken);
+  }
   await AuthService().loginOrSignup(interactive: false);
   await WorkoutNotificationService.instance.initialize();
 
@@ -59,6 +68,7 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
+  InviteLinkService.instance.start(appNavigatorKey);
 }
 
 class MyApp extends StatelessWidget {
@@ -71,6 +81,7 @@ class MyApp extends StatelessWidget {
         return Semantics(
           enabled: true,
           child: MaterialApp(
+            navigatorKey: appNavigatorKey,
             title: 'MVFitness',
             locale: localeProv.locale,
             localizationsDelegates: const [
@@ -87,12 +98,24 @@ class MyApp extends StatelessWidget {
                   : const Locale('en');
             },
 
-            initialRoute: '/',
+            initialRoute: WidgetsBinding.instance.platformDispatcher.defaultRouteName,
             routes: appRoutes,
 
-            // Catch '/client' here and build the detail page with the passed Client
+            // Catch routes with query params here.
             onGenerateRoute: (settings) {
-              if (settings.name == '/client') {
+              final name = settings.name ?? '/';
+              final uri = Uri.parse(name);
+
+              if (uri.path == '/onboard/client') {
+                return MaterialPageRoute(
+                  builder: (_) => ClientOnboardingPage(
+                    token: uri.queryParameters['token'],
+                  ),
+                  settings: settings,
+                );
+              }
+
+              if (uri.path == '/client') {
                 final client = settings.arguments as Client;
                 return MaterialPageRoute(
                   builder: (_) => ClientDetailPage(client: client),

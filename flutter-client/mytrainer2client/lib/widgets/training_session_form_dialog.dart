@@ -29,6 +29,7 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
   TimeOfDay _start = const TimeOfDay(hour: 10, minute: 0);
   TimeOfDay _end   = const TimeOfDay(hour: 11, minute: 0);
   final _name = TextEditingController();
+  bool _submitting = false;
 
   List<Client>     _pickedClients = [];
   WorkoutTemplate? _pickedTpl;
@@ -205,8 +206,10 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _submit,
-          child: const Text('Create'),
+          onPressed: _submitting || _pickedClients.isEmpty || _pickedTpl == null
+              ? null
+              : _submit,
+          child: Text(_submitting ? 'Creating...' : 'Create'),
         ),
       ],
     );
@@ -237,6 +240,8 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
     return showModalBottomSheet<List<Client>>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: Colors.white,
       builder: (_) => _ClientPickerSheet(
         clients: clients,
@@ -247,7 +252,16 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
   }
 
   Future<void> _submit() async {
-    if (!_form.currentState!.validate()) return;
+    setState(() => _submitting = true);
+    if (!_form.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select at least one client and one workout.'),
+        ),
+      );
+      setState(() => _submitting = false);
+      return;
+    }
 
     final start = _merge(_day, _start);
     final end   = _merge(_day, _end);
@@ -255,6 +269,7 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End must be after start')),
       );
+      setState(() => _submitting = false);
       return;
     }
 
@@ -267,6 +282,13 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
       'workoutTemplateId': _pickedTpl!.id,
     };
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Submitting clients ${_pickedClients.map((c) => c.id).join(', ')} workout ${_pickedTpl!.id}',
+        ),
+      ),
+    );
     Navigator.pop(context, dto);
   }
 }
@@ -453,6 +475,11 @@ class _ClientPickerSheetState extends State<_ClientPickerSheet> {
           children: [
             Row(
               children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
                     'Choose clients',

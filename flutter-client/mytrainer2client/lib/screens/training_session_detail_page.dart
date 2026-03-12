@@ -59,7 +59,10 @@ class _TrainingSessionDetailPageState
     // load the available exercise list **after** the first frame to avoid the
     // framework complaining about notifyListeners() during build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ExercisesProvider>().loadAvailable();
+      if (!mounted) return;
+      if (context.read<AuthProvider>().isTrainer) {
+        context.read<ExercisesProvider>().loadAvailable();
+      }
     });
 
     _loadAll();
@@ -271,33 +274,42 @@ class _TrainingSessionDetailPageState
     if (_session == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    final isClient = context.watch<AuthProvider>().isClient;
+    final clientReadOnly = isClient && (_session!.isCompleted ?? false);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_session!.sessionName ?? 'Session ${_session!.id}'),
         actions: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: _reorder),
-          if (_dirtyMeta || _dirtyEx)
+          if (!isClient)
+            IconButton(icon: const Icon(Icons.edit), onPressed: _reorder),
+          if ((_dirtyMeta || _dirtyEx) && !clientReadOnly)
             IconButton(icon: const Icon(Icons.save), onPressed: _saveAll),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addExercises,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: clientReadOnly
+          ? null
+          : FloatingActionButton(
+              onPressed: _addExercises,
+              child: const Icon(Icons.add),
+            ),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          _metaCard(),
+          _metaCard(isClient: isClient),
           const SizedBox(height: 12),
-          _activityCard(),
+          _activityCard(isClient: isClient),
           const SizedBox(height: 12),
-          if (_groups.length > 1) ...[
+          if (!isClient && _groups.length > 1) ...[
             _leaderboardCard(),
             const SizedBox(height: 12),
           ],
           ..._groups.map(
-                (group) => _clientSection(group),
+                (group) => _clientSection(
+                  group,
+                  isClient: isClient,
+                  clientReadOnly: clientReadOnly,
+                ),
           ),
           const SizedBox(height: 40),
         ],
@@ -305,7 +317,7 @@ class _TrainingSessionDetailPageState
     );
   }
 
-  Widget _activityCard() {
+  Widget _activityCard({required bool isClient}) {
     final runningElsewhere =
         _activeSnapshot != null && !_isActiveForCurrentSession;
 
@@ -359,31 +371,33 @@ class _TrainingSessionDetailPageState
                 style: TextStyle(color: Colors.orange[800]),
               ),
             ],
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                if (!_isActiveForCurrentSession)
-                  ElevatedButton.icon(
-                    onPressed: runningElsewhere || _busyAction ? null : _startWorkout,
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start'),
-                  ),
-                if (_isActiveForCurrentSession) ...[
-                  OutlinedButton.icon(
-                    onPressed: _busyAction ? null : _discardWorkout,
-                    icon: const Icon(Icons.close),
-                    label: const Text('Discard'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _busyAction ? null : _completeWorkout,
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text('Complete'),
-                  ),
+            if (!isClient) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  if (!_isActiveForCurrentSession)
+                    ElevatedButton.icon(
+                      onPressed: runningElsewhere || _busyAction ? null : _startWorkout,
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Start'),
+                    ),
+                  if (_isActiveForCurrentSession) ...[
+                    OutlinedButton.icon(
+                      onPressed: _busyAction ? null : _discardWorkout,
+                      icon: const Icon(Icons.close),
+                      label: const Text('Discard'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _busyAction ? null : _completeWorkout,
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Complete'),
+                    ),
+                  ],
                 ],
-              ],
-            ),
+              ),
+            ],
           ],
         ),
       ),
@@ -509,7 +523,7 @@ class _TrainingSessionDetailPageState
 
   /* ───────── meta card & date buttons ───────── */
 
-  Widget _metaCard() {
+  Widget _metaCard({required bool isClient}) {
     final f = DateFormat('yyyy-MM-dd   HH:mm');
     return Card(
       child: Padding(
@@ -519,7 +533,8 @@ class _TrainingSessionDetailPageState
             TextFormField(
               controller: _nameCtl,
               decoration: const InputDecoration(labelText: 'Name'),
-              onChanged: (_) => setState(() => _dirtyMeta = true),
+              readOnly: isClient,
+              onChanged: isClient ? null : (_) => setState(() => _dirtyMeta = true),
             ),
             const SizedBox(height: 14),
             Row(
@@ -530,6 +545,7 @@ class _TrainingSessionDetailPageState
                     value: _start!,
                     fmt: f,
                     icon: Icons.play_circle_outline,
+                    enabled: !isClient,
                     onChanged: (d) => setState(() {
                       _start = d;
                       _dirtyMeta = true;
@@ -543,6 +559,7 @@ class _TrainingSessionDetailPageState
                     value: _end!,
                     fmt: f,
                     icon: Icons.flag_outlined,
+                    enabled: !isClient,
                     onChanged: (d) => setState(() {
                       _end = d;
                       _dirtyMeta = true;
@@ -562,11 +579,12 @@ class _TrainingSessionDetailPageState
     required DateTime value,
     required DateFormat fmt,
     required IconData icon,
+    required bool enabled,
     required ValueChanged<DateTime> onChanged,
   }) {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () async {
+      onTap: !enabled ? null : () async {
         final d = await showDatePicker(
           context: context,
           firstDate: DateTime(2020),
@@ -624,7 +642,7 @@ class _TrainingSessionDetailPageState
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade500),
+            if (enabled) Icon(Icons.chevron_right, color: Colors.grey.shade500),
           ],
         ),
       ),
@@ -942,7 +960,11 @@ class _TrainingSessionDetailPageState
     }
   }
 
-  Widget _clientSection(InstanceClientGroup group) {
+  Widget _clientSection(
+    InstanceClientGroup group, {
+    required bool isClient,
+    required bool clientReadOnly,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -950,42 +972,44 @@ class _TrainingSessionDetailPageState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  child: Text(_initials(group.clientName)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    group.clientName,
-                    style: Theme.of(context).textTheme.titleMedium,
+            if (!isClient) ...[
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    child: Text(_initials(group.clientName)),
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${_groupTotalWeightLifted(group).toStringAsFixed(0)} kg',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      group.clientName,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${_groupCompletedSets(group)}/${_groupSetCount(group)} sets',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 12,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${_groupTotalWeightLifted(group).toStringAsFixed(0)} kg',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_groupCompletedSets(group)}/${_groupSetCount(group)} sets',
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             ...group.items.map(
               (it) => WorkoutTemplateExerciseWidget(
                 key: ValueKey(
@@ -994,6 +1018,9 @@ class _TrainingSessionDetailPageState
                 templateId: _session!.id,
                 wte: it.wte,
                 showCompletion: true,
+                canEditExerciseNotes: !isClient,
+                canEditSetNotes: !isClient,
+                isReadOnly: clientReadOnly,
                 onChanged: () {
                   setState(() => _dirtyEx = true);
                   _syncActiveWorkoutNotification();

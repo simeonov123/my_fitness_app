@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@PreAuthorize("hasRole('TRAINER')")
 @RestController
 @RequestMapping("/trainer/training-sessions/{sessionId}/instance")
 @RequiredArgsConstructor
@@ -24,6 +23,7 @@ public class WorkoutInstanceExerciseController {
     /* ───────── READ ───────── */
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public List<WorkoutInstanceExerciseDto> list(
             JwtAuthenticationToken auth,
             @PathVariable Long sessionId
@@ -34,6 +34,7 @@ public class WorkoutInstanceExerciseController {
     /* ───────── REPLACE ALL ───────── */
 
     @PutMapping
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public List<WorkoutInstanceExerciseDto> replaceAll(
             JwtAuthenticationToken auth,
             @PathVariable Long sessionId,
@@ -45,6 +46,7 @@ public class WorkoutInstanceExerciseController {
     /* ───────── DELETE ONE ───────── */
 
     @DeleteMapping("/{exerciseEntryId}")
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public ResponseEntity<Void> deleteOne(
             JwtAuthenticationToken auth,
             @PathVariable Long sessionId,

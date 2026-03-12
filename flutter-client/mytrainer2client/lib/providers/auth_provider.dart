@@ -1,5 +1,7 @@
 // lib/providers/auth_provider.dart
 
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import '../services/auth_service.dart';
 
@@ -16,6 +18,32 @@ class AuthProvider extends ChangeNotifier {
 
   /// The raw (possibly expired) access token string.
   String? get token => _auth.accessToken;
+
+  String? get role {
+    final raw = _auth.accessToken;
+    if (raw == null || raw.isEmpty) return null;
+
+    try {
+      final parts = raw.split('.');
+      if (parts.length < 2) return null;
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = jsonDecode(utf8.decode(base64Url.decode(normalized)))
+          as Map<String, dynamic>;
+      final realmAccess = payload['realm_access'] as Map<String, dynamic>?;
+      final roles = (realmAccess?['roles'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString().toUpperCase())
+          .toList();
+
+      if (roles.contains('TRAINER')) return 'TRAINER';
+      if (roles.contains('CLIENT')) return 'CLIENT';
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get isTrainer => role == 'TRAINER';
+  bool get isClient => role == 'CLIENT';
 
   /// A future that yields a valid (and auto-refreshed if needed) access token.
   ///

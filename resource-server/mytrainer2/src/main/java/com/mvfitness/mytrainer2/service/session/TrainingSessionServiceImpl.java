@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service                                   // <-- only ONE @Service with this name exists now
 @RequiredArgsConstructor
@@ -42,12 +44,66 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         return u;
     }
 
+    private User userOr404(String kc) {
+        User u = users.findByKeycloakUserId(kc);
+        if (u == null) throw new IllegalArgumentException("User not found");
+        return u;
+    }
+
+    private boolean isTrainer(String kc) {
+        User user = userOr404(kc);
+        return "TRAINER".equalsIgnoreCase(user.getRole())
+                || !user.getClients().isEmpty()
+                || !user.getTrainingSessions().isEmpty()
+                || !user.getWorkoutTemplates().isEmpty()
+                || !user.getExercises().isEmpty()
+                || !user.getClientInvites().isEmpty();
+    }
+
+    private Client clientProfileOr404(String kc) {
+        User user = userOr404(kc);
+        return clients.findByAccountUser(user)
+                .orElseThrow(() -> new IllegalArgumentException("Client profile not found"));
+    }
+
+    private User accountUserOr404(String kc) {
+        User user = userOr404(kc);
+        if (user.getClientProfile() == null) {
+            throw new IllegalArgumentException("Client profile not found");
+        }
+        return user;
+    }
+
     private TrainingSession ownedOr404(String kc, Long id) {
         TrainingSession t = sessions.findWithClientsById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
         if (!t.getTrainer().getKeycloakUserId().equals(kc))
             throw new IllegalArgumentException("Session not found");
         return t;
+    }
+
+    private List<Client> ownedClientsOr404(User trainer, List<Long> clientIds) {
+        if (clientIds == null || clientIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Client> found = clients.findAllById(clientIds);
+        if (found.size() != clientIds.size()) {
+            throw new IllegalArgumentException("One or more clients not found");
+        }
+
+        boolean invalidOwnership = found.stream()
+                .anyMatch(client -> client.getUser() == null || !trainer.getId().equals(client.getUser().getId()));
+        if (invalidOwnership) {
+            throw new IllegalArgumentException("One or more clients not found");
+        }
+
+        Map<Long, Client> byId = found.stream()
+                .collect(Collectors.toMap(Client::getId, Function.identity()));
+
+        return clientIds.stream()
+                .map(byId::get)
+                .toList();
     }
 
     /* ───────────────── list / get ──────────────────────────────────── */
@@ -63,17 +119,28 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
             default          -> Sort.by("startTime").descending();
         };
 
-        Page<TrainingSession> p = sessions
-                .findByTrainerAndSessionNameContainingIgnoreCase(
-                        trainerOr404(kc), (q == null ? "" : q),
-                        PageRequest.of(page, size, order));
+        Page<TrainingSession> p;
+        if (isTrainer(kc)) {
+            p = sessions.findByTrainerAndSessionNameContainingIgnoreCase(
+                    trainerOr404(kc), (q == null ? "" : q),
+                    PageRequest.of(page, size, order));
+        } else {
+            p = sessions.findDistinctByClients_AccountUserAndSessionNameContainingIgnoreCase(
+                    accountUserOr404(kc), (q == null ? "" : q),
+                    PageRequest.of(page, size, order));
+        }
 
         return p.map(TrainingSessionMapper::toDto);
     }
 
     @Override @Transactional(readOnly = true)
     public TrainingSessionDto get(String kc, Long id) {
-        return TrainingSessionMapper.toDto( ownedOr404(kc, id) );
+        if (isTrainer(kc)) {
+            return TrainingSessionMapper.toDto(ownedOr404(kc, id));
+        }
+        TrainingSession session = sessions.findWithClientsByIdAndClients_AccountUser(id, accountUserOr404(kc))
+                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+        return TrainingSessionMapper.toDto(session);
     }
 
     /* ───────────────── create ──────────────────────────────────────── */
@@ -84,12 +151,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         /* 1) base entities */
         User trainer = trainerOr404(kc);
 
-        List<Client> clientRefs = (d.clientIds() == null || d.clientIds().isEmpty())
-                ? List.of()
-                : clients.findAllById(d.clientIds());
-
-        if (d.clientIds() != null && clientRefs.size() != d.clientIds().size())
-            throw new IllegalArgumentException("One or more clients not found");
+        List<Client> clientRefs = ownedClientsOr404(trainer, d.clientIds());
 
         WorkoutTemplate tpl = (d.workoutTemplateId() == null) ? null
                 : templates.findById(d.workoutTemplateId())
@@ -111,12 +173,15 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                 .isCompleted(Boolean.FALSE)
                 .build();
 
-        /* 3) deep-clone template → instances (sets included) */
+        /* 3) persist shell first so workout instances are built from a managed session */
+        session = sessions.save(session);
+
+        /* 4) deep-clone template → instances (sets included) */
         if (tpl != null && !clientRefs.isEmpty()) {
-            injectDeepClone(session, tpl);
+            injectDeepClone(session, tpl, clientRefs);
         }
 
-        /* 4) persist (+ cascades) */
+        /* 5) persist (+ cascades) */
         return TrainingSessionMapper.toDto(sessions.save(session));
     }
 
@@ -138,9 +203,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                     .toList();
 
             if (!currentClientIds.equals(requestedClientIds)) {
-                List<Client> newClients = clients.findAllById(d.clientIds());
-                if (newClients.size() != d.clientIds().size())
-                    throw new IllegalArgumentException("One or more clients not found");
+                List<Client> newClients = ownedClientsOr404(trainerOr404(kc), d.clientIds());
                 s.getClients().clear();
                 s.getClients().addAll(newClients);
             }
@@ -158,7 +221,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
 
             /* rebuild instances */
             s.getWorkoutInstances().clear();
-            injectDeepClone(s, tpl);
+            injectDeepClone(s, tpl, new ArrayList<>(s.getClients()));
         } else if (d.workoutTemplateId() == null && s.getWorkoutTemplate() != null) {
             s.setWorkoutTemplate(null);
         }
@@ -191,7 +254,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
 
     /* ───────────────── private deep-clone helper ───────────────────── */
 
-    private void injectDeepClone(TrainingSession session, WorkoutTemplate tpl) {
+    private void injectDeepClone(TrainingSession session, WorkoutTemplate tpl, List<Client> clientsForInstances) {
 
         /* load template exercises + their sets in one go */
         List<WorkoutTemplateExercise> exTpls =
@@ -199,13 +262,14 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         exTpls.forEach(e -> e.getExerciseHasSets()
                 .forEach(sh -> sh.getSetData().size())); // init LAZY
 
-        for (Client cli : session.getClients()) {
+        for (Client cli : clientsForInstances) {
 
             WorkoutInstance wi = WorkoutInstance.builder()
                     .trainingSession(session)
                     .client(cli)
                     .workoutTemplate(tpl)
                     .build();
+            wi = instanceRepo.save(wi);
             session.getWorkoutInstances().add(wi);
 
             for (WorkoutTemplateExercise te : exTpls) {
@@ -218,10 +282,11 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                         .setParams(te.getSetParams())
                         .notes(te.getNotes())
                         .build();
+                ie = instanceExRepo.save(ie);
                 wi.getWorkoutInstanceExercises().add(ie);
 
                 /* clone every set (+ per-set data) */
-                te.getExerciseHasSets().forEach(ehs -> {
+                for (ExerciseHasSets ehs : te.getExerciseHasSets()) {
 
                     WorkoutInstanceExerciseHasSets ies = WorkoutInstanceExerciseHasSets.builder()
                             .workoutInstanceExercise(ie)
@@ -230,16 +295,18 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                             .setContextType(ehs.getSetContextType())
                             .notes(ehs.getNotes())
                             .build();
+                    ies = instanceSetRepo.save(ies);
                     ie.getWorkoutInstanceExerciseHasSets().add(ies);
 
-                    ehs.getSetData().forEach(sd -> {
+                    for (SetData sd : ehs.getSetData()) {
                         SetData copy = SetData.builder()
                                 .type(sd.getType())
                                 .value(sd.getValue())
                                 .build();
                         ies.addSetData(copy);
-                    });
-                });
+                        setDataRepo.save(copy);
+                    }
+                }
             }
         }
     }
@@ -256,13 +323,13 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         if (to.isBefore(from))
             throw new IllegalArgumentException("`to` must be ≥ `from`");
 
-        var trainer = trainerOr404(kc);
-
         // inclusive range → add one day, then < nextDay00:00
         LocalDateTime fromTs = from.atStartOfDay();
         LocalDateTime toTs   = to.plusDays(1).atStartOfDay().minusNanos(1);
 
-        List<Object[]> raw = sessions.countPerDay(trainer, fromTs, toTs);
+        List<Object[]> raw = isTrainer(kc)
+                ? sessions.countPerDay(trainerOr404(kc), fromTs, toTs)
+                : sessions.countPerDayForAccountUser(accountUserOr404(kc), fromTs, toTs);
 
         Map<LocalDate,Long> tmp = new HashMap<>();
         for (Object[] row : raw) {
@@ -286,12 +353,16 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                                                int page,
                                                int size) {
 
-        var trainer = trainerOr404(kc);
         LocalDateTime from = day.atStartOfDay();
         LocalDateTime to   = day.plusDays(1).atStartOfDay().minusNanos(1);
 
-        Page<TrainingSession> p = sessions.findByTrainerAndStartTimeBetween(
-                trainer, from, to, PageRequest.of(page, size, Sort.by("startTime").ascending()));
+        Page<TrainingSession> p = isTrainer(kc)
+                ? sessions.findByTrainerAndStartTimeBetween(
+                        trainerOr404(kc), from, to,
+                        PageRequest.of(page, size, Sort.by("startTime").ascending()))
+                : sessions.findDistinctByClients_AccountUserAndStartTimeBetween(
+                        accountUserOr404(kc), from, to,
+                        PageRequest.of(page, size, Sort.by("startTime").ascending()));
 
         return p.map(TrainingSessionMapper::toDto);
     }

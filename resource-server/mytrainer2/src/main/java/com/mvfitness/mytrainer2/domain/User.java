@@ -17,7 +17,8 @@ import java.util.List;
 @ToString(exclude = {
         "clients", "programs", "programTemplates", "trainingSessions",
         "exercises", "nutritionPlanTemplates", "nutritionPlans",
-        "feedbacks", "changeLogs", "userAchievements", "workoutTemplates"
+        "feedbacks", "changeLogs", "userAchievements", "workoutTemplates",
+        "clientInvites"
 })
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class User extends BaseTimestampedEntity {
@@ -42,6 +43,9 @@ public class User extends BaseTimestampedEntity {
     // 1) One User can have many Clients
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Client> clients = new ArrayList<>();
+
+    @OneToOne(mappedBy = "accountUser")
+    private Client clientProfile;
 
     // 2) One User (trainer) can have many Programs
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -85,5 +89,8 @@ public class User extends BaseTimestampedEntity {
 
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TrainerClients> trainerClients = new ArrayList<>();
+
+    @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ClientInvite> clientInvites = new ArrayList<>();
     // (No timestamps here; now inherited from BaseTimestampedEntity)
 }

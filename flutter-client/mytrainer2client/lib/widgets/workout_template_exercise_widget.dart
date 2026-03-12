@@ -16,6 +16,9 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
   final WorkoutTemplateExercise wte;
   final VoidCallback onChanged;
   final bool showCompletion;
+  final bool canEditExerciseNotes;
+  final bool canEditSetNotes;
+  final bool isReadOnly;
 
   const WorkoutTemplateExerciseWidget({
     super.key,
@@ -23,6 +26,9 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
     required this.wte,
     required this.onChanged,
     this.showCompletion = false,
+    this.canEditExerciseNotes = true,
+    this.canEditSetNotes = true,
+    this.isReadOnly = false,
   });
 
   @override
@@ -229,18 +235,19 @@ class _WorkoutTemplateExerciseWidgetState
                     ],
                   ),
                 ),
-                IconButton(
-                  tooltip: widget.wte.notes?.trim().isNotEmpty == true
-                      ? 'Edit pinned note'
-                      : 'Add pinned note',
-                  onPressed: _editExerciseNote,
-                  icon: Icon(
-                    Icons.push_pin_outlined,
-                    color: widget.wte.notes?.trim().isNotEmpty == true
-                        ? const Color(0xFFEF6C00)
-                        : Colors.grey[600],
+                if (widget.canEditExerciseNotes)
+                  IconButton(
+                    tooltip: widget.wte.notes?.trim().isNotEmpty == true
+                        ? 'Edit pinned note'
+                        : 'Add pinned note',
+                    onPressed: _editExerciseNote,
+                    icon: Icon(
+                      Icons.push_pin_outlined,
+                      color: widget.wte.notes?.trim().isNotEmpty == true
+                          ? const Color(0xFFEF6C00)
+                          : Colors.grey[600],
+                    ),
                   ),
-                ),
               ],
             ),
             if (widget.wte.notes?.trim().isNotEmpty == true) ...[
@@ -275,7 +282,9 @@ class _WorkoutTemplateExerciseWidgetState
                   for (var i = 0; i < _localSets.length; i++) ...[
                     Dismissible(
                       key: ValueKey(_setIds[i]),
-                      direction: DismissDirection.endToStart,
+                      direction: widget.isReadOnly
+                          ? DismissDirection.none
+                          : DismissDirection.endToStart,
                       background: Container(
                         decoration: BoxDecoration(
                           color: Colors.red,
@@ -288,7 +297,7 @@ class _WorkoutTemplateExerciseWidgetState
                           style: const TextStyle(color: Colors.white),
                         ),
                       ),
-                      onDismissed: (_) => _removeSet(i),
+                      onDismissed: widget.isReadOnly ? null : (_) => _removeSet(i),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
@@ -320,29 +329,34 @@ class _WorkoutTemplateExerciseWidgetState
                                     ),
                                   ),
                                 ),
-                                IconButton(
-                                  onPressed: () => _editSetNote(i),
-                                  visualDensity: VisualDensity.compact,
-                                  iconSize: 18,
-                                  splashRadius: 18,
-                                  icon: Icon(
-                                    Icons.push_pin_outlined,
-                                    color: _localSets[i].notes?.trim().isNotEmpty == true
-                                        ? const Color(0xFFEF6C00)
-                                        : Colors.grey[600],
+                                if (widget.canEditSetNotes)
+                                  IconButton(
+                                    onPressed: widget.isReadOnly
+                                        ? null
+                                        : () => _editSetNote(i),
+                                    visualDensity: VisualDensity.compact,
+                                    iconSize: 18,
+                                    splashRadius: 18,
+                                    icon: Icon(
+                                      Icons.push_pin_outlined,
+                                      color: _localSets[i].notes?.trim().isNotEmpty == true
+                                          ? const Color(0xFFEF6C00)
+                                          : Colors.grey[600],
+                                    ),
                                   ),
-                                ),
                                 if (widget.showCompletion)
                                   Checkbox(
                                     value: _localSets[i].completed,
                                     visualDensity: VisualDensity.compact,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _localSets[i].completed = value ?? false;
-                                      });
-                                      widget.wte.sets = List.from(_localSets);
-                                      widget.onChanged();
-                                    },
+                                    onChanged: widget.isReadOnly
+                                        ? null
+                                        : (value) {
+                                            setState(() {
+                                              _localSets[i].completed = value ?? false;
+                                            });
+                                            widget.wte.sets = List.from(_localSets);
+                                            widget.onChanged();
+                                          },
                                   ),
                               ],
                             ),
@@ -368,7 +382,9 @@ class _WorkoutTemplateExerciseWidgetState
                             Row(
                               children: [
                                 InkWell(
-                                  onTap: () => _pickSetContext(i),
+                                  onTap: widget.isReadOnly
+                                      ? null
+                                      : () => _pickSetContext(i),
                                   borderRadius: BorderRadius.circular(999),
                                   child: Padding(
                                     padding: const EdgeInsets.only(right: 10),
@@ -384,16 +400,19 @@ class _WorkoutTemplateExerciseWidgetState
                                             _localSets[i].values[key]?.toStringAsFixed(0),
                                         decoration:
                                             InputDecoration(labelText: _label(key, loc)),
+                                        readOnly: widget.isReadOnly,
                                         keyboardType: TextInputType.number,
                                         inputFormatters: [
                                           FilteringTextInputFormatter.digitsOnly
                                         ],
-                                        onChanged: (s) {
-                                          _localSets[i].values[key] =
-                                              double.tryParse(s) ?? 0.0;
-                                          widget.wte.sets = List.from(_localSets);
-                                          widget.onChanged();
-                                        },
+                                        onChanged: widget.isReadOnly
+                                            ? null
+                                            : (s) {
+                                                _localSets[i].values[key] =
+                                                    double.tryParse(s) ?? 0.0;
+                                                widget.wte.sets = List.from(_localSets);
+                                                widget.onChanged();
+                                              },
                                       ),
                                     ),
                                   ),
@@ -409,7 +428,7 @@ class _WorkoutTemplateExerciseWidgetState
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: _addSet,
+                      onPressed: widget.isReadOnly ? null : _addSet,
                       icon: const Icon(Icons.add),
                       label: Text(loc.add_set),
                       style: FilledButton.styleFrom(

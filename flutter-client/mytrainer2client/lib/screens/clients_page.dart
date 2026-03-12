@@ -16,6 +16,7 @@ import '../models/client_folder.dart';
 import '../widgets/client_widget.dart';
 import '../widgets/client_form_dialog.dart';
 import '../widgets/client_folder_form_dialog.dart';
+import '../widgets/client_invite_dialog.dart';
 import '../widgets/reorder_clients_panel.dart';
 
 class ClientsPage extends StatefulWidget {
@@ -66,6 +67,13 @@ class _ClientsPageState extends State<ClientsPage> {
       _searchCtrl.clear();
       await _loadAll(page: 0, search: '', sort: 'newest');
     }
+  }
+
+  Future<void> _openInviteDialog(Client client) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ClientInviteDialog(client: client),
+    );
   }
 
   Future<void> _openFolderDialog({ClientFolder? folder}) async {
@@ -264,6 +272,7 @@ class _ClientsPageState extends State<ClientsPage> {
                         clients: sorted
                             .where((client) => client.folderId == folder.id)
                             .toList(),
+                        onInvite: _openInviteDialog,
                         onEdit: () => _openFolderDialog(folder: folder),
                         onDelete: () => _deleteFolder(folder),
                       ),
@@ -272,6 +281,7 @@ class _ClientsPageState extends State<ClientsPage> {
                     clients: folderProv.supported
                         ? sorted.where((client) => client.folderId == null).toList()
                         : sorted,
+                    onInvite: _openInviteDialog,
                   ),
                 ],
               ),
@@ -291,12 +301,14 @@ class _ClientsPageState extends State<ClientsPage> {
 class _ClientFolderSection extends StatelessWidget {
   final ClientFolder folder;
   final List<Client> clients;
+  final ValueChanged<Client> onInvite;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ClientFolderSection({
     required this.folder,
     required this.clients,
+    required this.onInvite,
     required this.onEdit,
     required this.onDelete,
   });
@@ -355,6 +367,7 @@ class _ClientFolderSection extends StatelessWidget {
             ...clients.map(
               (client) => ClientWidget(
                 client: client,
+                onInviteTap: () => onInvite(client),
                 onTap: () => Navigator.pushNamed(
                   context,
                   '/client',
@@ -370,8 +383,12 @@ class _ClientFolderSection extends StatelessWidget {
 
 class _UngroupedClientsSection extends StatelessWidget {
   final List<Client> clients;
+  final ValueChanged<Client> onInvite;
 
-  const _UngroupedClientsSection({required this.clients});
+  const _UngroupedClientsSection({
+    required this.clients,
+    required this.onInvite,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -401,6 +418,7 @@ class _UngroupedClientsSection extends StatelessWidget {
             ...clients.map(
               (client) => ClientWidget(
                 client: client,
+                onInviteTap: () => onInvite(client),
                 onTap: () => Navigator.pushNamed(
                   context,
                   '/client',

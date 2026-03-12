@@ -26,7 +26,8 @@ android {
 
         manifestPlaceholders += [
                 // this lets us write ${appAuthRedirectScheme} in the AndroidManifest.xml
-                appAuthRedirectScheme: "com.mvfitness.mytrainer2client"
+                appAuthRedirectScheme: "com.mvfitness.mytrainer2client",
+                appInviteScheme      : "mytrainer"
         ]
     }
 

@@ -7,11 +7,13 @@ import '../models/client.dart';
 class ClientWidget extends StatefulWidget {
   final Client client;
   final VoidCallback? onTap;
+  final VoidCallback? onInviteTap;
 
   const ClientWidget({
     super.key,
     required this.client,
     this.onTap,
+    this.onInviteTap,
   });
 
   @override
@@ -85,6 +87,12 @@ class _ClientWidgetState extends State<ClientWidget> {
                 ],
               ),
             ),
+            if (widget.onInviteTap != null)
+              IconButton(
+                tooltip: 'Invite client to onboard',
+                onPressed: widget.onInviteTap,
+                icon: const Icon(Icons.person_add_alt_1_outlined),
+              ),
             const Icon(Icons.chevron_right, size: 20),
           ],
         ),

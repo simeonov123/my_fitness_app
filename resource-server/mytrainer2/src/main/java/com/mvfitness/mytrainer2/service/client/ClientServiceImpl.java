@@ -3,6 +3,7 @@ package com.mvfitness.mytrainer2.service.client;
 
 import com.mvfitness.mytrainer2.domain.Client;
 import com.mvfitness.mytrainer2.domain.ClientFolder;
+import com.mvfitness.mytrainer2.domain.TrainingSession;
 import com.mvfitness.mytrainer2.domain.User;
 import com.mvfitness.mytrainer2.dto.ClientDto;
 import com.mvfitness.mytrainer2.mapper.ClientMapper;
@@ -11,9 +12,10 @@ import com.mvfitness.mytrainer2.repository.ClientFolderRepository;
 import com.mvfitness.mytrainer2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
-import org.springframework.jdbc.core.metadata.HsqlTableMetaDataProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +40,7 @@ public class ClientServiceImpl implements ClientService {
         Client client = repo.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found or not yours"));
 
-        if (!trainer.getId().equals(trainer.getId()))
+        if (client.getUser() == null || !trainer.getId().equals(client.getUser().getId()))
             throw new IllegalArgumentException("Client not found or not yours");
 
         return  client;
@@ -103,13 +105,25 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public void delete(String kcUserId, Long clientId) {
-        try{
+        Client client = ownedClientOr404(kcUserId, clientId);
+        User trainer = client.getUser();
+        User accountUser = client.getAccountUser();
 
-            repo.delete(ownedClientOr404(kcUserId, clientId));
-        } catch (Exception e) {
-            System.out.println("Error deleting client: " + e.getMessage());
-            throw new IllegalArgumentException("Client not found or not yours");
+        for (TrainingSession session : new ArrayList<>(client.getTrainingSessions())) {
+            session.getClients().removeIf(c -> c.getId().equals(client.getId()));
         }
 
+        if (trainer != null) {
+            trainer.getClients().removeIf(c -> c.getId().equals(client.getId()));
+        }
+        if (accountUser != null) {
+            accountUser.setClientProfile(null);
+        }
+
+        client.setAccountUser(null);
+        client.setFolder(null);
+        client.setUser(null);
+
+        repo.delete(client);
     }
 }

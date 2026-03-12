@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-@PreAuthorize("hasRole('TRAINER')")
 @RestController @RequiredArgsConstructor
 @RequestMapping("/trainer/training-sessions")
 public class TrainingSessionController {
@@ -22,6 +21,7 @@ public class TrainingSessionController {
     private static String kc(JwtAuthenticationToken a) { return a.getToken().getSubject(); }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public Page<TrainingSessionDto> list(
             JwtAuthenticationToken auth,
             @RequestParam(required=false) String q,
@@ -33,6 +33,7 @@ public class TrainingSessionController {
 
 
     @GetMapping("/calendar")
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public List<CalendarDayCountDto> countsBetween(
             JwtAuthenticationToken auth,
             @RequestParam LocalDate from,
@@ -41,6 +42,7 @@ public class TrainingSessionController {
     }
 
     @GetMapping("/day/{day}")
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public Page<TrainingSessionDto> listDay(
             JwtAuthenticationToken auth,
             @PathVariable LocalDate day,
@@ -49,17 +51,20 @@ public class TrainingSessionController {
         return svc.listForDay(kc(auth), day, page, size);
     }
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public TrainingSessionDto get(JwtAuthenticationToken auth, @PathVariable Long id) {
         return svc.get(kc(auth), id);
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('TRAINER')")
     public TrainingSessionDto create(JwtAuthenticationToken auth,
                                      @RequestBody TrainingSessionDto dto) {
         return svc.create(kc(auth), dto);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('TRAINER')")
     public TrainingSessionDto update(JwtAuthenticationToken auth,
                                      @PathVariable Long id,
                                      @RequestBody TrainingSessionDto dto) {
@@ -67,6 +72,7 @@ public class TrainingSessionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('TRAINER')")
     public ResponseEntity<Void> delete(JwtAuthenticationToken auth, @PathVariable Long id) {
         svc.delete(kc(auth), id);
         return ResponseEntity.noContent().build();
