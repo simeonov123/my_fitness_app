@@ -117,6 +117,7 @@ public class WorkoutInstanceExerciseServiceImpl
             String kc, Long sessionId, List<WorkoutInstanceExerciseDto> dtos) {
 
         var session = accessibleSessionOr404(kc, sessionId);
+        final boolean trainer = isTrainer(kc);
         if (!isTrainer(kc) && Boolean.TRUE.equals(session.getIsCompleted())) {
             throw new IllegalArgumentException("Completed sessions are read-only for clients");
         }
@@ -125,35 +126,36 @@ public class WorkoutInstanceExerciseServiceImpl
         Map<Long, WorkoutInstance> workoutInstancesByClientId = session.getWorkoutInstances().stream()
                 .collect(Collectors.toMap(wi -> wi.getClient().getId(), Function.identity()));
 
-        if (!isTrainer(kc)) {
+        WorkoutInstance ownInstance = null;
+        Long ownClientId = null;
+
+        if (!trainer) {
             User accountUser = accountUserOr404(kc);
-            boolean invalidTarget = dtos.stream().anyMatch(dto ->
-                    dto.clientId() != null && session.getClients().stream()
-                            .filter(c -> c.getId().equals(dto.clientId()))
-                            .noneMatch(c -> c.getAccountUser() != null
-                                    && c.getAccountUser().getId().equals(accountUser.getId())));
-            if (invalidTarget) {
-                throw new IllegalArgumentException("Cannot modify another client's workout");
-            }
+            ownInstance = session.getWorkoutInstances().stream()
+                    .filter(wi -> wi.getClient() != null
+                            && wi.getClient().getAccountUser() != null
+                            && wi.getClient().getAccountUser().getId().equals(accountUser.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Workout instance not found for client entry"));
+            ownClientId = ownInstance.getClient().getId();
+            final Long ownClientIdForFilter = ownClientId;
+            final Long ownWorkoutInstanceId = ownInstance.getId();
+
+            dtos = dtos.stream()
+                    .filter(dto ->
+                            (dto.clientId() == null || dto.clientId().equals(ownClientIdForFilter))
+                                    && (dto.workoutInstanceId() == null
+                                    || dto.workoutInstanceId().equals(ownWorkoutInstanceId)))
+                    .toList();
         }
 
         /* 1) clear managed child collections, then nuke existing rows */
-        if (isTrainer(kc)) {
+        if (trainer) {
             for (WorkoutInstance wi : session.getWorkoutInstances()) {
                 wi.getWorkoutInstanceExercises().clear();
             }
             repo.deleteByWorkoutInstance_TrainingSession_Id(sessionId);
         } else {
-            User accountUser = accountUserOr404(kc);
-            WorkoutInstance ownInstance = session.getWorkoutInstances().stream()
-                    .filter(wi -> wi.getClient() != null
-                            && wi.getClient().getAccountUser() != null
-                            && wi.getClient().getAccountUser().getId().equals(accountUser.getId()))
-                    .findFirst()
-                    .orElse(null);
-            if (ownInstance == null) {
-                throw new IllegalArgumentException("Workout instance not found for client entry");
-            }
             ownInstance.getWorkoutInstanceExercises().clear();
             repo.deleteByWorkoutInstance_Id(ownInstance.getId());
         }
@@ -162,11 +164,15 @@ public class WorkoutInstanceExerciseServiceImpl
         /* 2) recreate per client-specific WorkoutInstance */
         for (WorkoutInstanceExerciseDto dto : dtos) {
             WorkoutInstance wi = null;
-            if (dto.workoutInstanceId() != null) {
-                wi = workoutInstancesById.get(dto.workoutInstanceId());
-            }
-            if (wi == null && dto.clientId() != null) {
-                wi = workoutInstancesByClientId.get(dto.clientId());
+            if (trainer) {
+                if (dto.workoutInstanceId() != null) {
+                    wi = workoutInstancesById.get(dto.workoutInstanceId());
+                }
+                if (wi == null && dto.clientId() != null) {
+                    wi = workoutInstancesByClientId.get(dto.clientId());
+                }
+            } else {
+                wi = ownInstance;
             }
             if (wi == null) {
                 throw new IllegalArgumentException("Workout instance not found for client entry");

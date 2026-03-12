@@ -30,7 +30,7 @@ class _SplashState extends State<SplashPage> {
 
     Navigator.pushReplacementNamed(
       context,
-      pendingInvite != null && pendingInvite.isNotEmpty && !auth.isAuthenticated
+      pendingInvite != null && pendingInvite.isNotEmpty
           ? '/onboard/client?token=$pendingInvite'
           : auth.isAuthenticated
               ? '/home'

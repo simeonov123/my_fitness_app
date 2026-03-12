@@ -41,6 +41,7 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
     }
 
     try {
+      await _pending.saveToken(token);
       final validation = await _api.validate(token);
       if (!mounted) return;
       setState(() {
@@ -145,6 +146,38 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
           const Icon(Icons.error_outline, size: 40),
           const SizedBox(height: 16),
           Text(_error!),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: _submitting
+                    ? null
+                    : () {
+                        setState(() {
+                          _loading = true;
+                          _error = null;
+                        });
+                        _load();
+                      },
+                child: const Text('Try again'),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: _submitting
+                    ? null
+                    : () async {
+                        await _pending.clear();
+                        if (!mounted) return;
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/login',
+                          (_) => false,
+                        );
+                      },
+                child: const Text('Start over'),
+              ),
+            ],
+          ),
         ],
       );
     }

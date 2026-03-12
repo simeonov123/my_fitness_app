@@ -31,17 +31,56 @@ class ActiveWorkoutService {
   static const _storage = FlutterSecureStorage();
   static const _key = 'active_workout_snapshot';
 
-  Future<ActiveWorkoutSnapshot?> load() async {
+  Future<Map<int, ActiveWorkoutSnapshot>> loadAll() async {
     final raw = await _storage.read(key: _key);
-    if (raw == null || raw.isEmpty) return null;
-    return ActiveWorkoutSnapshot.fromJson(
-      jsonDecode(raw) as Map<String, dynamic>,
+    if (raw == null || raw.isEmpty) return {};
+    final decoded = jsonDecode(raw);
+    if (decoded is Map<String, dynamic> && decoded['sessionId'] != null) {
+      final legacy = ActiveWorkoutSnapshot.fromJson(decoded);
+      return {legacy.sessionId: legacy};
+    }
+    if (decoded is! Map<String, dynamic>) return {};
+    return decoded.map((key, value) {
+      final sessionId = int.tryParse(key) ?? 0;
+      return MapEntry(
+        sessionId,
+        ActiveWorkoutSnapshot.fromJson(value as Map<String, dynamic>),
+      );
+    })..remove(0);
+  }
+
+  Future<ActiveWorkoutSnapshot?> load(int sessionId) async =>
+      (await loadAll())[sessionId];
+
+  Future<void> save(ActiveWorkoutSnapshot snapshot) {
+    return _writeAllWith(snapshot);
+  }
+
+  Future<void> _writeAllWith(ActiveWorkoutSnapshot snapshot) async {
+    final all = await loadAll();
+    all[snapshot.sessionId] = snapshot;
+    await _storage.write(
+      key: _key,
+      value: jsonEncode(
+        all.map((key, value) => MapEntry(key.toString(), value.toJson())),
+      ),
     );
   }
 
-  Future<void> save(ActiveWorkoutSnapshot snapshot) {
-    return _storage.write(key: _key, value: jsonEncode(snapshot.toJson()));
+  Future<void> clear(int sessionId) async {
+    final all = await loadAll();
+    all.remove(sessionId);
+    if (all.isEmpty) {
+      await _storage.delete(key: _key);
+      return;
+    }
+    await _storage.write(
+      key: _key,
+      value: jsonEncode(
+        all.map((key, value) => MapEntry(key.toString(), value.toJson())),
+      ),
+    );
   }
 
-  Future<void> clear() => _storage.delete(key: _key);
+  Future<void> clearAll() => _storage.delete(key: _key);
 }

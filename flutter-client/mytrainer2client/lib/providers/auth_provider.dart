@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import '../services/auth_service.dart';
+import '../services/active_workout_service.dart';
 
 /// A [ChangeNotifier] that wraps our singleton [AuthService].
 ///
@@ -75,6 +76,7 @@ class AuthProvider extends ChangeNotifier {
   ///
   /// After calling, [isAuthenticated] will become `false`. Fires [notifyListeners].
   Future<void> logout() async {
+    await ActiveWorkoutService().clearAll();
     await _auth.logout();
     notifyListeners();
   }

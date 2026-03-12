@@ -114,7 +114,7 @@ class _TrainingSessionDetailPageState
   }
 
   Future<void> _restoreActiveWorkout() async {
-    final snapshot = await _activeWorkout.load();
+    final snapshot = await _activeWorkout.load(widget.sessionId);
     _ticker?.cancel();
     _activeSnapshot = snapshot;
 
@@ -389,9 +389,6 @@ class _TrainingSessionDetailPageState
   }
 
   Widget _activityCard({required bool isClient}) {
-    final runningElsewhere =
-        _activeSnapshot != null && !_isActiveForCurrentSession;
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -435,13 +432,6 @@ class _TrainingSessionDetailPageState
                 ),
               ],
             ),
-            if (runningElsewhere) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Another workout is already running: ${_activeSnapshot!.sessionName}',
-                style: TextStyle(color: Colors.orange[800]),
-              ),
-            ],
             if (!isClient) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -450,7 +440,7 @@ class _TrainingSessionDetailPageState
                 children: [
                   if (!_isActiveForCurrentSession)
                     ElevatedButton.icon(
-                      onPressed: runningElsewhere || _busyAction ? null : _startWorkout,
+                      onPressed: _busyAction ? null : _startWorkout,
                       icon: const Icon(Icons.play_arrow),
                       label: const Text('Start'),
                     ),
@@ -890,7 +880,7 @@ class _TrainingSessionDetailPageState
       });
       if (mounted) setState(() {});
     } catch (e) {
-      await _activeWorkout.clear();
+      await _activeWorkout.clear(widget.sessionId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to start workout: $e')),
@@ -901,7 +891,7 @@ class _TrainingSessionDetailPageState
   Future<void> _discardWorkout() async {
     setState(() => _busyAction = true);
     try {
-      await _activeWorkout.clear();
+      await _activeWorkout.clear(widget.sessionId);
       await _notifications.cancelActiveWorkout();
       _ticker?.cancel();
       _activeSnapshot = null;
@@ -956,7 +946,7 @@ class _TrainingSessionDetailPageState
       _session = await api.update(token: tok, id: _session!.id, dto: dto);
       _dirtyMeta = false;
 
-      await _activeWorkout.clear();
+      await _activeWorkout.clear(widget.sessionId);
       await _notifications.cancelActiveWorkout();
       _ticker?.cancel();
       _activeSnapshot = null;
