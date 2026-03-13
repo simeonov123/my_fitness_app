@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/session.dart';
-import '../providers/auth_provider.dart';
 import '../providers/training_sessions_provider.dart';
 
 class SessionStore {
@@ -24,10 +23,7 @@ class SessionStore {
 
   /// Removes the pill *and* dispatches a backend delete.
   Future<void> remove(BuildContext ctx, int id) async {
-    final tok = ctx.read<AuthProvider>().token!;
-    await ctx
-        .read<TrainingSessionsProvider>()
-        .deleteOne(token: tok, id: id);
+    await ctx.read<TrainingSessionsProvider>().deleteOne(id: id);
 
     _notifier.value =
         _notifier.value.where((e) => e.id != id).toList();

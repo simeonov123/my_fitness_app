@@ -22,7 +22,8 @@ class _SplashState extends State<SplashPage> {
   }
 
   Future<void> _boot(AuthProvider auth) async {
-    final pendingInvite = await PendingClientInviteService().readToken();
+    final pendingInvite =
+        await PendingClientInviteService().readToken() ?? Uri.base.queryParameters['token'];
     if (!mounted) return;
 
     await auth.loginOrSignup(interactive: false);
@@ -33,7 +34,7 @@ class _SplashState extends State<SplashPage> {
       pendingInvite != null && pendingInvite.isNotEmpty
           ? '/onboard/client?token=$pendingInvite'
           : auth.isAuthenticated
-              ? '/home'
+              ? (auth.role == null ? '/pending-approval' : '/home')
               : '/login',
     );
   }

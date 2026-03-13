@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/client_invite_validation.dart';
 import '../providers/auth_provider.dart';
@@ -22,6 +24,7 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
   ClientInviteValidation? _validation;
   bool _loading = true;
   bool _submitting = false;
+  bool _autoAcceptTried = false;
   String? _error;
 
   @override
@@ -48,6 +51,7 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
         _validation = validation;
         _loading = false;
       });
+      _maybeAutoAccept(validation);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -55,6 +59,36 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
         _error = e.toString();
       });
     }
+  }
+
+  void _maybeAutoAccept(ClientInviteValidation validation) {
+    if (!mounted) return;
+
+    final auth = context.read<AuthProvider>();
+
+    if (auth.isAuthenticated && !auth.isTrainer && auth.role == null && validation.alreadyLinked) {
+      Future.microtask(() {
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/pending-approval',
+          (_) => false,
+        );
+      });
+      return;
+    }
+
+    if (_autoAcceptTried) return;
+
+    final shouldAutoAccept = auth.isAuthenticated &&
+        !auth.isTrainer &&
+        !validation.alreadyLinked &&
+        validation.valid;
+
+    if (!shouldAutoAccept) return;
+
+    _autoAcceptTried = true;
+    Future.microtask(_accept);
   }
 
   Future<void> _beginAuth() async {
@@ -99,7 +133,12 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
         _submitting = false;
       });
       if (accepted.valid || accepted.alreadyLinked) {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+        final auth = context.read<AuthProvider>();
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          auth.role == null ? '/pending-approval' : '/home',
+          (_) => false,
+        );
       }
     } catch (e) {
       if (!mounted) return;
@@ -110,10 +149,66 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
     }
   }
 
+  Uri _mobileInviteUri(String token) {
+    final isAndroidWeb = kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (isAndroidWeb) {
+      return Uri.parse(
+        'intent://invite/client?token=$token#Intent;scheme=mytrainer;package=com.mvfitness.mytrainer2client;end',
+      );
+    }
+    return Uri.parse('mytrainer://invite/client?token=$token');
+  }
+
+  Future<void> _openInApp() async {
+    final token = widget.token;
+    if (token == null || token.isEmpty) return;
+    final uri = _mobileInviteUri(token);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _goToPendingApproval() async {
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/pending-approval',
+      (_) => false,
+    );
+  }
+
+  Future<void> _logoutToLogin() async {
+    await _pending.clear();
+    await context.read<AuthProvider>().logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (_) => false,
+    );
+  }
+
+  Future<void> _logoutTrainerAndReturnToInvite() async {
+    final token = widget.token;
+    final redirectPath =
+        token == null || token.isEmpty ? '/login' : '/onboard/client?token=$token';
+
+    setState(() => _submitting = true);
+    await context.read<AuthProvider>().logout(
+      clearPendingInvite: false,
+      postLogoutRedirectPath: redirectPath,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final isTrainer = auth.isTrainer;
+    final invite = _validation;
+
+    if (invite != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _maybeAutoAccept(invite);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Client onboarding')),
@@ -127,6 +222,7 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
                 : _buildContent(
                     isAuthenticated: auth.isAuthenticated,
                     isTrainer: isTrainer,
+                    hasApprovedRole: auth.role != null,
                   ),
           ),
         ),
@@ -137,6 +233,7 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
   Widget _buildContent({
     required bool isAuthenticated,
     required bool isTrainer,
+    required bool hasApprovedRole,
   }) {
     if (_error != null) {
       return Column(
@@ -206,8 +303,16 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
             const SizedBox(height: 16),
             if (!invite.valid) ...[
               Text('Status: ${invite.status}'),
+              const SizedBox(height: 12),
+              const Text(
+                'This invite cannot continue from this page anymore. You can return to login or use a different invite.',
+              ),
             ] else if (invite.alreadyLinked) ...[
-              const Text('This invite has already been used for a linked client account.'),
+              Text(
+                hasApprovedRole
+                    ? 'This invite is already linked to your account.'
+                    : 'Your registration was already linked. Continue to the approval status page or switch to a different account.',
+              ),
             ] else if (isTrainer) ...[
               const Text(
                 'You are currently signed in as a trainer. Sign out first, then continue with the invited client account.',
@@ -220,35 +325,58 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
               ),
             ],
             const SizedBox(height: 20),
-            if (invite.valid && !invite.alreadyLinked)
-              SizedBox(
-                width: double.infinity,
-                child: isTrainer
-                    ? OutlinedButton(
-                        onPressed: _submitting
-                            ? null
-                            : () async {
-                                await context.read<AuthProvider>().logout();
-                                if (!mounted) return;
-                                setState(() {});
-                              },
-                        child: const Text('Sign out trainer'),
-                      )
-                    : ElevatedButton(
-                        onPressed: _submitting
-                            ? null
-                            : isAuthenticated
-                                ? _accept
-                                : _beginAuth,
-                        child: Text(
-                          _submitting
-                              ? 'Processing...'
-                              : isAuthenticated
-                                  ? 'Accept invite'
-                                  : 'Sign in / Sign up',
-                        ),
-                      ),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (invite.valid && !invite.alreadyLinked)
+                  SizedBox(
+                    width: double.infinity,
+                    child: isTrainer
+                        ? OutlinedButton(
+                            onPressed: _submitting ? null : _logoutTrainerAndReturnToInvite,
+                            child: const Text('Sign out trainer'),
+                          )
+                        : ElevatedButton(
+                            onPressed: _submitting
+                                ? null
+                                : isAuthenticated
+                                    ? _accept
+                                    : _beginAuth,
+                            child: Text(
+                              _submitting
+                                  ? 'Processing...'
+                                  : isAuthenticated
+                                      ? 'Accept invite'
+                                      : 'Sign in / Sign up',
+                            ),
+                          ),
+                  ),
+                if (invite.alreadyLinked && !hasApprovedRole) ...[
+                  FilledButton(
+                    onPressed: _submitting ? null : _goToPendingApproval,
+                    child: const Text('Check approval status'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _submitting ? null : _logoutToLogin,
+                    child: const Text('Use different account'),
+                  ),
+                ],
+                if (!invite.valid) ...[
+                  OutlinedButton(
+                    onPressed: _submitting ? null : _logoutToLogin,
+                    child: const Text('Back to login'),
+                  ),
+                ],
+                if (kIsWeb && !isTrainer && invite.valid && !invite.alreadyLinked) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _submitting ? null : _openInApp,
+                    child: const Text('Open in app'),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),

@@ -28,25 +28,15 @@ class _HomePageState extends State<HomePage> {
   Future<void> _refreshForMonth() async {
     final monthFirst = DateTime(_focusedDay.year, _focusedDay.month, 1);
 
-    final auth = context.read<AuthProvider>();
     if (!mounted) return;
     final prov = context.read<TrainingSessionsProvider>();
-    final token = await auth.getValidToken();
-    if (token == null) return;
-    if (!mounted) return;
-
-    await prov.loadCounts(token: token, monthFirst: monthFirst);
+    await prov.loadCounts(monthFirst: monthFirst);
   }
 
   Future<void> _refreshForDay() async {
-    final auth = context.read<AuthProvider>();
     if (!mounted) return;
     final prov = context.read<TrainingSessionsProvider>();
-    final token = await auth.getValidToken();
-    if (token == null) return;
-    if (!mounted) return;
-
-    await prov.loadDay(token: token, day: _selectedDay);
+    await prov.loadDay(day: _selectedDay);
   }
 
   @override
@@ -98,7 +88,6 @@ class _HomePageState extends State<HomePage> {
         child: const Icon(Icons.add),
         onPressed: () async {
           final selectedDay = _selectedDay;
-          final auth = context.read<AuthProvider>();
           final prov = context.read<TrainingSessionsProvider>();
           final dto = await showDialog<Map<String, dynamic>>(
             context: context,
@@ -108,12 +97,10 @@ class _HomePageState extends State<HomePage> {
           );
           if (dto == null) return;
 
-          final token = await auth.getValidToken();
-          if (token == null) return;
           if (!mounted) return;
           TrainingSession created;
           try {
-            created = await prov.create(token: token, dto: dto);
+            created = await prov.create(dto: dto);
           } catch (e) {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(

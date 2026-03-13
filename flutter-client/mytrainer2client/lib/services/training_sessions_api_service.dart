@@ -6,9 +6,12 @@ import 'package:http/http.dart' as http;
 import '../models/page_response.dart';
 import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
+import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 class TrainingSessionsApiService {
+  final AuthService _auth = AuthService();
+
   static final _base = kIsWeb
       ? 'http://localhost:8080'
       : (const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
@@ -16,10 +19,16 @@ class TrainingSessionsApiService {
           : apiBaseUrl);
 
   /* ───────── helpers ───────── */
-  Map<String, String> _hdr(String tok) => {
-    'Authorization': 'Bearer $tok',
-    'Content-Type': 'application/json',
-  };
+  Future<Map<String, String>> _hdr([String? tok]) async {
+    final token = tok ?? await _auth.getValidAccessToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('No valid access token available');
+    }
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+  }
 
   Never _fail(String prefix, http.Response res) {
     final body = res.body.isEmpty ? '<empty body>' : res.body;
@@ -29,7 +38,7 @@ class TrainingSessionsApiService {
   /* ───────── calendar counts ───────── */
 
   Future<Map<DateTime, int>> counts({
-    required String token,
+    String? token,
     required DateTime from,
     required DateTime to,
   }) async {
@@ -41,7 +50,7 @@ class TrainingSessionsApiService {
     final uri = Uri.parse(
         '$_base/trainer/training-sessions/calendar?from=${fmt(from)}&to=${fmt(to)}');
 
-    final res = await http.get(uri, headers: _hdr(token));
+    final res = await http.get(uri, headers: await _hdr(token));
     if (res.statusCode != 200) {
       _fail('GET counts failed', res);
     }
@@ -58,7 +67,7 @@ class TrainingSessionsApiService {
   /* ───────── one-day slice ───────── */
 
   Future<List<TrainingSession>> listDay({
-    required String token,
+    String? token,
     required DateTime day,
     int page = 0,
     int size = 100,
@@ -70,7 +79,7 @@ class TrainingSessionsApiService {
     final uri = Uri.parse(
         '$_base/trainer/training-sessions/day/$d?page=$page&size=$size');
 
-    final res = await http.get(uri, headers: _hdr(token));
+    final res = await http.get(uri, headers: await _hdr(token));
     if (res.statusCode != 200) {
       _fail('GET day list failed', res);
     }
@@ -85,7 +94,7 @@ class TrainingSessionsApiService {
   /* ───────── paged search ───────── */
 
   Future<PageResponse<TrainingSession>> page({
-    required String token,
+    String? token,
     required int page,
     required int size,
     String q = '',
@@ -94,7 +103,7 @@ class TrainingSessionsApiService {
     final uri = Uri.parse('$_base/trainer/training-sessions'
         '?page=$page&size=$size&q=${Uri.encodeQueryComponent(q)}&sort=$sort');
 
-    final res = await http.get(uri, headers: _hdr(token));
+    final res = await http.get(uri, headers: await _hdr(token));
     if (res.statusCode != 200) {
       _fail('GET sessions failed', res);
     }
@@ -108,11 +117,11 @@ class TrainingSessionsApiService {
   /* ───────── CRUD (single) ───────── */
 
   Future<TrainingSession> getOne({
-    required String token,
+    String? token,
     required int id,
   }) async {
     final uri = Uri.parse('$_base/trainer/training-sessions/$id');
-    final res = await http.get(uri, headers: _hdr(token));
+    final res = await http.get(uri, headers: await _hdr(token));
     if (res.statusCode != 200) {
       _fail('GET session failed', res);
     }
@@ -120,12 +129,12 @@ class TrainingSessionsApiService {
   }
 
   Future<TrainingSession> create({
-    required String token,
+    String? token,
     required Map<String, dynamic> dto,
   }) async {
     final uri = Uri.parse('$_base/trainer/training-sessions');
     final res =
-    await http.post(uri, headers: _hdr(token), body: jsonEncode(dto));
+    await http.post(uri, headers: await _hdr(token), body: jsonEncode(dto));
     if (res.statusCode != 200 && res.statusCode != 201) {
       _fail('POST session failed', res);
     }
@@ -133,13 +142,13 @@ class TrainingSessionsApiService {
   }
 
   Future<TrainingSession> update({
-    required String token,
+    String? token,
     required int id,
     required Map<String, dynamic> dto,
   }) async {
     final uri = Uri.parse('$_base/trainer/training-sessions/$id');
     final res =
-    await http.put(uri, headers: _hdr(token), body: jsonEncode(dto));
+    await http.put(uri, headers: await _hdr(token), body: jsonEncode(dto));
     if (res.statusCode != 200) {
       _fail('PUT session failed', res);
     }
@@ -149,11 +158,11 @@ class TrainingSessionsApiService {
   /* ───────── DELETE ───────── */
 
   Future<void> delete({
-    required String token,
+    String? token,
     required int id,
   }) async {
     final uri = Uri.parse('$_base/trainer/training-sessions/$id');
-    final res = await http.delete(uri, headers: _hdr(token));
+    final res = await http.delete(uri, headers: await _hdr(token));
 
     // backend may return 200 *or* 204 depending on Spring config
     if (res.statusCode != 200 && res.statusCode != 204) {
@@ -164,12 +173,12 @@ class TrainingSessionsApiService {
   /* ───────── workout-instance helpers (unchanged) ───────── */
 
   Future<List<WorkoutInstanceExercise>> listInstanceExercises({
-    required String token,
+    String? token,
     required int sessionId,
   }) async {
     final uri =
     Uri.parse('$_base/trainer/training-sessions/$sessionId/instance');
-    final res = await http.get(uri, headers: _hdr(token));
+    final res = await http.get(uri, headers: await _hdr(token));
     if (res.statusCode != 200) {
       _fail('GET instance failed', res);
     }
@@ -180,14 +189,14 @@ class TrainingSessionsApiService {
   }
 
   Future<List<WorkoutInstanceExercise>> replaceInstanceExercises({
-    required String token,
+    String? token,
     required int sessionId,
     required List<WorkoutInstanceExercise> items,
   }) async {
     final uri =
     Uri.parse('$_base/trainer/training-sessions/$sessionId/instance');
     final res = await http.put(uri,
-        headers: _hdr(token),
+        headers: await _hdr(token),
         body: jsonEncode(items.map((e) => e.toJson()).toList()));
     if (res.statusCode != 200) {
       _fail('PUT instance failed', res);

@@ -40,11 +40,34 @@ class InviteLinkService {
 
   String? _extractInviteToken(Uri? uri) {
     if (uri == null) return null;
-    if (uri.scheme != 'mytrainer') return null;
-    if (uri.host != 'invite') return null;
-    if (!uri.path.startsWith('/client')) return null;
     final token = uri.queryParameters['token'];
     if (token == null || token.isEmpty) return null;
-    return token;
+
+    if (uri.scheme == 'mytrainer') {
+      final host = uri.host.toLowerCase();
+      final path = uri.path.toLowerCase();
+      final combined = '$host$path';
+
+      if (host == 'invite' && path.startsWith('/client')) {
+        return token;
+      }
+      if (host == 'client') {
+        return token;
+      }
+      if (combined.contains('invite/client') || combined.contains('client')) {
+        return token;
+      }
+
+      // Android browsers and intent dispatch can normalize custom schemes differently.
+      // If it is our custom scheme and it carries a token, treat it as an invite.
+      return token;
+    }
+
+    if ((uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.path.toLowerCase().startsWith('/onboard/client')) {
+      return token;
+    }
+
+    return null;
   }
 }

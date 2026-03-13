@@ -30,6 +30,9 @@ public class ClientInviteServiceImpl implements ClientInviteService {
     @Value("${app.client-invite-base-url:mytrainer://invite/client}")
     private String inviteBaseUrl;
 
+    @Value("${app.client-web-invite-base-url:http://localhost/onboard/client}")
+    private String webInviteBaseUrl;
+
     private User trainerOr404(String kcUserId) {
         User u = users.findByKeycloakUserId(kcUserId);
         if (u == null) {
@@ -178,6 +181,7 @@ public class ClientInviteServiceImpl implements ClientInviteService {
                 invite.getStatus().name(),
                 invite.getInviteToken(),
                 inviteBaseUrl + "?token=" + invite.getInviteToken(),
+                webInviteBaseUrl + "?token=" + invite.getInviteToken(),
                 invite.getExpiresAt(),
                 invite.getAcceptedAt(),
                 invite.getCreatedAt()

@@ -5,16 +5,14 @@ class WorkoutInstanceExercisesApiService {
   final _tsApi = TrainingSessionsApiService();
 
   Future<List<WorkoutInstanceExercise>> list({
-    required String token,
     required int sessionId,
   }) =>
-      _tsApi.listInstanceExercises(token: token, sessionId: sessionId);
+      _tsApi.listInstanceExercises(sessionId: sessionId);
 
   Future<List<WorkoutInstanceExercise>> replaceAll({
-    required String token,
     required int sessionId,
     required List<WorkoutInstanceExercise> items,
   }) =>
       _tsApi.replaceInstanceExercises(
-          token: token, sessionId: sessionId, items: items);
+          sessionId: sessionId, items: items);
 }

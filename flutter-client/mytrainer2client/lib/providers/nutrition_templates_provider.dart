@@ -15,7 +15,6 @@ class NutritionTemplatesProvider extends ChangeNotifier {
   List<NutritionPlanTemplate> items = [];
 
   Future<void> load({
-    required String token,
     int? toPage,
     String? newSearch,
     String? newSort,
@@ -26,22 +25,24 @@ class NutritionTemplatesProvider extends ChangeNotifier {
     if (toPage != null) page = toPage;
     notifyListeners();
 
-    final p = await _api.page(
-      page: page,
-      size: size,
-      q: search,
-      sort: sort,
-    );
+    try {
+      final p = await _api.page(
+        page: page,
+        size: size,
+        q: search,
+        sort: sort,
+      );
 
-    items = p.items;
-    page = p.page;
-    totalPages = p.totalPages;
-    loading = false;
-    notifyListeners();
+      items = p.items;
+      page = p.page;
+      totalPages = p.totalPages;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> save({
-    required String token,
     required NutritionPlanTemplate t,
   }) async {
     if (t.id == 0) {
@@ -56,7 +57,6 @@ class NutritionTemplatesProvider extends ChangeNotifier {
   }
 
   Future<void> remove({
-    required String token,
     required int id,
   }) async {
     await _api.delete(id);

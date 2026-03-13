@@ -6,6 +6,7 @@ class ClientInvite {
   final String status;
   final String inviteToken;
   final String inviteUrl;
+  final String webInviteUrl;
   final DateTime? expiresAt;
   final DateTime? acceptedAt;
   final DateTime? createdAt;
@@ -18,6 +19,7 @@ class ClientInvite {
     required this.status,
     required this.inviteToken,
     required this.inviteUrl,
+    required this.webInviteUrl,
     required this.expiresAt,
     required this.acceptedAt,
     required this.createdAt,
@@ -25,6 +27,10 @@ class ClientInvite {
 
   bool get isPending => status == 'PENDING';
   bool get isAccepted => status == 'ACCEPTED';
+
+  String get iosInviteUrl => inviteUrl;
+  String get androidInviteUrl =>
+      'intent://invite/client?token=$inviteToken#Intent;scheme=mytrainer;package=com.mvfitness.mytrainer2client;end';
 
   factory ClientInvite.fromJson(Map<String, dynamic> json) => ClientInvite(
         id: (json['id'] ?? 0) as int,
@@ -34,6 +40,7 @@ class ClientInvite {
         status: (json['status'] ?? '') as String,
         inviteToken: (json['inviteToken'] ?? '') as String,
         inviteUrl: (json['inviteUrl'] ?? '') as String,
+        webInviteUrl: (json['webInviteUrl'] ?? '') as String,
         expiresAt: json['expiresAt'] != null
             ? DateTime.parse(json['expiresAt'] as String)
             : null,

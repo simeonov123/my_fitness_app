@@ -5,9 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/training_session_realtime_event.dart';
+import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 class TrainingSessionRealtimeService {
+  final AuthService _auth = AuthService();
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
   final _controller =
@@ -16,14 +18,19 @@ class TrainingSessionRealtimeService {
   Stream<TrainingSessionRealtimeEvent> get stream => _controller.stream;
 
   Future<void> connect({
-    required String token,
+    String? token,
     required int sessionId,
   }) async {
     await disconnect();
 
+    final resolvedToken = token ?? await _auth.getValidAccessToken();
+    if (resolvedToken == null) {
+      throw Exception('Not authenticated – please log in again.');
+    }
+
     final base = kIsWeb ? 'ws://localhost:8080' : _wsBaseUrl;
     final uri = Uri.parse(
-      '$base/ws/training-sessions/$sessionId?token=${Uri.encodeQueryComponent(token)}',
+      '$base/ws/training-sessions/$sessionId?token=${Uri.encodeQueryComponent(resolvedToken)}',
     );
 
     final channel = WebSocketChannel.connect(uri);

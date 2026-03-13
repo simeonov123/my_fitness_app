@@ -150,24 +150,25 @@ class AuthService {
   /// Logs out locally (clearing tokens) and at Keycloak (end‐session endpoint).
   ///
   /// Also optionally revokes the refresh token before redirecting.
-  Future<void> logout() async {
-    // Clear storage
-    await _storage.delete(key: 'access_token');
-    await _storage.delete(key: 'refresh_token');
-    await _storage.delete(key: 'id_token');
+  Future<void> logout({String? postLogoutRedirectPath}) async {
+    final refreshToken = _refreshToken;
+    final idTokenHint = _idToken;
+
+    // Clear storage aggressively so stale invite/auth state does not survive logout.
+    await _storage.deleteAll();
     _accessToken  = null;
     _refreshToken = null;
     _idToken      = null;
-    debugPrint('🔒 Cleared tokens');
+    debugPrint('🔒 Cleared tokens and secure storage');
 
     // Optionally revoke refresh token
-    if (_refreshToken != null) {
+    if (refreshToken != null) {
       try {
         await _appAuth.token(TokenRequest(
           _clientId,
           _redirectUri,
           grantType: 'refresh_token',
-          refreshToken: _refreshToken!,
+          refreshToken: refreshToken,
           discoveryUrl: '$_issuer/.well-known/openid-configuration',
           allowInsecureConnections: true,
         ));
@@ -178,7 +179,7 @@ class AuthService {
     // Redirect to Keycloak end-session
     try {
       await _appAuth.endSession(EndSessionRequest(
-        idTokenHint: _idToken,
+        idTokenHint: idTokenHint,
         postLogoutRedirectUrl: _postLogoutRedirectUri,
         allowInsecureConnections: true,
         serviceConfiguration: AuthorizationServiceConfiguration(

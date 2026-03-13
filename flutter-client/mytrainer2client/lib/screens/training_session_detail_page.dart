@@ -85,23 +85,19 @@ class _TrainingSessionDetailPageState
 
   Future<void> _loadAll() async {
     try {
-      final tok  = await context.read<AuthProvider>().getValidToken();
-      if (tok == null) {
-        throw Exception('Missing auth token');
-      }
-      if (!mounted) return;
       final api  = context.read<TrainingSessionsProvider>().api;
       final prov = context.read<WorkoutInstanceExercisesProvider>();
 
-      _session = await api.getOne(token: tok, id: widget.sessionId);
+      _session = await api.getOne(id: widget.sessionId);
       _start   = _session!.start;
       _end     = _session!.end;
       _nameCtl.text = _session!.sessionName ?? '';
 
-      await prov.load(token: tok, sessionId: widget.sessionId);
+      await prov.load(sessionId: widget.sessionId);
       _buildItemList(prov.items);
       await _restoreActiveWorkout();
-      await _connectRealtime(tok);
+      await _connectRealtime();
+      await _syncSocialPost();
 
       if (mounted) setState(() {});
     } catch (e) {
@@ -194,6 +190,236 @@ class _TrainingSessionDetailPageState
     return count;
   }
 
+  double _groupBestSetKg(InstanceClientGroup group) {
+    var best = 0.0;
+    for (final item in group.items) {
+      for (final set in item.wte.sets) {
+        final kg = set.values['KG'];
+        if (kg != null && kg > best) {
+          best = kg;
+        }
+      }
+    }
+    return best;
+  }
+
+  int _groupBestSetReps(InstanceClientGroup group) {
+    var best = 0;
+    for (final item in group.items) {
+      for (final set in item.wte.sets) {
+        final reps = set.values['REPS'];
+        if (reps != null && reps > best) {
+          best = reps.round();
+        }
+      }
+    }
+    return best;
+  }
+
+  SocialPerformanceHighlight? _bestVolumeHighlightForGroups(
+    List<InstanceClientGroup> groups, {
+    bool includePerformer = true,
+  }) {
+    _ExercisePerformanceSnapshot? best;
+    for (final group in groups) {
+      for (final item in group.items) {
+        for (final set in item.wte.sets) {
+          if (!set.completed) continue;
+          final kg = set.values['KG'];
+          final reps = set.values['REPS'];
+          if (kg == null || reps == null) continue;
+          final volume = kg * reps;
+          if (best == null || volume > best.volume) {
+            best = _ExercisePerformanceSnapshot(
+              clientName: group.clientName,
+              exerciseName: item.wte.exercise.name,
+              setNumber: set.setNumber,
+              volume: volume,
+              kg: kg,
+              reps: reps.round(),
+            );
+          }
+        }
+      }
+    }
+    if (best == null) return null;
+    final performer = includePerformer ? ' • ${best.clientName}' : '';
+    return SocialPerformanceHighlight(
+      label: 'Best set volume',
+      value: '${best.volume.toStringAsFixed(0)} kg',
+      detail: '${best.exerciseName} • Set ${best.setNumber} • ${best.kg.toStringAsFixed(0)}kg x ${best.reps}$performer',
+    );
+  }
+
+  SocialPerformanceHighlight? _heaviestHighlightForGroups(
+    List<InstanceClientGroup> groups, {
+    bool includePerformer = true,
+  }) {
+    _ExercisePerformanceSnapshot? best;
+    for (final group in groups) {
+      for (final item in group.items) {
+        for (final set in item.wte.sets) {
+          if (!set.completed) continue;
+          final kg = set.values['KG'];
+          if (kg == null) continue;
+          final reps = (set.values['REPS'] ?? 0).round();
+          if (best == null || kg > best.kg) {
+            best = _ExercisePerformanceSnapshot(
+              clientName: group.clientName,
+              exerciseName: item.wte.exercise.name,
+              setNumber: set.setNumber,
+              volume: kg * (reps > 0 ? reps : 1),
+              kg: kg,
+              reps: reps,
+            );
+          }
+        }
+      }
+    }
+    if (best == null) return null;
+    final repPart = best.reps > 0 ? ' • ${best.reps} reps' : '';
+    final performer = includePerformer ? ' • ${best.clientName}' : '';
+    return SocialPerformanceHighlight(
+      label: 'Heaviest weight',
+      value: '${best.kg.toStringAsFixed(0)} kg',
+      detail: '${best.exerciseName}$repPart • Set ${best.setNumber}$performer',
+    );
+  }
+
+  SocialPerformanceHighlight? _bestRepsHighlightForGroups(
+    List<InstanceClientGroup> groups, {
+    bool includePerformer = true,
+  }) {
+    _ExercisePerformanceSnapshot? best;
+    for (final group in groups) {
+      for (final item in group.items) {
+        for (final set in item.wte.sets) {
+          if (!set.completed) continue;
+          final reps = set.values['REPS'];
+          if (reps == null) continue;
+          final repsInt = reps.round();
+          final kg = set.values['KG'] ?? 0;
+          if (best == null || repsInt > best.reps) {
+            best = _ExercisePerformanceSnapshot(
+              clientName: group.clientName,
+              exerciseName: item.wte.exercise.name,
+              setNumber: set.setNumber,
+              volume: kg * repsInt,
+              kg: kg,
+              reps: repsInt,
+            );
+          }
+        }
+      }
+    }
+    if (best == null) return null;
+    final weightPart = best.kg > 0 ? ' • ${best.kg.toStringAsFixed(0)} kg' : '';
+    final performer = includePerformer ? ' • ${best.clientName}' : '';
+    return SocialPerformanceHighlight(
+      label: 'Best reps',
+      value: '${best.reps} reps',
+      detail: '${best.exerciseName}$weightPart • Set ${best.setNumber}$performer',
+    );
+  }
+
+  int get _completedSetCountOverall =>
+      _groups.fold<int>(0, (sum, group) => sum + _groupCompletedSets(group));
+
+  int get _totalSetCountOverall =>
+      _groups.fold<int>(0, (sum, group) => sum + _groupSetCount(group));
+
+  double get _bestSetKgOverall => _groups.fold<double>(
+        0,
+        (best, group) => _groupBestSetKg(group) > best ? _groupBestSetKg(group) : best,
+      );
+
+  int get _bestSetRepsOverall => _groups.fold<int>(
+        0,
+        (best, group) => _groupBestSetReps(group) > best ? _groupBestSetReps(group) : best,
+      );
+
+  Future<void> _syncSocialPost() async {
+    if (_session == null || !(_session!.isCompleted ?? false) || !mounted) return;
+
+    final provider = context.read<SocialFeedProvider>();
+    final auth = context.read<AuthProvider>();
+    final completedAt = _session!.actualEndTime ?? _session!.endTime;
+    final durationSeconds = (_session!.actualDuration ?? _session!.plannedDuration).inSeconds;
+    final leaderboard = _leaderboard
+        .take(3)
+        .map(
+          (entry) => SocialLeaderboardEntry(
+            clientName: entry.clientName,
+            totalWeightLifted: entry.totalWeightLifted,
+          ),
+        )
+        .toList(growable: false);
+    final overallVolumeHighlight = _bestVolumeHighlightForGroups(_groups);
+    final overallHeaviestHighlight = _heaviestHighlightForGroups(_groups);
+    final overallBestRepsHighlight = _bestRepsHighlightForGroups(_groups);
+
+    if (auth.isClient) {
+      if (_groups.isEmpty) return;
+      final group = _groups.first;
+      final rankIndex = _leaderboard.indexWhere(
+        (entry) => entry.clientName == group.clientName,
+      );
+      await provider.addPost(
+        SocialPost(
+          id: 'session-${_session!.id}-client-${group.clientId ?? 'me'}',
+          ownerRole: 'CLIENT',
+          ownerClientId: group.clientId,
+          ownerClientName: group.clientName,
+          title: 'You completed a workout',
+          workoutTitle: _session!.sessionName ?? 'Workout ${_session!.id}',
+          trainerName: 'Your trainer',
+          clientSummary: 'Personal performance recap',
+          completedAt: completedAt,
+          durationSeconds: durationSeconds,
+          totalWeightLifted: _groupTotalWeightLifted(group),
+          sessionTotalWeightLifted: _totalWeightLifted,
+          exerciseCount: group.items.length,
+          participantCount: 1,
+          completedSetCount: _groupCompletedSets(group),
+          totalSetCount: _groupSetCount(group),
+          bestSetKg: _groupBestSetKg(group),
+          bestSetReps: _groupBestSetReps(group),
+          rank: rankIndex >= 0 ? rankIndex + 1 : null,
+          leaderboard: const [],
+          bestVolumeHighlight: _bestVolumeHighlightForGroups([group], includePerformer: false),
+          heaviestHighlight: _heaviestHighlightForGroups([group], includePerformer: false),
+          bestRepsHighlight: _bestRepsHighlightForGroups([group], includePerformer: false),
+        ),
+      );
+      return;
+    }
+
+    await provider.addPost(
+      SocialPost(
+        id: 'session-${_session!.id}',
+        ownerRole: 'TRAINER',
+        title: 'Congratulations',
+        workoutTitle: _session!.sessionName ?? 'Workout ${_session!.id}',
+        trainerName: _trainerDisplayName(),
+        clientSummary: _clientSummary(),
+        completedAt: completedAt,
+        durationSeconds: durationSeconds,
+        totalWeightLifted: _totalWeightLifted,
+        sessionTotalWeightLifted: _totalWeightLifted,
+        exerciseCount: _groups.fold<int>(0, (sum, group) => sum + group.items.length),
+        participantCount: _session!.clientIds.length,
+        completedSetCount: _completedSetCountOverall,
+        totalSetCount: _totalSetCountOverall,
+        bestSetKg: _bestSetKgOverall,
+        bestSetReps: _bestSetRepsOverall,
+        leaderboard: leaderboard,
+        bestVolumeHighlight: overallVolumeHighlight,
+        heaviestHighlight: overallHeaviestHighlight,
+        bestRepsHighlight: overallBestRepsHighlight,
+      ),
+    );
+  }
+
   String get _formattedPlannedDuration => _formatDuration(_plannedDuration);
 
   String get _formattedActualDuration =>
@@ -237,9 +463,9 @@ class _TrainingSessionDetailPageState
     );
   }
 
-  Future<void> _connectRealtime(String token) async {
+  Future<void> _connectRealtime() async {
     await _realtimeSub?.cancel();
-    await _realtime.connect(token: token, sessionId: widget.sessionId);
+    await _realtime.connect(sessionId: widget.sessionId);
     _realtimeSub = _realtime.stream.listen(_handleRealtimeEvent);
   }
 
@@ -249,6 +475,7 @@ class _TrainingSessionDetailPageState
       case 'SESSION_UPDATED':
         if (event.session != null) {
           _applySessionUpdate(TrainingSession.fromJson(event.session!));
+          await _syncSocialPost();
         }
         break;
       case 'INSTANCE_UPDATED':
@@ -262,6 +489,7 @@ class _TrainingSessionDetailPageState
             setState(() {});
           }
           await _syncActiveWorkoutNotification();
+          await _syncSocialPost();
         }
         break;
     }
@@ -806,7 +1034,6 @@ class _TrainingSessionDetailPageState
   }
 
   Future<void> _saveAllInternal({required bool showFeedback}) async {
-    final tok  = context.read<AuthProvider>().token!;
     final api  = context.read<TrainingSessionsProvider>().api;
     final prov = context.read<WorkoutInstanceExercisesProvider>();
 
@@ -818,7 +1045,7 @@ class _TrainingSessionDetailPageState
           'sessionName': _nameCtl.text.trim(),
         });
       _session =
-      await api.update(token: tok, id: _session!.id, dto: dto);
+      await api.update(id: _session!.id, dto: dto);
       _dirtyMeta = false;
     }
 
@@ -833,7 +1060,6 @@ class _TrainingSessionDetailPageState
               ))
           .toList();
       await prov.replaceAll(
-        token: tok,
         sessionId: _session!.id,
         newList: groupedPayload,
       );
@@ -861,7 +1087,6 @@ class _TrainingSessionDetailPageState
       await _activeWorkout.save(snapshot);
       if (!mounted) return;
 
-      final tok = context.read<AuthProvider>().token!;
       final api = context.read<TrainingSessionsProvider>().api;
       final dto = _session!.toJson()
         ..addAll({
@@ -870,7 +1095,7 @@ class _TrainingSessionDetailPageState
           'actualStartTime': startedAt.toIso8601String(),
           'actualEndTime': null,
         });
-      _session = await api.update(token: tok, id: _session!.id, dto: dto);
+      _session = await api.update(id: _session!.id, dto: dto);
 
       _activeSnapshot = snapshot;
       await _syncActiveWorkoutNotification();
@@ -898,7 +1123,6 @@ class _TrainingSessionDetailPageState
       if (!mounted) return;
 
       if (_session != null) {
-        final tok = context.read<AuthProvider>().token!;
         final api = context.read<TrainingSessionsProvider>().api;
         final dto = _session!.toJson()
           ..addAll({
@@ -907,7 +1131,7 @@ class _TrainingSessionDetailPageState
             'actualStartTime': null,
             'actualEndTime': null,
           });
-        _session = await api.update(token: tok, id: _session!.id, dto: dto);
+        _session = await api.update(id: _session!.id, dto: dto);
       }
 
       if (mounted) {
@@ -926,12 +1150,10 @@ class _TrainingSessionDetailPageState
 
     setState(() => _busyAction = true);
     try {
-      final actualDurationSeconds = _elapsed.inSeconds;
       final totalLiftedAtCompletion = _totalWeightLifted;
       await _saveAllInternal(showFeedback: false);
       if (!mounted) return;
 
-      final tok = context.read<AuthProvider>().token!;
       final api = context.read<TrainingSessionsProvider>().api;
       final finishedAt = DateTime.now();
       final actualStartedAt =
@@ -943,7 +1165,7 @@ class _TrainingSessionDetailPageState
           'actualStartTime': actualStartedAt.toIso8601String(),
           'actualEndTime': finishedAt.toIso8601String(),
         });
-      _session = await api.update(token: tok, id: _session!.id, dto: dto);
+      _session = await api.update(id: _session!.id, dto: dto);
       _dirtyMeta = false;
 
       await _activeWorkout.clear(widget.sessionId);
@@ -951,32 +1173,7 @@ class _TrainingSessionDetailPageState
       _ticker?.cancel();
       _activeSnapshot = null;
       if (!mounted) return;
-      await context.read<SocialFeedProvider>().addPost(
-            SocialPost(
-              id: 'session-${_session!.id}',
-              title: 'Congratulations',
-              workoutTitle:
-                  _session!.sessionName ?? 'Workout ${_session!.id}',
-              trainerName: _trainerDisplayName(),
-              clientSummary: _clientSummary(),
-              completedAt: finishedAt,
-              durationSeconds: actualDurationSeconds,
-              totalWeightLifted: totalLiftedAtCompletion,
-              exerciseCount: _groups.fold<int>(
-                0,
-                (sum, group) => sum + group.items.length,
-              ),
-              leaderboard: _leaderboard
-                  .take(3)
-                  .map(
-                    (entry) => SocialLeaderboardEntry(
-                      clientName: entry.clientName,
-                      totalWeightLifted: entry.totalWeightLifted,
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-          );
+      await _syncSocialPost();
 
       if (mounted) {
         setState(() {});
@@ -1175,3 +1372,21 @@ class ClientLeaderboardEntry {
     required this.totalSets,
   });
 }
+class _ExercisePerformanceSnapshot {
+  final String clientName;
+  final String exerciseName;
+  final int setNumber;
+  final double volume;
+  final double kg;
+  final int reps;
+
+  _ExercisePerformanceSnapshot({
+    required this.clientName,
+    required this.exerciseName,
+    required this.setNumber,
+    required this.volume,
+    required this.kg,
+    required this.reps,
+  });
+}
+

@@ -13,29 +13,32 @@ class WorkoutInstanceExercisesProvider extends ChangeNotifier {
       List.unmodifiable(_items);
 
   Future<void> load({
-    required String token,
     required int sessionId,
   }) async {
     _loading = true;
     notifyListeners();
-    _items = await _api.list(token: token, sessionId: sessionId);
-    _loading = false;
-    notifyListeners();
+    try {
+      _items = await _api.list(sessionId: sessionId);
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> replaceAll({
-    required String token,
     required int sessionId,
     required List<WorkoutInstanceExercise> newList,
   }) async {
     _loading = true;
     notifyListeners();
-    _items = await _api.replaceAll(
-      token: token,
-      sessionId: sessionId,
-      items: newList,
-    );
-    _loading = false;
-    notifyListeners();
+    try {
+      _items = await _api.replaceAll(
+        sessionId: sessionId,
+        items: newList,
+      );
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
 }

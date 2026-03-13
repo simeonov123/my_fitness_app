@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/nutrition_plan_template.dart';
-import '../providers/auth_provider.dart';
 import '../providers/nutrition_templates_provider.dart';
 
 class NutritionTemplateFormDialog extends StatefulWidget {
@@ -47,8 +46,7 @@ class _NutritionTemplateFormDialogState
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
     );
 
-    final token = context.read<AuthProvider>().token!;
-    await context.read<NutritionTemplatesProvider>().save(token: token, t: tpl);
+    await context.read<NutritionTemplatesProvider>().save(t: tpl);
 
     setState(() => _submitting = false);
     Navigator.of(context).pop(tpl);

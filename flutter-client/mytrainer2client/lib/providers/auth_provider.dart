@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import '../services/auth_service.dart';
 import '../services/active_workout_service.dart';
+import '../services/pending_client_invite_service.dart';
 
 /// A [ChangeNotifier] that wraps our singleton [AuthService].
 ///
@@ -75,9 +76,15 @@ class AuthProvider extends ChangeNotifier {
   /// Logs out the user both locally (clearing tokens) and at Keycloak.
   ///
   /// After calling, [isAuthenticated] will become `false`. Fires [notifyListeners].
-  Future<void> logout() async {
+  Future<void> logout({
+    bool clearPendingInvite = true,
+    String? postLogoutRedirectPath,
+  }) async {
     await ActiveWorkoutService().clearAll();
-    await _auth.logout();
+    if (clearPendingInvite) {
+      await PendingClientInviteService().clear();
+    }
+    await _auth.logout(postLogoutRedirectPath: postLogoutRedirectPath);
     notifyListeners();
   }
 }

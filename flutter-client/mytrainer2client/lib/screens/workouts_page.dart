@@ -35,20 +35,17 @@ class _WorkoutsPageState extends State<WorkoutsPage> {
   }
 
   Future<void> _loadAll({int? page, String? search, String? sort}) async {
-    final token = context.read<AuthProvider>().token!;
     await Future.wait([
       _load(page: page, search: search, sort: sort),
-      context.read<WorkoutFoldersProvider>().load(token: token),
+      context.read<WorkoutFoldersProvider>().load(),
     ]);
   }
 
   Future<void> _load({int? page, String? search, String? sort}) async {
-    final token = context.read<AuthProvider>().token!;
     setState(() {
       if (sort != null) _sort = sort;
     });
     await context.read<WorkoutTemplatesProvider>().load(
-      token: token,
       toPage: page,
       newSearch: search,
       newSort: _sort,
@@ -56,19 +53,17 @@ class _WorkoutsPageState extends State<WorkoutsPage> {
   }
 
   Future<void> _openCreateDialog() async {
-    final auth = context.read<AuthProvider>();
     final prov = context.read<WorkoutTemplatesProvider>();
     final folderProv = context.read<WorkoutFoldersProvider>();
     final tpl = await showDialog<WorkoutTemplate>(
         context: context, builder: (_) => const WorkoutTemplateFormDialog());
     if (tpl != null) {
-      final token = auth.token!;
-      await prov.save(token: token, t: tpl);
+      await prov.save(t: tpl);
       if (!mounted) return;
       _searchCtrl.clear();
       setState(() => _sort = 'newest');
       prov.resetViewState(newSearch: '', newSort: 'newest', newPage: 0);
-      await folderProv.load(token: token);
+      await folderProv.load();
     }
   }
 
@@ -78,7 +73,6 @@ class _WorkoutsPageState extends State<WorkoutsPage> {
       _showFoldersUnavailableMessage();
       return;
     }
-    final auth = context.read<AuthProvider>();
     final prov = folderProv;
     final edited = await showDialog<WorkoutFolder>(
       context: context,
@@ -86,7 +80,6 @@ class _WorkoutsPageState extends State<WorkoutsPage> {
     );
     if (edited == null) return;
 
-    final token = auth.token!;
     final next = WorkoutFolder(
       id: edited.id,
       name: edited.name,
@@ -95,7 +88,7 @@ class _WorkoutsPageState extends State<WorkoutsPage> {
       createdAt: edited.createdAt,
       updatedAt: edited.updatedAt,
     );
-    await prov.save(token: token, folder: next);
+    await prov.save(folder: next);
     if (!mounted) return;
     await _loadAll(page: 0);
   }
@@ -123,8 +116,7 @@ class _WorkoutsPageState extends State<WorkoutsPage> {
       ),
     );
     if (ok != true || !mounted) return;
-    final token = context.read<AuthProvider>().token!;
-    await context.read<WorkoutFoldersProvider>().remove(token: token, id: folder.id);
+    await context.read<WorkoutFoldersProvider>().remove(id: folder.id);
     if (!mounted) return;
     await _loadAll(page: 0);
   }
@@ -153,15 +145,14 @@ class _WorkoutsPageState extends State<WorkoutsPage> {
     );
     if (result == null || !mounted) return;
 
-    final token = context.read<AuthProvider>().token!;
     final folderProv = context.read<WorkoutFoldersProvider>();
     final workoutProv = context.read<WorkoutTemplatesProvider>();
 
     for (final folder in result.folders) {
-      await folderProv.save(token: token, folder: folder);
+      await folderProv.save(folder: folder);
     }
     for (final workout in result.workouts) {
-      await workoutProv.save(token: token, t: workout);
+      await workoutProv.save(t: workout);
     }
     if (!mounted) return;
     await _loadAll(page: 0);

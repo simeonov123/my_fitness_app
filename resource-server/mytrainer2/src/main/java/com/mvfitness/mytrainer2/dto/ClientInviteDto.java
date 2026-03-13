@@ -10,6 +10,7 @@ public record ClientInviteDto(
         String status,
         String inviteToken,
         String inviteUrl,
+        String webInviteUrl,
         LocalDateTime expiresAt,
         LocalDateTime acceptedAt,
         LocalDateTime createdAt

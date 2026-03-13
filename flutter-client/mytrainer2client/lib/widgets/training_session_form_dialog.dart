@@ -43,11 +43,10 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
 
     // 🔹 defer provider loads until after first frame
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      final token = context.read<AuthProvider>().token!;
-      context.read<ClientsProvider>().load(token: token);
-      context.read<ClientFoldersProvider>().load(token: token);
-      context.read<WorkoutTemplatesProvider>().load(token: token);
-      context.read<WorkoutFoldersProvider>().load(token: token);
+      context.read<ClientsProvider>().load();
+      context.read<ClientFoldersProvider>().load();
+      context.read<WorkoutTemplatesProvider>().load();
+      context.read<WorkoutFoldersProvider>().load();
     });
   }
 

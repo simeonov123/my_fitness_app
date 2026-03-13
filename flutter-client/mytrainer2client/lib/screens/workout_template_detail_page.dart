@@ -7,7 +7,6 @@ import '../models/workout_template_exercise.dart';
 import '../widgets/workout_template_exercise_widget.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/reorder_exercises_panel.dart';
-import '../providers/auth_provider.dart';
 import '../providers/exercises_provider.dart';
 import '../providers/workout_templates_provider.dart';
 import '../providers/workout_template_exercises_provider.dart';
@@ -32,10 +31,8 @@ class _WorkoutTemplateDetailPageState
     super.initState();
     _tpl = widget.template;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final token = context.read<AuthProvider>().token!;
       context.read<ExercisesProvider>().loadAvailable();
       context.read<WorkoutTemplateExercisesProvider>().load(
-        token: token,
         templateId: _tpl.id,
       );
     });
@@ -78,10 +75,8 @@ class _WorkoutTemplateDetailPageState
   }
 
   Future<void> _saveAll() async {
-    final token = context.read<AuthProvider>().token!;
     final wtep = context.read<WorkoutTemplateExercisesProvider>();
     await wtep.replaceAll(
-      token: token,
       templateId: _tpl.id,
       newList: List.from(wtep.items),
     );
@@ -163,9 +158,7 @@ class _WorkoutTemplateDetailPageState
       ));
     }
 
-    final token = context.read<AuthProvider>().token!;
     await wtep.replaceAll(
-      token: token,
       templateId: _tpl.id,
       newList: current,
     );
@@ -192,11 +185,9 @@ class _WorkoutTemplateDetailPageState
       ),
     );
     if (updated != null) {
-      final token = context.read<AuthProvider>().token!;
       await context
           .read<WorkoutTemplateExercisesProvider>()
           .replaceAll(
-        token: token,
         templateId: _tpl.id,
         newList: updated,
       );
@@ -223,10 +214,9 @@ class _WorkoutTemplateDetailPageState
       ),
     );
     if (ok == true) {
-      final token = context.read<AuthProvider>().token!;
       await context
           .read<WorkoutTemplatesProvider>()
-          .remove(token: token, id: _tpl.id);
+          .remove(id: _tpl.id);
       if (mounted) Navigator.pop(context);
     }
   }

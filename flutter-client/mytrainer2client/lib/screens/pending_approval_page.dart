@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,29 +14,8 @@ class PendingApprovalPage extends StatefulWidget {
 
 class _PendingApprovalPageState extends State<PendingApprovalPage> {
   static const _phoneNumber = '+359882706700';
-  Timer? _pollTimer;
   bool _refreshing = false;
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _startPolling();
-  }
-
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _refreshApproval();
-    });
-    _refreshApproval();
-  }
 
   Future<void> _refreshApproval() async {
     if (_refreshing) return;
@@ -56,7 +33,6 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
       if (!mounted) return;
 
       if (auth.role != null) {
-        _pollTimer?.cancel();
         Navigator.pushNamedAndRemoveUntil(
           context,
           pendingInvite != null && pendingInvite.isNotEmpty
@@ -117,7 +93,7 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      'This page refreshes automatically every 5 seconds to check whether your account has been approved.',
+                      'After your registration is approved, log out and log back in, or use the refresh button below to check again.',
                     ),
                     const SizedBox(height: 20),
                     SelectableText(
@@ -137,18 +113,22 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                       ),
                     ],
                     const SizedBox(height: 24),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
                         FilledButton(
                           onPressed: _refreshing ? null : _refreshApproval,
                           child: Text(_refreshing ? 'Checking...' : 'Refresh now'),
                         ),
-                        const SizedBox(width: 12),
                         OutlinedButton(
                           onPressed: _callNow,
                           child: const Text('Call now'),
                         ),
-                        const SizedBox(width: 12),
+                        OutlinedButton(
+                          onPressed: _logout,
+                          child: const Text('Use different account'),
+                        ),
                         TextButton(
                           onPressed: _logout,
                           child: const Text('Logout'),

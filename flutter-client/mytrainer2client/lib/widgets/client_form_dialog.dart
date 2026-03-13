@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../models/client.dart';
 import '../models/client_folder.dart';
-import '../providers/auth_provider.dart';
 import '../providers/client_folders_provider.dart';
 import '../providers/clients_provider.dart';
 
@@ -69,13 +68,12 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
       sequenceOrder: widget.client?.sequenceOrder,
     );
 
-    final token = context.read<AuthProvider>().token!;
     final provider = context.read<ClientsProvider>();
 
     if (newClient.id == 0) {
-      await provider.save(token: token, c: newClient);
+      await provider.save(c: newClient);
     } else {
-      await provider.save(token: token, c: newClient);
+      await provider.save(c: newClient);
     }
 
     if (!mounted) return;

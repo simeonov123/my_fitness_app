@@ -8,6 +8,8 @@ import 'dart:html' as html;
 import 'package:openid_client/openid_client.dart';
 import 'package:openid_client/openid_client_browser.dart' as browser;
 
+import 'dev_endpoints.dart';
+
 /// Common interface shared by all platform-specific services.
 abstract class _AuthServiceBase {
   String? get accessToken;
@@ -22,7 +24,7 @@ abstract class _AuthServiceBase {
   Future<bool> register(String u, String e, String p, String c);
 
   /// Clear local tokens and call the Keycloak end-session endpoint.
-  Future<void> logout();
+  Future<void> logout({String? postLogoutRedirectPath});
 
   /// Return a **currently valid** JWT, silently refreshing if needed.
   Future<String?> getValidAccessToken();
@@ -34,10 +36,14 @@ class AuthService implements _AuthServiceBase {
   factory AuthService() => _instance;
 
   // ===== Keycloak config (DEV — adjust for prod) ============================
-  static const issuerUrl = 'http://localhost:8081/realms/myrealm';
+  static final issuerUrl = keycloakRealmUrl;
 
   static const clientId = 'mytrainer2client';
-  static const redirect = 'http://localhost';
+  static String get redirect {
+    final uri = Uri.parse(html.window.location.href);
+    final normalized = uri.replace(fragment: '');
+    return normalized.toString();
+  }
 
   String? _accessToken;
   String? _idToken;
@@ -129,12 +135,23 @@ class AuthService implements _AuthServiceBase {
   // Logout
   // --------------------------------------------------------------------------
   @override
-  Future<void> logout() async {
-    // Remove from localStorage first
-    html.window.localStorage
-      ..remove('access_token')
-      ..remove('id_token');
+  Future<void> logout({String? postLogoutRedirectPath}) async {
+    final idTokenHint = _idToken;
+    final current = Uri.parse(html.window.location.href).replace(fragment: '');
+    final redirectUri = Uri.parse(postLogoutRedirectPath ?? '/login');
+    final postLogoutRedirect = Uri(
+      scheme: current.scheme,
+      host: current.host,
+      port: current.hasPort ? current.port : null,
+      path: redirectUri.path.isEmpty ? '/login' : redirectUri.path,
+      queryParameters: redirectUri.queryParameters.isEmpty ? null : redirectUri.queryParameters,
+    ).toString();
+
+    // Clear browser storage aggressively so stale auth/invite state does not survive logout.
+    html.window.localStorage.clear();
+    html.window.sessionStorage.clear();
     _accessToken = null;
+    _idToken = null;
 
     // Nuke Keycloak cookies so silent renew does not auto-log-in again
     for (final name in [
@@ -151,8 +168,8 @@ class AuthService implements _AuthServiceBase {
     final issuer = await Issuer.discover(Uri.parse(issuerUrl));
     final endSession = issuer.metadata.endSessionEndpoint!;
     final uri = endSession.replace(queryParameters: {
-      'id_token_hint': _idToken,
-      'post_logout_redirect_uri': redirect,
+      'id_token_hint': idTokenHint,
+      'post_logout_redirect_uri': postLogoutRedirect,
       'client_id': clientId,
     });
     html.window.location.href = uri.toString();

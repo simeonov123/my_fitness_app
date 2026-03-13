@@ -11,7 +11,7 @@ class ClientFoldersProvider extends ChangeNotifier {
   String? error;
   List<ClientFolder> items = [];
 
-  Future<void> load({required String token}) async {
+  Future<void> load() async {
     loading = true;
     notifyListeners();
     try {
@@ -33,7 +33,6 @@ class ClientFoldersProvider extends ChangeNotifier {
   }
 
   Future<void> save({
-    required String token,
     required ClientFolder folder,
   }) async {
     if (!supported) return;
@@ -48,7 +47,6 @@ class ClientFoldersProvider extends ChangeNotifier {
   }
 
   Future<void> remove({
-    required String token,
     required int id,
   }) async {
     if (!supported) return;

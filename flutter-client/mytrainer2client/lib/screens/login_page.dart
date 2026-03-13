@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
+import '../services/pending_client_invite_service.dart';
 import '../widgets/landing_content.dart';
 import 'package:mytrainer2client/l10n/app_localizations.dart';
 
@@ -34,9 +35,25 @@ class _LoginState extends State<LoginPage> {
     // first boot → finish redirect silently if there is one
     Future.microtask(() async {
       final auth = context.read<AuthProvider>();
+      final pendingInvite =
+          await PendingClientInviteService().readToken() ?? Uri.base.queryParameters['token'];
       final ok = await auth.loginOrSignup(interactive: false);
       if (ok && auth.isAuthenticated) {
-        if (mounted) Navigator.pushReplacementNamed(context, '/home');
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(
+          context,
+          pendingInvite != null && pendingInvite.isNotEmpty
+              ? '/onboard/client?token=$pendingInvite'
+              : auth.role == null
+                  ? '/pending-approval'
+                  : '/home',
+        );
+      } else if (pendingInvite != null && pendingInvite.isNotEmpty) {
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(
+          context,
+          '/onboard/client?token=$pendingInvite',
+        );
       } else {
         if (mounted) setState(() => _checking = false);
       }
@@ -51,6 +68,8 @@ class _LoginState extends State<LoginPage> {
     });
 
     final auth = context.read<AuthProvider>();
+    final pendingInvite =
+        await PendingClientInviteService().readToken() ?? Uri.base.queryParameters['token'];
 
     Future<bool?> task() async {
       try {
@@ -65,14 +84,29 @@ class _LoginState extends State<LoginPage> {
     if (!mounted) return;
 
     if (ok == true && auth.isAuthenticated) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      // either timeout (ok == null) or explicit failure (ok == false)
-      setState(() {
-        _authing = false;
-        _authError = true;
-      });
+      Navigator.pushReplacementNamed(
+        context,
+        pendingInvite != null && pendingInvite.isNotEmpty
+            ? '/onboard/client?token=$pendingInvite'
+            : auth.role == null
+                ? '/pending-approval'
+                : '/home',
+      );
+      return;
     }
+
+    if (kIsWeb && ok == false) {
+      // On web, interactive auth triggers a browser redirect. The auth helper can
+      // briefly return before the page leaves, so keep showing the loading state
+      // instead of flashing the generic error screen in that handoff window.
+      return;
+    }
+
+    // either timeout (ok == null) or explicit failure (ok == false)
+    setState(() {
+      _authing = false;
+      _authError = true;
+    });
   }
 
   @override
@@ -144,15 +178,7 @@ class _LoginState extends State<LoginPage> {
               Align(
                 alignment: const Alignment(0, -0.2),
                 child: LandingContent(
-                  onSignIn: () async {
-                    if (kIsWeb) {
-                      // 🔄 full‑page redirect on web
-                      await context.read<AuthProvider>().loginOrSignup();
-                    } else {
-                      // 📱 in‑app flow on mobile with splash
-                      await _startAuth();
-                    }
-                  },
+                  onSignIn: _startAuth,
                 ),
               ),
 

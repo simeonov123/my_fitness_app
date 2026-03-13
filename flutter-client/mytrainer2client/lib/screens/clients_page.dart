@@ -37,21 +37,18 @@ class _ClientsPageState extends State<ClientsPage> {
   }
 
   Future<void> _loadAll({int? page, String? search, String? sort}) async {
-    final auth = context.read<AuthProvider>();
     await Future.wait([
       _load(page: page, search: search, sort: sort),
-      context.read<ClientFoldersProvider>().load(token: auth.token!),
+      context.read<ClientFoldersProvider>().load(),
     ]);
   }
 
   Future<void> _load({int? page, String? search, String? sort}) async {
-    final auth = context.read<AuthProvider>();
     setState(() {
       if (sort != null) _sort = sort;
     });
 
     await context.read<ClientsProvider>().load(
-          token: auth.token!,
           toPage: page,
           newSearch: search,
           newSort: _sort,
@@ -78,7 +75,6 @@ class _ClientsPageState extends State<ClientsPage> {
 
   Future<void> _openFolderDialog({ClientFolder? folder}) async {
     final folderProv = context.read<ClientFoldersProvider>();
-    final auth = context.read<AuthProvider>();
     if (!folderProv.supported) {
       _showFoldersUnavailableMessage();
       return;
@@ -89,7 +85,6 @@ class _ClientsPageState extends State<ClientsPage> {
     );
     if (edited == null) return;
     if (!mounted) return;
-    final token = auth.token!;
     final next = ClientFolder(
       id: edited.id,
       name: edited.name,
@@ -98,7 +93,7 @@ class _ClientsPageState extends State<ClientsPage> {
       createdAt: edited.createdAt,
       updatedAt: edited.updatedAt,
     );
-    await folderProv.save(token: token, folder: next);
+    await folderProv.save(folder: next);
     if (!mounted) return;
     await _loadAll(page: 0);
   }
@@ -126,8 +121,7 @@ class _ClientsPageState extends State<ClientsPage> {
       ),
     );
     if (ok != true || !mounted) return;
-    final token = context.read<AuthProvider>().token!;
-    await context.read<ClientFoldersProvider>().remove(token: token, id: folder.id);
+    await context.read<ClientFoldersProvider>().remove(id: folder.id);
     if (!mounted) return;
     await _loadAll(page: 0);
   }
@@ -154,13 +148,12 @@ class _ClientsPageState extends State<ClientsPage> {
 
     if (result == null || !mounted) return;
 
-    final token = context.read<AuthProvider>().token!;
     final clientProv = context.read<ClientsProvider>();
     for (final folder in result.folders) {
-      await folderProv.save(token: token, folder: folder);
+      await folderProv.save(folder: folder);
     }
     for (final client in result.clients) {
-      await clientProv.save(token: token, c: client);
+      await clientProv.save(c: client);
     }
     if (!mounted) return;
     await _loadAll(page: 0);

@@ -25,7 +25,7 @@ class AuthService {
   Future<bool> register(String u, String e, String p, String c) async => false;
 
   /// No-op.
-  Future<void> logout() async {}
+  Future<void> logout({String? postLogoutRedirectPath}) async {}
 
   /// Always `null`.
   Future<String?> getValidAccessToken() async => null;

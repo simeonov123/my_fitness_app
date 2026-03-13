@@ -30,14 +30,13 @@ class TrainingSessionsProvider extends ChangeNotifier {
   /* ───────── calendar counts ───────── */
 
   Future<void> loadCounts({
-    required String token,
     required DateTime monthFirst,
   }) async {
     final first = monthFirst.subtract(Duration(days: monthFirst.weekday % 7));
     final lastMonthDay = DateTime(monthFirst.year, monthFirst.month + 1, 0);
     final last = lastMonthDay.add(Duration(days: 6 - lastMonthDay.weekday % 7));
 
-    final fresh = await _api.counts(token: token, from: first, to: last);
+    final fresh = await _api.counts(from: first, to: last);
     _counts
       ..removeWhere((d, _) =>
           d.isAfter(first.subtract(const Duration())) &&
@@ -49,10 +48,9 @@ class TrainingSessionsProvider extends ChangeNotifier {
   /* ───────── day slice (timeline) ───────── */
 
   Future<void> loadDay({
-    required String token,
     required DateTime day,
   }) async {
-    final list = await _api.listDay(token: token, day: day);
+    final list = await _api.listDay(day: day);
     _dayList
       ..clear()
       ..addAll(list);
@@ -71,7 +69,6 @@ class TrainingSessionsProvider extends ChangeNotifier {
   /* ───────── paged search list ───────── */
 
   Future<void> loadSearch({
-    required String token,
     int? toPage,
     String? newSearch,
     String? newSort,
@@ -82,30 +79,31 @@ class TrainingSessionsProvider extends ChangeNotifier {
     if (newSort != null) sort = newSort;
     notifyListeners();
 
-    final resp = await _api.page(
-      token: token,
-      page: page,
-      size: size,
-      q: search,
-      sort: sort,
-    );
+    try {
+      final resp = await _api.page(
+        page: page,
+        size: size,
+        q: search,
+        sort: sort,
+      );
 
-    _searchList
-      ..clear()
-      ..addAll(resp.items);
-    page = resp.page;
-    totalPages = resp.totalPages;
-    loading = false;
-    notifyListeners();
+      _searchList
+        ..clear()
+        ..addAll(resp.items);
+      page = resp.page;
+      totalPages = resp.totalPages;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
   }
 
   /* ───────── create (FAB) ───────── */
 
   Future<TrainingSession> create({
-    required String token,
     required Map<String, dynamic> dto,
   }) async {
-    final created = await _api.create(token: token, dto: dto);
+    final created = await _api.create(dto: dto);
     _dayList.add(created); // if it's today it appears immediately
     notifyListeners();
     return created;
@@ -114,7 +112,6 @@ class TrainingSessionsProvider extends ChangeNotifier {
   /* ───────── delete ───────── */
 
   Future<void> deleteOne({
-    required String token,
     required int id,
   }) async {
     // grab the session (if present) **before** we mutate the list
@@ -122,7 +119,7 @@ class TrainingSessionsProvider extends ChangeNotifier {
     final TrainingSession? toRemove = idx == -1 ? null : _dayList[idx];
 
     // backend call
-    await _api.delete(token: token, id: id);
+    await _api.delete(id: id);
 
     // local UI lists
     if (idx != -1) _dayList.removeAt(idx);

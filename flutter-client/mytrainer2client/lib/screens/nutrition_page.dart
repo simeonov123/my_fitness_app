@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/nutrition_templates_provider.dart';
-import '../providers/auth_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../providers/navigation_provider.dart';
 import '../models/nutrition_plan_template.dart';
@@ -27,13 +26,11 @@ class _NutritionPageState extends State<NutritionPage> {
   }
 
   void _load({int? page, String? search, String? sort}) {
-    final auth = context.read<AuthProvider>();
     setState(() {
       if (sort != null) _sort = sort;
     });
 
     context.read<NutritionTemplatesProvider>().load(
-      token: auth.token!,
       toPage: page,
       newSearch: search,
       newSort: _sort,

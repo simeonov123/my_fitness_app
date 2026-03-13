@@ -2,7 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'auth_service_mobile.dart';
+import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 /// A thin wrapper around HTTP GET that automatically handles:

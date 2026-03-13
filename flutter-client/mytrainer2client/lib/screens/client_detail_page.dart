@@ -5,7 +5,6 @@ import 'package:avatar_plus/avatar_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../models/client.dart';
-import '../providers/auth_provider.dart';
 import '../providers/clients_provider.dart';
 import '../widgets/client_form_dialog.dart';
 
@@ -40,8 +39,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
       builder: (_) => ClientFormDialog(client: _client),
     );
     if (updated != null) {
-      final token = context.read<AuthProvider>().token!;
-      await context.read<ClientsProvider>().save(token: token, c: updated);
+      await context.read<ClientsProvider>().save(c: updated);
       setState(() {
         _client = updated;
       });
@@ -70,10 +68,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
       ),
     );
     if (confirmed == true) {
-      final token = context.read<AuthProvider>().token!;
-      await context
-          .read<ClientsProvider>()
-          .remove(token: token, id: _client.id);
+      await context.read<ClientsProvider>().remove(id: _client.id);
       Navigator.of(context).pop(); // back to clients list
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Client deleted')),

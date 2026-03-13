@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mytrainer2client/models/client.dart';
 import 'package:mytrainer2client/screens/client_detail_page.dart';
 import 'package:mytrainer2client/screens/login_page.dart';
+import 'package:mytrainer2client/screens/pending_approval_page.dart';
 import 'package:mytrainer2client/screens/splash_page.dart';
 import 'package:mytrainer2client/screens/home_page.dart';
 import 'package:mytrainer2client/screens/training_session_detail_page.dart';
@@ -14,6 +15,7 @@ import 'package:mytrainer2client/screens/nutrition_page.dart';
 final Map<String, WidgetBuilder> appRoutes = {
   '/':         (_) => const SplashPage(),
   '/login':    (_) => const LoginPage(),
+  '/pending-approval': (_) => const PendingApprovalPage(),
   '/home':     (_) => const HomePage(),
   '/workout':  (_) => const WorkoutsPage(),
   '/social':   (_) => const SocialPage(),
