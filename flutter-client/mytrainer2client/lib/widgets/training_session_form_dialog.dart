@@ -56,79 +56,233 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
     final clientFolderProv = context.watch<ClientFoldersProvider>();
     final tProv = context.watch<WorkoutTemplatesProvider>();
     final folderProv = context.watch<WorkoutFoldersProvider>();
+    final colors = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
 
-    return AlertDialog(
-      title: const Text('New Training Session'),
-      content: Form(
-        key: _form,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _name,
-                decoration:
-                const InputDecoration(labelText: 'Name (optional)'),
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colors.surface,
+                colors.surfaceContainerLowest,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.shadow.withOpacity(0.18),
+                blurRadius: 36,
+                offset: const Offset(0, 24),
               ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.date_range),
-                title: Text('${_day.year}-${_day.month}-${_day.day}'),
-                onTap: () async {
-                  final d = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2030),
-                    initialDate: _day,
-                  );
-                  if (d != null) setState(() => _day = d);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.schedule),
-                title: Text('Start ${_start.format(context)}'),
-                onTap: () async {
-                  final t = await showTimePicker(
-                    context: context,
-                    initialTime: _start,
-                  );
-                  if (t != null) setState(() => _start = t);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.schedule),
-                title: Text('End   ${_end.format(context)}'),
-                onTap: () async {
-                  final t = await showTimePicker(
-                    context: context,
-                    initialTime: _end,
-                  );
-                  if (t != null) setState(() => _end = t);
-                },
-              ),
-              const Divider(),
-              FormField<List<Client>>(
-                validator: (_) =>
-                    _pickedClients.isEmpty ? 'Pick at least one' : null,
-                builder: (field) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.people_outline),
-                      title: Text(
-                        _pickedClients.isEmpty
-                            ? 'Choose clients'
-                            : '${_pickedClients.length} client${_pickedClients.length == 1 ? '' : 's'} selected',
+            ],
+          ),
+          child: Form(
+            key: _form,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          colors.primary.withOpacity(0.14),
+                          colors.secondary.withOpacity(0.08),
+                        ],
                       ),
-                      subtitle: Text(
-                        _pickedClients.isEmpty
-                            ? 'All, ungrouped, and folder filters available'
-                            : _pickedClients.map((c) => c.fullName).join(', '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              height: 44,
+                              width: 44,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withOpacity(0.14),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                Icons.event_available_rounded,
+                                color: colors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'New training session',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: text.headlineSmall?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Schedule the session, attach the workout, and invite the right clients in one pass.',
+                                      style: text.bodyMedium?.copyWith(
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            _InfoPill(
+                              icon: Icons.calendar_today_rounded,
+                              label: _formatDay(_day),
+                            ),
+                            _InfoPill(
+                              icon: Icons.play_arrow_rounded,
+                              label: _start.format(context),
+                            ),
+                            _InfoPill(
+                              icon: Icons.flag_rounded,
+                              label: _end.format(context),
+                            ),
+                            _InfoPill(
+                              icon: Icons.groups_rounded,
+                              label: _pickedClients.isEmpty
+                                  ? 'No clients yet'
+                                  : '${_pickedClients.length} selected',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _name,
+                    decoration: InputDecoration(
+                      labelText: 'Session name',
+                      hintText: 'Upper body strength, Team conditioning, Morning group...',
+                      filled: true,
+                      fillColor: colors.surfaceContainerLowest,
+                      prefixIcon: const Icon(Icons.edit_calendar_rounded),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide.none,
                       ),
-                      trailing: const Icon(Icons.keyboard_arrow_down),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Schedule',
+                    style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 430;
+                      final medium = constraints.maxWidth < 620;
+                      final columns = compact ? 1 : (medium ? 2 : 3);
+                      final spacing = 12.0;
+                      final cardWidth =
+                          (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: spacing,
+                        children: [
+                          SizedBox(
+                            width: cardWidth,
+                            child: _ActionCard(
+                              icon: Icons.date_range_rounded,
+                              label: 'Day',
+                              value: _formatDay(_day),
+                              onTap: () async {
+                                final d = await showDatePicker(
+                                  context: context,
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2030),
+                                  initialDate: _day,
+                                );
+                                if (d != null) setState(() => _day = d);
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _ActionCard(
+                              icon: Icons.schedule_rounded,
+                              label: 'Start',
+                              value: _start.format(context),
+                              onTap: () async {
+                                final t = await showTimePicker(
+                                  context: context,
+                                  initialTime: _start,
+                                );
+                                if (t != null) setState(() => _start = t);
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _ActionCard(
+                              icon: Icons.schedule_send_rounded,
+                              label: 'End',
+                              value: _end.format(context),
+                              onTap: () async {
+                                final t = await showTimePicker(
+                                  context: context,
+                                  initialTime: _end,
+                                );
+                                if (t != null) setState(() => _end = t);
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  FormField<List<Client>>(
+                    validator: (_) =>
+                        _pickedClients.isEmpty ? 'Pick at least one client.' : null,
+                    builder: (field) => _SelectionCard(
+                      icon: Icons.people_alt_rounded,
+                      title: 'Clients',
+                      value: _pickedClients.isEmpty
+                          ? 'Choose who is joining this session'
+                          : '${_pickedClients.length} client${_pickedClients.length == 1 ? '' : 's'} selected',
+                      subtitle: _pickedClients.isEmpty
+                          ? 'Search by name, folder, or ungrouped clients.'
+                          : _pickedClients.map((c) => c.fullName).join(', '),
+                      errorText: field.errorText,
                       onTap: () async {
                         final picked = await _showClientPicker(
                           clients: cProv.items,
@@ -140,36 +294,18 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                         }
                       },
                     ),
-                    if (field.hasError)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          field.errorText!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              FormField<WorkoutTemplate>(
-                validator: (_) => _pickedTpl == null ? 'Required' : null,
-                builder: (field) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.fitness_center),
-                      title: Text(_pickedTpl?.name ?? 'Choose workout'),
-                      subtitle: Text(
-                        _pickedTpl == null
-                            ? 'All, ungrouped, and folder filters available'
-                            : (_pickedTpl!.folderName ?? 'Ungrouped workout'),
-                      ),
-                      trailing: const Icon(Icons.keyboard_arrow_down),
+                  ),
+                  const SizedBox(height: 14),
+                  FormField<WorkoutTemplate>(
+                    validator: (_) => _pickedTpl == null ? 'Choose a workout template.' : null,
+                    builder: (field) => _SelectionCard(
+                      icon: Icons.fitness_center_rounded,
+                      title: 'Workout template',
+                      value: _pickedTpl?.name ?? 'Choose the workout structure',
+                      subtitle: _pickedTpl == null
+                          ? 'Browse all workouts, folders, or ungrouped templates.'
+                          : (_pickedTpl!.folderName ?? 'Ungrouped workout'),
+                      errorText: field.errorText,
                       onTap: () async {
                         final picked = await _showWorkoutPicker(
                           workouts: tProv.items,
@@ -181,37 +317,64 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                         }
                       },
                     ),
-                    if (field.hasError)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          field.errorText!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 12,
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _submitting ? null : () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
+                          child: const Text('Cancel'),
                         ),
                       ),
-                  ],
-                ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _submitting || _pickedClients.isEmpty || _pickedTpl == null
+                              ? null
+                              : _submit,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(_submitting ? 'Creating...' : 'Create session'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _submitting || _pickedClients.isEmpty || _pickedTpl == null
-              ? null
-              : _submit,
-          child: Text(_submitting ? 'Creating...' : 'Create'),
-        ),
-      ],
     );
+  }
+
+  String _formatDay(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   DateTime _merge(DateTime d, TimeOfDay t) =>
@@ -289,6 +452,187 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
       ),
     );
     Navigator.pop(context, dto);
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _InfoPill({
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surface.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: colors.primary),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: colors.primary),
+              const SizedBox(height: 14),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final String subtitle;
+  final String? errorText;
+  final VoidCallback onTap;
+
+  const _SelectionCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.onTap,
+    this.errorText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final hasError = errorText != null && errorText!.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          color: colors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  Container(
+                    height: 44,
+                    width: 44,
+                    decoration: BoxDecoration(
+                      color: colors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(icon, color: colors.primary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          value,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.keyboard_arrow_right_rounded),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 6, top: 6),
+            child: Text(
+              errorText!,
+              style: TextStyle(
+                color: colors.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 

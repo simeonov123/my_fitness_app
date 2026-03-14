@@ -122,6 +122,7 @@ class _LoginState extends State<LoginPage> {
 
     // 2️⃣ auth splash (progress or error) ─────────────────────────────
     if (_authing || _authError) {
+      final auth = context.watch<AuthProvider>();
       return Scaffold(
         body: Center(
           child: _authing
@@ -145,6 +146,19 @@ class _LoginState extends State<LoginPage> {
                       .textTheme
                       .titleMedium
                       ?.copyWith(color: Colors.red)),
+              if (!kIsWeb &&
+                  kDebugMode &&
+                  (auth.lastAuthError?.isNotEmpty ?? false)) ...[
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    auth.lastAuthError!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _startAuth,

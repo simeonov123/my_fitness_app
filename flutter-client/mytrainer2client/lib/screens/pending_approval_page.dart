@@ -26,7 +26,7 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
 
     final auth = context.read<AuthProvider>();
     try {
-      await auth.loginOrSignup(interactive: false);
+      final refreshed = await auth.refreshSession();
       if (!mounted) return;
 
       final pendingInvite = await PendingClientInviteService().readToken();
@@ -41,6 +41,12 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
           (_) => false,
         );
         return;
+      }
+
+      if (!refreshed) {
+        setState(() {
+          _error = 'Approval is still pending. Try again after your account has been approved.';
+        });
       }
     } catch (e) {
       if (!mounted) return;

@@ -17,11 +17,17 @@ abstract class _AuthServiceBase {
   /// Read any tokens cached in localStorage/secure storage.
   void loadFromStorage();
 
+  /// Rehydrate any stored tokens and update in-memory state.
+  Future<void> reloadFromStorage();
+
   /// Start a login / signup flow.
   Future<bool> loginOrSignup({bool interactive = true});
 
   /// Shortcut for “Register” (falls back to normal login flow on web).
   Future<bool> register(String u, String e, String p, String c);
+
+  /// Refresh the current session without requiring a new interactive login.
+  Future<bool> refreshSession();
 
   /// Clear local tokens and call the Keycloak end-session endpoint.
   Future<void> logout({String? postLogoutRedirectPath});
@@ -47,9 +53,11 @@ class AuthService implements _AuthServiceBase {
 
   String? _accessToken;
   String? _idToken;
+  String? _lastAuthError;
 
   @override
   String? get accessToken => _accessToken;
+  String? get lastAuthError => _lastAuthError;
 
   // --------------------------------------------------------------------------
   // Storage helpers
@@ -60,41 +68,53 @@ class AuthService implements _AuthServiceBase {
     _idToken = html.window.localStorage['id_token'];
   }
 
+  Future<void> reloadFromStorage() async {
+    loadFromStorage();
+  }
+
   // --------------------------------------------------------------------------
   // Login / signup (interactive OR silent)
   // --------------------------------------------------------------------------
   @override
   Future<bool> loginOrSignup({bool interactive = true}) async {
-    final issuer = await Issuer.discover(Uri.parse(issuerUrl));
-    final client = Client(issuer, clientId);
+    _lastAuthError = null;
+    try {
+      final issuer = await Issuer.discover(Uri.parse(issuerUrl));
+      final client = Client(issuer, clientId);
 
-    final auth = browser.Authenticator(
-      client,
-      scopes: const ['openid', 'profile', 'email', 'offline_access'],
-      prompt: interactive ? '' : 'none', // “none” = silent renew
-    );
+      final auth = browser.Authenticator(
+        client,
+        scopes: const ['openid', 'profile', 'email', 'offline_access'],
+        prompt: interactive ? '' : 'none', // “none” = silent renew
+      );
 
-    final cred = await auth.credential;
-    if (cred == null) {
-      if (interactive) auth.authorize(); // Full redirect login
+      final cred = await auth.credential;
+      if (cred == null) {
+        if (interactive) auth.authorize(); // Full redirect login
+        return false;
+      }
+
+      final token = await cred.getTokenResponse();
+      _accessToken = token.accessToken;
+      _idToken = token.idToken.toCompactSerialization();
+
+      html.window.localStorage
+        ..['access_token'] = _accessToken!
+        ..['id_token'] = _idToken!;
+
+      return true;
+    } catch (e) {
+      _lastAuthError = e.toString();
       return false;
     }
-
-    final token = await cred.getTokenResponse();
-    _accessToken = token.accessToken;
-    _idToken = token.idToken.toCompactSerialization();
-
-    html.window.localStorage
-      ..['access_token'] = _accessToken!
-      ..['id_token'] = _idToken!;
-
-    return true;
   }
 
   // On web we simply reuse the normal login flow with “Register” link visible.
   @override
   Future<bool> register(String u, String e, String p, String c) =>
       loginOrSignup(interactive: true);
+
+  Future<bool> refreshSession() => loginOrSignup(interactive: false);
 
   // --------------------------------------------------------------------------
   // **NEW** – unified token-getter used by the provider & API services

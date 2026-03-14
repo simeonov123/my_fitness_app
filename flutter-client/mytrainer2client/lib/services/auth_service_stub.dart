@@ -14,15 +14,22 @@ class AuthService {
 
   /// Always `null` in this stub.
   String? get accessToken => null;
+  String? get lastAuthError => null;
 
   /// No-op.
   void loadFromStorage() {}
+
+  /// No-op async rehydrate.
+  Future<void> reloadFromStorage() async {}
 
   /// Always returns `false`.
   Future<bool> loginOrSignup({bool interactive = true}) async => false;
 
   /// Always returns `false`.
   Future<bool> register(String u, String e, String p, String c) async => false;
+
+  /// Always returns `false`.
+  Future<bool> refreshSession() async => false;
 
   /// No-op.
   Future<void> logout({String? postLogoutRedirectPath}) async {}

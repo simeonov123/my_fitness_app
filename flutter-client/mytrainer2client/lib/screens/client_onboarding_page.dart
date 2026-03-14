@@ -17,7 +17,8 @@ class ClientOnboardingPage extends StatefulWidget {
   State<ClientOnboardingPage> createState() => _ClientOnboardingPageState();
 }
 
-class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
+class _ClientOnboardingPageState extends State<ClientOnboardingPage>
+    with WidgetsBindingObserver {
   final ClientOnboardingApiService _api = ClientOnboardingApiService();
   final PendingClientInviteService _pending = PendingClientInviteService();
 
@@ -30,7 +31,26 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _recoverAfterAuthReturn();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _recoverAfterAuthReturn();
+    }
   }
 
   Future<void> _load() async {
@@ -50,12 +70,14 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
       setState(() {
         _validation = validation;
         _loading = false;
+        _submitting = false;
       });
       _maybeAutoAccept(validation);
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _loading = false;
+        _submitting = false;
         _error = e.toString();
       });
     }
@@ -196,6 +218,23 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
       clearPendingInvite: false,
       postLogoutRedirectPath: redirectPath,
     );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+  }
+
+  Future<void> _recoverAfterAuthReturn() async {
+    final auth = context.read<AuthProvider>();
+    await auth.reloadSession();
+    if (!mounted) return;
+
+    final invite = _validation;
+    if (_submitting && invite != null && invite.valid && !invite.alreadyLinked) {
+      setState(() => _submitting = false);
+    }
+
+    if (invite != null) {
+      _maybeAutoAccept(invite);
+    }
   }
 
   @override
@@ -292,7 +331,11 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              invite.valid ? 'You were invited to join MVFitness' : 'Invite unavailable',
+              invite.alreadyLinked
+                  ? 'Invite successful'
+                  : invite.valid
+                      ? 'You were invited to join MVFitness'
+                      : 'Invite unavailable',
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
@@ -310,8 +353,8 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage> {
             ] else if (invite.alreadyLinked) ...[
               Text(
                 hasApprovedRole
-                    ? 'This invite is already linked to your account.'
-                    : 'Your registration was already linked. Continue to the approval status page or switch to a different account.',
+                    ? 'This invite has already been linked to your account.'
+                    : 'Your registration was linked successfully. Continue to the approval status page or switch to a different account.',
               ),
             ] else if (isTrainer) ...[
               const Text(

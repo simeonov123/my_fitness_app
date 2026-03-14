@@ -21,7 +21,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableMethodSecurity
@@ -29,6 +31,9 @@ public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
+
+    @Value("${app.security.allowed-issuers}")
+    private String allowedIssuersProperty;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -64,10 +69,10 @@ public class SecurityConfig {
         OAuth2TokenValidator<Jwt> withTimestamp = JwtValidators.createDefault();
         OAuth2TokenValidator<Jwt> withIssuer = jwt -> {
             String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : null;
-            Set<String> allowedIssuers = Set.of(
-                    "http://localhost:8081/realms/myrealm",
-                    "http://10.0.2.2:8081/realms/myrealm"
-            );
+            Set<String> allowedIssuers = Arrays.stream(allowedIssuersProperty.split(","))
+                    .map(String::trim)
+                    .filter(value -> !value.isEmpty())
+                    .collect(Collectors.toUnmodifiableSet());
 
             if (issuer != null && allowedIssuers.contains(issuer)) {
                 return OAuth2TokenValidatorResult.success();

@@ -68,6 +68,9 @@ services:
       SPRING_DATASOURCE_USERNAME: fitness_user
       SPRING_DATASOURCE_PASSWORD: userpass
       KEYCLOAK_AUTH_URL: http://keycloak:8081/realms/myrealm
+      KEYCLOAK_ISSUER_URI: http://${DEV_LAN_HOST:-localhost}:8081/realms/myrealm
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8081/realms/myrealm/protocol/openid-connect/certs
+      KEYCLOAK_ALLOWED_ISSUERS: http://localhost:8081/realms/myrealm,http://10.0.2.2:8081/realms/myrealm,http://${DEV_LAN_HOST:-localhost}:8081/realms/myrealm
       APP_CLIENT_INVITE_BASE_URL: mytrainer://invite/client
       APP_CLIENT_WEB_INVITE_BASE_URL: http://localhost:3000/onboard/client
       # SPRING_LIQUIBASE_CLEAR_CHECKSUMS: "true"

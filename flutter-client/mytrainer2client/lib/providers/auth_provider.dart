@@ -20,6 +20,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// The raw (possibly expired) access token string.
   String? get token => _auth.accessToken;
+  String? get lastAuthError => _auth.lastAuthError;
 
   String? get role {
     final raw = _auth.accessToken;
@@ -51,6 +52,18 @@ class AuthProvider extends ChangeNotifier {
   ///
   /// Returns `null` if we have no token or refresh failed.
   Future<String?> getValidToken() => _auth.getValidAccessToken();
+
+  Future<void> reloadSession() async {
+    await _auth.reloadFromStorage();
+    notifyListeners();
+  }
+
+  Future<bool> refreshSession() async {
+    final ok = await _auth.refreshSession();
+    await _auth.reloadFromStorage();
+    notifyListeners();
+    return ok;
+  }
 
   /// Starts the interactive (or silent) login/registration flow.
   ///

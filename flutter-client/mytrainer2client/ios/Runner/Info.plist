@@ -55,12 +55,21 @@
 				<string>com.mvfitness.mytrainer2client</string>
 				<string>mytrainer</string>
 			</array>
-		</dict>
+			</dict>
 	</array>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Allow local network access so the app can connect to the Flutter debug service during development.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+		<string>_dartVmService._tcp</string>
+	</array>
 </dict>
 </plist>

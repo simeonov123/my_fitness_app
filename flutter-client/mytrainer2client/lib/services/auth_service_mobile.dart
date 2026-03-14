@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dev_endpoints.dart';
@@ -30,6 +31,8 @@ class AuthService {
 
   String? _refreshToken;
   String? _idToken;
+  String? _lastAuthError;
+  String? get lastAuthError => _lastAuthError;
 
   /// Reads any previously‐saved tokens from secure storage.
   Future<void> loadFromStorage() async {
@@ -39,12 +42,15 @@ class AuthService {
     debugPrint('🔑 Loaded tokens: access=${_accessToken!=null}, refresh=${_refreshToken!=null}');
   }
 
+  Future<void> reloadFromStorage() => loadFromStorage();
+
   /// Interactive or silent login/signup via Keycloak.
   ///
   /// If [interactive] is `false`, attempts `prompt=none` to refresh silently.
   /// Returns `true` on success, `false` on error or user cancellation.
   Future<bool> loginOrSignup({bool interactive = true}) async {
     if (!interactive && _refreshToken == null) return false;
+    _lastAuthError = null;
 
     final req = AuthorizationTokenRequest(
       _clientId,
@@ -70,7 +76,13 @@ class AuthService {
 
       debugPrint('✅ Login success; tokens stored');
       return true;
+    } on PlatformException catch (e, st) {
+      _lastAuthError =
+          'PlatformException(${e.code}): ${e.message ?? e.details ?? e.toString()}';
+      debugPrint('⚠️ loginOrSignup platform error: $_lastAuthError\n$st');
+      return false;
     } catch (e, st) {
+      _lastAuthError = e.toString();
       debugPrint('⚠️ loginOrSignup error: $e\n$st');
       return false;
     }
@@ -79,6 +91,11 @@ class AuthService {
   /// Shortcut to show Keycloak’s “Register” screen.
   Future<bool> register(String u, String e, String p, String c) =>
       loginOrSignup(interactive: true);
+
+  Future<bool> refreshSession() async {
+    await loadFromStorage();
+    return refresh();
+  }
 
   /// Uses the stored refresh token to obtain a fresh access token.
   ///
