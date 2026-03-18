@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -11,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/social_feed_provider.dart';
 import '../services/social_story_export_service.dart';
+import '../theme/app_density.dart';
 import '../widgets/bottom_nav_bar.dart';
 
 class SocialPage extends StatelessWidget {
@@ -59,7 +59,7 @@ class _SocialScaffoldState extends State<_SocialScaffold> {
       body: feed.isEmpty
           ? Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: AppDensity.all(18),
                 child: Text(
                   isClient
                       ? 'Your completed workout stories will appear here after you finish or open a completed session.'
@@ -71,9 +71,15 @@ class _SocialScaffoldState extends State<_SocialScaffold> {
           : ListView.separated(
               controller: _scrollController,
               primary: false,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              padding: EdgeInsets.fromLTRB(
+                AppDensity.space(12),
+                AppDensity.space(12),
+                AppDensity.space(12),
+                AppDensity.space(20),
+              ),
               itemCount: feed.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 24),
+              separatorBuilder: (_, __) =>
+                  SizedBox(height: AppDensity.space(16)),
               itemBuilder: (_, index) => _SocialPostCard(post: feed[index]),
             ),
       bottomNavigationBar: const BottomNavBar(),
@@ -99,8 +105,8 @@ class _SocialPostCardState extends State<_SocialPostCard> {
     if (_exporting) return;
     setState(() => _exporting = true);
     try {
-      final boundary =
-          _captureKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary = _captureKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
       if (boundary == null) return;
       final image = await boundary.toImage(pixelRatio: 3);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -112,7 +118,8 @@ class _SocialPostCardState extends State<_SocialPostCard> {
           .replaceAll(RegExp(r'^_|_$'), '');
       await _exportService.exportPng(
         bytes: bytes,
-        fileName: '${safeName.isEmpty ? 'workout_story' : safeName}_${widget.post.id}',
+        fileName:
+            '${safeName.isEmpty ? 'workout_story' : safeName}_${widget.post.id}',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,7 +147,7 @@ class _SocialPostCardState extends State<_SocialPostCard> {
           key: _captureKey,
           child: _StoryWorkoutCard(post: widget.post),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: AppDensity.space(10)),
         Row(
           children: [
             Expanded(
@@ -203,10 +210,15 @@ class _StoryWorkoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _StatTile(label: 'Lifted', value: '${post.totalWeightLifted.toStringAsFixed(0)} kg'),
-      _StatTile(label: 'Duration', value: _formatDuration(post.durationSeconds)),
+      _StatTile(
+          label: 'Lifted',
+          value: '${post.totalWeightLifted.toStringAsFixed(0)} kg'),
+      _StatTile(
+          label: 'Duration', value: _formatDuration(post.durationSeconds)),
       _StatTile(label: 'Exercises', value: '${post.exerciseCount}'),
-      _StatTile(label: 'Sets', value: '${post.completedSetCount}/${post.totalSetCount}'),
+      _StatTile(
+          label: 'Sets',
+          value: '${post.completedSetCount}/${post.totalSetCount}'),
     ];
     final highlights = [
       post.bestVolumeHighlight,
@@ -215,10 +227,10 @@ class _StoryWorkoutCard extends StatelessWidget {
     ].whereType<SocialPerformanceHighlight>().toList(growable: false);
 
     return AspectRatio(
-      aspectRatio: 9 / 16,
+      aspectRatio: 9 / 16.4,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
+          borderRadius: AppDensity.circular(26),
           gradient: LinearGradient(
             colors: _gradient(),
             begin: Alignment.topLeft,
@@ -235,31 +247,36 @@ class _StoryWorkoutCard extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              top: -40,
+              top: -28,
               right: -10,
               child: Container(
-                width: 180,
-                height: 180,
+                width: AppDensity.space(150),
+                height: AppDensity.space(150),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: Colors.white.withOpacity(0.08),
                 ),
               ),
             ),
             Positioned(
-              bottom: -70,
+              bottom: -54,
               left: -30,
               child: Container(
-                width: 220,
-                height: 220,
+                width: AppDensity.space(180),
+                height: AppDensity.space(180),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: Colors.white.withOpacity(0.08),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.fromLTRB(
+                AppDensity.space(18),
+                AppDensity.space(18),
+                AppDensity.space(18),
+                AppDensity.space(24),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -272,7 +289,7 @@ class _StoryWorkoutCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
-                          color: Colors.white.withValues(alpha: 0.14),
+                          color: Colors.white.withOpacity(0.14),
                         ),
                         child: Text(
                           _headline(),
@@ -288,7 +305,7 @@ class _StoryWorkoutCard extends StatelessWidget {
                         post.ownerRole == 'CLIENT'
                             ? Icons.auto_awesome
                             : Icons.groups_rounded,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withOpacity(0.9),
                       ),
                     ],
                   ),
@@ -306,7 +323,7 @@ class _StoryWorkoutCard extends StatelessWidget {
                   Text(
                     _subhead(),
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.84),
+                      color: Colors.white.withOpacity(0.84),
                       fontSize: 14,
                       height: 1.35,
                     ),
@@ -315,7 +332,7 @@ class _StoryWorkoutCard extends StatelessWidget {
                   Text(
                     'Coach ${post.trainerName} • ${_formatDate(post.completedAt)}',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.68),
+                      color: Colors.white.withOpacity(0.68),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -324,10 +341,10 @@ class _StoryWorkoutCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: Colors.white.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: Colors.white.withOpacity(0.15),
                       ),
                     ),
                     child: Column(
@@ -357,123 +374,145 @@ class _StoryWorkoutCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (post.ownerRole == 'CLIENT' && post.rank != null) ...[
-                    _InsightStrip(
-                      label: 'Rank',
-                      value: '#${post.rank}',
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (post.ownerRole == 'CLIENT' &&
+                              post.rank != null) ...[
+                            _InsightStrip(
+                              label: 'Rank',
+                              value: '#${post.rank}',
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          _InsightStrip(
+                            label: post.ownerRole == 'CLIENT'
+                                ? 'Session total'
+                                : 'Crew total',
+                            value:
+                                '${post.sessionTotalWeightLifted.toStringAsFixed(0)} kg',
+                          ),
+                          if (highlights.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              'Performance highlights',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.92),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ...highlights.map(
+                              (highlight) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: _HighlightCard(highlight: highlight),
+                              ),
+                            ),
+                          ],
+                          if (_showLeaderboard) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'Top performers',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.92),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ...post.leaderboard
+                                .take(2)
+                                .toList()
+                                .asMap()
+                                .entries
+                                .map(
+                                  (entry) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 24,
+                                          height: 24,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(999),
+                                            color:
+                                                Colors.white.withOpacity(0.14),
+                                          ),
+                                          child: Text(
+                                            '${entry.key + 1}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            entry.value.clientName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            '${entry.value.totalWeightLifted.toStringAsFixed(0)} kg',
+                                            maxLines: 1,
+                                            textAlign: TextAlign.right,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: Colors.white
+                                                  .withOpacity(0.95),
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                          ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                  ],
-                  _InsightStrip(
-                    label: post.ownerRole == 'CLIENT'
-                        ? 'Session total'
-                        : 'Crew total',
-                    value:
-                        '${post.sessionTotalWeightLifted.toStringAsFixed(0)} kg',
                   ),
-                  if (highlights.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      'Performance highlights',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...highlights.map(
-                      (highlight) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _HighlightCard(highlight: highlight),
-                      ),
-                    ),
-                  ],
-                  if (_showLeaderboard) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Top performers',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...post.leaderboard.take(2).toList().asMap().entries.map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(999),
-                                    color: Colors.white.withValues(alpha: 0.14),
-                                  ),
-                                  child: Text(
-                                    '${entry.key + 1}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    entry.value.clientName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    '${entry.value.totalWeightLifted.toStringAsFixed(0)} kg',
-                                    maxLines: 1,
-                                    textAlign: TextAlign.right,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.95),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.camera_outlined,
+                          color: Colors.white.withOpacity(0.82),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Built to share as a story',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.75),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                  ],
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.camera_outlined,
-                        color: Colors.white.withValues(alpha: 0.82),
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Built to share as a story',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -497,7 +536,7 @@ class _StatTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withOpacity(0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,7 +545,7 @@ class _StatTile extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: Colors.white.withOpacity(0.7),
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -526,46 +565,6 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _MiniMetric extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MiniMetric({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withValues(alpha: 0.08),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.68),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _HighlightCard extends StatelessWidget {
   final SocialPerformanceHighlight highlight;
 
@@ -577,7 +576,7 @@ class _HighlightCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: Colors.white.withValues(alpha: 0.08),
+        color: Colors.white.withOpacity(0.08),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,7 +589,7 @@ class _HighlightCard extends StatelessWidget {
               Text(
                 highlight.label,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
+                  color: Colors.white.withOpacity(0.72),
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
                 ),
@@ -612,7 +611,7 @@ class _HighlightCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             softWrap: true,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.86),
+              color: Colors.white.withOpacity(0.86),
               fontWeight: FontWeight.w600,
               height: 1.25,
               fontSize: 12,
@@ -636,7 +635,7 @@ class _InsightStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Colors.black.withValues(alpha: 0.14),
+        color: Colors.black.withOpacity(0.14),
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
@@ -646,7 +645,7 @@ class _InsightStrip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
+              color: Colors.white.withOpacity(0.72),
               fontWeight: FontWeight.w700,
             ),
           ),

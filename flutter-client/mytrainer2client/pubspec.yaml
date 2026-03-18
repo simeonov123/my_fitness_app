@@ -24,7 +24,7 @@ dependencies:
   path_provider: ^2.1.4
   flutter_localizations:
     sdk: flutter
-  intl: ^0.20.2
+  intl: any
   avatar_plus: ^0.0.5
   table_calendar: ^3.1.1
   collection: ^1.18.0

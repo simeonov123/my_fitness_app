@@ -2,22 +2,32 @@ import 'package:flutter/material.dart';
 
 import '../models/session.dart';
 import '../providers/session_store.dart';
+import '../theme/app_density.dart';
 import 'session_card.dart';
 import 'session_group_card.dart';
 
 class SessionsTimeline extends StatelessWidget {
-  const SessionsTimeline({super.key, required this.day});
+  const SessionsTimeline({
+    super.key,
+    required this.day,
+    this.onLongPressTime,
+  });
   final DateTime day;
+  final ValueChanged<DateTime>? onLongPressTime;
 
   /* layout constants */
   static const double _pxPerMin = 1.2;
-  static const double _timeW = 60;
-  static const double _gap = 4;
-  static const double _minColW = 56;
+  static const double _timeW = 52;
+  static const double _gap = 3;
+  static const double _minColW = 50;
   static const int _maxCols = 4; // 3 cards + pill
+  static const int _startHour = 5;
+  static const int _visibleHours = 24;
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     // SessionStore is still the single source of truth for the day slice.
     return ValueListenableBuilder<List<Session>>(
       valueListenable: SessionStore().listenable,
@@ -28,15 +38,37 @@ class SessionsTimeline extends StatelessWidget {
           ..sort((a, b) => a.start.compareTo(b.start));
 
         final clusters = _clusters(dayEvents);
-        const fullHeight = (24 * 60 * _pxPerMin);
+        const fullHeight = (_visibleHours * 60 * _pxPerMin);
 
-        return Scrollbar(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(right: 8),
-            child: SizedBox(
-              height: fullHeight,
-              child: Row(
-                children: [_timeColumn(), Expanded(child: _paint(clusters))],
+        return ClipRRect(
+          borderRadius: AppDensity.circular(20),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerLowest,
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(right: AppDensity.space(6)),
+              child: SizedBox(
+                height: fullHeight,
+                child: Stack(
+                  children: [
+                    Row(
+                      children: [
+                        _timeColumn(context),
+                        Expanded(
+                          child: _TimelinePressSurface(
+                            day: day,
+                            pxPerMin: _pxPerMin,
+                            onLongPressTime: onLongPressTime,
+                            child: _paint(context, clusters),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (DateUtils.isSameDay(day, DateTime.now()))
+                      _nowLine(context),
+                  ],
+                ),
               ),
             ),
           ),
@@ -47,26 +79,49 @@ class SessionsTimeline extends StatelessWidget {
 
   /* time ruler & grid */
 
-  Widget _timeColumn() => Column(
-        children: List.generate(24, (h) {
-          return SizedBox(
-            height: 60 * _pxPerMin,
-            width: _timeW,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Text('${h.toString().padLeft(2, '0')}:00',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+  Widget _timeColumn(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      children: List.generate(_visibleHours, (index) {
+        final h = (_startHour + index) % 24;
+        return SizedBox(
+          height: 60 * _pxPerMin,
+          width: _timeW,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: AppDensity.space(2),
+                left: AppDensity.space(6),
+              ),
+              child: Text(
+                '${h.toString().padLeft(2, '0')}:00',
+                style: text.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
             ),
-          );
-        }),
-      );
+          ),
+        );
+      }),
+    );
+  }
 
-  Widget _grid() => Column(
-        children: List.generate(24, (_) {
+  Widget _grid(BuildContext context) => Column(
+        children: List.generate(_visibleHours, (_) {
           return Container(
             height: 60 * _pxPerMin,
             decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade300)),
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withOpacity(0.45),
+                ),
+              ),
             ),
           );
         }),
@@ -118,10 +173,10 @@ class SessionsTimeline extends StatelessWidget {
 
   /* painter */
 
-  Widget _paint(List<List<Session>> clusters) {
+  Widget _paint(BuildContext context, List<List<Session>> clusters) {
     return LayoutBuilder(builder: (_, constr) {
       final fullW = constr.maxWidth;
-      final children = <Widget>[_grid(), _nowLine()];
+      final children = <Widget>[_grid(context)];
 
       for (final cluster in clusters) {
         cluster.sort((a, b) => a.start.compareTo(b.start));
@@ -209,19 +264,110 @@ class SessionsTimeline extends StatelessWidget {
     );
   }
 
-  double _y(DateTime d) => ((d.hour * 60 + d.minute) * _pxPerMin).toDouble();
+  double _y(DateTime d) {
+    var hour = d.hour;
+    if (hour < _startHour) hour += 24;
+    final minutesFromStart = ((hour - _startHour) * 60) + d.minute;
+    return (minutesFromStart * _pxPerMin).toDouble();
+  }
 
-  Widget _nowLine() {
-    if (!DateUtils.isSameDay(day, DateTime.now())) return const SizedBox();
-    final y = _y(DateTime.now());
+  Widget _nowLine(BuildContext context) {
+    final now = DateTime.now();
+    final y = _y(now);
+    final label = TimeOfDay.fromDateTime(now).format(context);
+    final colors = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
     return Positioned(
       top: y,
       left: 0,
       right: 0,
-      child: const Row(children: [
-        SizedBox(width: _timeW, height: 1),
-        Expanded(child: SizedBox(height: 1, child: ColoredBox(color: Colors.red))),
-      ]),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            height: 2,
+            color: colors.error,
+          ),
+          Positioned(
+            left: 8,
+            top: -12,
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDensity.space(7),
+                    vertical: AppDensity.space(3),
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.error,
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.shadow.withOpacity(0.16),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    label,
+                    style: text.labelSmall?.copyWith(
+                      color: colors.onError,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                SizedBox(width: AppDensity.space(6)),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: colors.error,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
+  }
+}
+
+class _TimelinePressSurface extends StatelessWidget {
+  const _TimelinePressSurface({
+    required this.day,
+    required this.pxPerMin,
+    required this.child,
+    this.onLongPressTime,
+  });
+
+  final DateTime day;
+  final double pxPerMin;
+  final Widget child;
+  final ValueChanged<DateTime>? onLongPressTime;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onLongPressStart: onLongPressTime == null
+          ? null
+          : (details) =>
+              onLongPressTime!(_timeFromOffset(details.localPosition.dy)),
+      child: child,
+    );
+  }
+
+  DateTime _timeFromOffset(double dy) {
+    const visibleMinutes = SessionsTimeline._visibleHours * 60;
+    final totalMinutes = (dy / pxPerMin).round().clamp(0, visibleMinutes - 60);
+    final roundedMinutes =
+        ((totalMinutes / 15).round() * 15).clamp(0, visibleMinutes - 60);
+    return DateTime(day.year, day.month, day.day).add(Duration(
+      hours: SessionsTimeline._startHour,
+      minutes: roundedMinutes,
+    ));
   }
 }

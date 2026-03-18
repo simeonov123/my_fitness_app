@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/workout_template_exercise.dart';
 import '../providers/workout_templates_provider.dart';
+import '../theme/app_density.dart';
 
 /// Returns the updated List<WorkoutTemplateExercise> when done.
 class ReorderExercisesPanel extends StatefulWidget {
@@ -54,24 +55,61 @@ class _ReorderExercisesPanelState extends State<ReorderExercisesPanel> {
     final t = AppLocalizations.of(context)!;
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        color: Color(0xFFF9FBFF),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        AppDensity.space(14),
+        AppDensity.space(10),
+        AppDensity.space(14),
+        AppDensity.space(14),
+      ),
       child: Column(
         children: [
+          Container(
+            width: AppDensity.space(34),
+            height: AppDensity.space(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD5D9E7),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          SizedBox(height: AppDensity.space(10)),
           Row(
             children: [
-              Text(
-                t.reorder_exercises, // make sure this key exists
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  t.reorder_exercises,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF232530),
+                  ),
+                ),
               ),
-              const Spacer(),
-              IconButton(icon: const Icon(Icons.check), onPressed: _onDone),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2F80FF),
+                  borderRadius: AppDensity.circular(14),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.check_rounded, color: Colors.white),
+                  onPressed: _onDone,
+                ),
+              ),
             ],
           ),
-          const Divider(),
+          SizedBox(height: AppDensity.space(4)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Reorder the exercise flow and remove blocks you no longer want in this template.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF6F7691),
+                  ),
+            ),
+          ),
+          SizedBox(height: AppDensity.space(12)),
           Expanded(
             child: ReorderableListView.builder(
               onReorder: (oldIndex, newIndex) {
@@ -86,15 +124,78 @@ class _ReorderExercisesPanelState extends State<ReorderExercisesPanel> {
               itemCount: _list.length,
               itemBuilder: (ctx, idx) {
                 final wte = _list[idx];
-                return ListTile(
+                return Container(
                   key: ValueKey('wte-${wte.exercise.id}-$idx'),
-                  leading: Text('${wte.sequenceOrder}.'),
-                  title: Text(wte.exercise.name),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  margin: EdgeInsets.only(bottom: AppDensity.space(8)),
+                  padding: EdgeInsets.fromLTRB(
+                    AppDensity.space(12),
+                    AppDensity.space(10),
+                    AppDensity.space(6),
+                    AppDensity.space(10),
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppDensity.circular(18),
+                    border: Border.all(color: const Color(0xFFDCE8FF)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2F80FF).withOpacity(0.04),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Row(
                     children: [
+                      Container(
+                        width: AppDensity.space(28),
+                        height: AppDensity.space(28),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF2FF),
+                          borderRadius: AppDensity.circular(10),
+                        ),
+                        child: Text(
+                          '${wte.sequenceOrder}',
+                          style: const TextStyle(
+                            color: Color(0xFF2F80FF),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: AppDensity.space(8)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              wte.exercise.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF232530),
+                              ),
+                            ),
+                            if ((wte.setType ?? '').trim().isNotEmpty) ...[
+                              SizedBox(height: AppDensity.space(3)),
+                              Text(
+                                wte.setType!,
+                                style: TextStyle(
+                                  color: Color(0xFF6F7691),
+                                  fontSize: AppDensity.space(10.5),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Color(0xFFCC4B4B),
+                        ),
                         onPressed: () => setState(() {
                           _list.removeAt(idx);
                           _renumber();
@@ -102,7 +203,13 @@ class _ReorderExercisesPanelState extends State<ReorderExercisesPanel> {
                       ),
                       ReorderableDragStartListener(
                         index: idx,
-                        child: const Icon(Icons.drag_handle),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.drag_handle_rounded,
+                            color: Color(0xFF5D6B88),
+                          ),
+                        ),
                       ),
                     ],
                   ),

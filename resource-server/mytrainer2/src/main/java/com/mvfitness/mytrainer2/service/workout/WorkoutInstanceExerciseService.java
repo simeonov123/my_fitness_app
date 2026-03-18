@@ -1,6 +1,7 @@
 // src/main/java/com/mvfitness/mytrainer2/service/workout/WorkoutInstanceExerciseService.java
 package com.mvfitness.mytrainer2.service.workout;
 
+import com.mvfitness.mytrainer2.dto.ExerciseHistoryDto;
 import com.mvfitness.mytrainer2.dto.WorkoutInstanceExerciseDto;
 
 import java.util.List;
@@ -14,6 +15,8 @@ public interface WorkoutInstanceExerciseService {
             Long sessionId,
             List<WorkoutInstanceExerciseDto> dtos
     );
+
+    ExerciseHistoryDto history(String kcUserId, Long sessionId, Long exerciseEntryId, int limit);
 
     void deleteOne(String kcUserId, Long sessionId, Long exerciseEntryId);
 }

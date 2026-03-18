@@ -9,9 +9,9 @@ class PageResponse<T> {
   });
 
   factory PageResponse.fromJson(
-      Map<String, dynamic> json,
-      T Function(Map<String, dynamic>) fromJsonT,
-      ) {
+    Map<String, dynamic> json,
+    T Function(Map<String, dynamic>) fromJsonT,
+  ) {
     final content = (json['content'] as List)
         .cast<Map<String, dynamic>>()
         .map(fromJsonT)

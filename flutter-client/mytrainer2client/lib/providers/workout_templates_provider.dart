@@ -79,9 +79,9 @@ class WorkoutTemplatesProvider extends ChangeNotifier {
   /// Called after the user reorders/deletes in the bottom-sheet.
   /// We just update our in-memory list; call `save(...)` to persist.
   void updateExercisesOrder(
-      int templateId,
-      List<WorkoutTemplateExercise> newList,
-      ) {
+    int templateId,
+    List<WorkoutTemplateExercise> newList,
+  ) {
     final tplIndex = items.indexWhere((t) => t.id == templateId);
     if (tplIndex != -1) {
       items[tplIndex].exercises = newList;

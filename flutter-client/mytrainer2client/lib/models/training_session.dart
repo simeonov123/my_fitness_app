@@ -3,24 +3,24 @@ import 'dart:convert';
 
 /// Mirrors the Spring `TrainingSessionDto`.
 class TrainingSession {
-  final int          id;
-  final DateTime     startTime;
-  final DateTime     endTime;
-  final DateTime?    actualStartTime;
-  final DateTime?    actualEndTime;
-  final int?         dayIndexInCycle;
-  final String?      sessionName;
-  final String?      sessionDescription;
-  final String?      sessionType;
-  final String?      trainerNotes;
-  final String?      status;
-  final bool?        isCompleted;
-  final List<int>    clientIds;
-  final int?         workoutTemplateId;
+  final int id;
+  final DateTime startTime;
+  final DateTime endTime;
+  final DateTime? actualStartTime;
+  final DateTime? actualEndTime;
+  final int? dayIndexInCycle;
+  final String? sessionName;
+  final String? sessionDescription;
+  final String? sessionType;
+  final String? trainerNotes;
+  final String? status;
+  final bool? isCompleted;
+  final List<int> clientIds;
+  final int? workoutTemplateId;
 
   /* helpers for timeline / calendar */
   DateTime get start => startTime;
-  DateTime get end   => endTime;
+  DateTime get end => endTime;
   int get durationMinutes => end.difference(start).inMinutes;
   Duration get plannedDuration => end.difference(start);
   Duration? get actualDuration =>
@@ -46,44 +46,45 @@ class TrainingSession {
   });
 
   factory TrainingSession.fromJson(Map<String, dynamic> j) => TrainingSession(
-    id              : (j['id'] as num).toInt(),
-    startTime       : DateTime.parse(j['startTime'] as String),
-    endTime         : DateTime.parse(j['endTime']   as String),
-    actualStartTime : j['actualStartTime'] != null
-        ? DateTime.parse(j['actualStartTime'] as String)
-        : null,
-    actualEndTime   : j['actualEndTime'] != null
-        ? DateTime.parse(j['actualEndTime'] as String)
-        : null,
-    dayIndexInCycle : j['dayIndexInCycle'] as int?,
-    sessionName     : j['sessionName'] as String?,
-    sessionDescription : j['sessionDescription'] as String?,
-    sessionType     : j['sessionType'] as String?,
-    trainerNotes    : j['trainerNotes'] as String?,
-    status          : j['status'] as String?,
-    isCompleted     : j['isCompleted'] as bool?,
-    clientIds       : (j['clientIds'] as List<dynamic>? ?? [])
-        .cast<num>().map((e) => e.toInt()).toList(),
-    workoutTemplateId:
-    (j['workoutTemplateId'] as num?)?.toInt(),
-  );
+        id: (j['id'] as num).toInt(),
+        startTime: DateTime.parse(j['startTime'] as String),
+        endTime: DateTime.parse(j['endTime'] as String),
+        actualStartTime: j['actualStartTime'] != null
+            ? DateTime.parse(j['actualStartTime'] as String)
+            : null,
+        actualEndTime: j['actualEndTime'] != null
+            ? DateTime.parse(j['actualEndTime'] as String)
+            : null,
+        dayIndexInCycle: j['dayIndexInCycle'] as int?,
+        sessionName: j['sessionName'] as String?,
+        sessionDescription: j['sessionDescription'] as String?,
+        sessionType: j['sessionType'] as String?,
+        trainerNotes: j['trainerNotes'] as String?,
+        status: j['status'] as String?,
+        isCompleted: j['isCompleted'] as bool?,
+        clientIds: (j['clientIds'] as List<dynamic>? ?? [])
+            .cast<num>()
+            .map((e) => e.toInt())
+            .toList(),
+        workoutTemplateId: (j['workoutTemplateId'] as num?)?.toInt(),
+      );
 
   Map<String, dynamic> toJson() => {
-    'id'              : id,
-    'startTime'       : startTime.toIso8601String(),
-    'endTime'         : endTime .toIso8601String(),
-    'actualStartTime' : actualStartTime?.toIso8601String(),
-    'actualEndTime'   : actualEndTime?.toIso8601String(),
-    'dayIndexInCycle' : dayIndexInCycle,
-    'sessionName'     : sessionName,
-    'sessionDescription': sessionDescription,
-    'sessionType'     : sessionType,
-    'trainerNotes'    : trainerNotes,
-    'status'          : status,
-    'isCompleted'     : isCompleted,
-    'clientIds'       : clientIds,
-    'workoutTemplateId': workoutTemplateId,
-  };
+        'id': id,
+        'startTime': startTime.toIso8601String(),
+        'endTime': endTime.toIso8601String(),
+        'actualStartTime': actualStartTime?.toIso8601String(),
+        'actualEndTime': actualEndTime?.toIso8601String(),
+        'dayIndexInCycle': dayIndexInCycle,
+        'sessionName': sessionName,
+        'sessionDescription': sessionDescription,
+        'sessionType': sessionType,
+        'trainerNotes': trainerNotes,
+        'status': status,
+        'isCompleted': isCompleted,
+        'clientIds': clientIds,
+        'workoutTemplateId': workoutTemplateId,
+      };
 
   @override
   String toString() => jsonEncode(toJson());

@@ -35,8 +35,8 @@ class _LoginState extends State<LoginPage> {
     // first boot → finish redirect silently if there is one
     Future.microtask(() async {
       final auth = context.read<AuthProvider>();
-      final pendingInvite =
-          await PendingClientInviteService().readToken() ?? Uri.base.queryParameters['token'];
+      final pendingInvite = await PendingClientInviteService().readToken() ??
+          Uri.base.queryParameters['token'];
       final ok = await auth.loginOrSignup(interactive: false);
       if (ok && auth.isAuthenticated) {
         if (!mounted) return;
@@ -68,8 +68,8 @@ class _LoginState extends State<LoginPage> {
     });
 
     final auth = context.read<AuthProvider>();
-    final pendingInvite =
-        await PendingClientInviteService().readToken() ?? Uri.base.queryParameters['token'];
+    final pendingInvite = await PendingClientInviteService().readToken() ??
+        Uri.base.queryParameters['token'];
 
     Future<bool?> task() async {
       try {
@@ -127,45 +127,45 @@ class _LoginState extends State<LoginPage> {
         body: Center(
           child: _authing
               ? Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 24),
-              Text(loc.authenticatingLabel),
-            ],
-          )
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 24),
+                    Text(loc.authenticatingLabel),
+                  ],
+                )
               : Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline,
-                  size: 48, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 16),
-              Text(loc.authFailedLabel,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: Colors.red)),
-              if (!kIsWeb &&
-                  kDebugMode &&
-                  (auth.lastAuthError?.isNotEmpty ?? false)) ...[
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    auth.lastAuthError!,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 48, color: Theme.of(context).colorScheme.error),
+                    const SizedBox(height: 16),
+                    Text(loc.authFailedLabel,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(color: Colors.red)),
+                    if (!kIsWeb &&
+                        kDebugMode &&
+                        (auth.lastAuthError?.isNotEmpty ?? false)) ...[
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          auth.lastAuthError!,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _startAuth,
+                      child: Text(loc.tryAgainButton),
+                    ),
+                  ],
                 ),
-              ],
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _startAuth,
-                child: Text(loc.tryAgainButton),
-              ),
-            ],
-          ),
         ),
       );
     }

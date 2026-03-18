@@ -5,7 +5,8 @@ import '../services/pending_client_invite_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
-  @override State<SplashPage> createState() => _SplashState();
+  @override
+  State<SplashPage> createState() => _SplashState();
 }
 
 class _SplashState extends State<SplashPage> {
@@ -22,8 +23,8 @@ class _SplashState extends State<SplashPage> {
   }
 
   Future<void> _boot(AuthProvider auth) async {
-    final pendingInvite =
-        await PendingClientInviteService().readToken() ?? Uri.base.queryParameters['token'];
+    final pendingInvite = await PendingClientInviteService().readToken() ??
+        Uri.base.queryParameters['token'];
     if (!mounted) return;
 
     await auth.loginOrSignup(interactive: false);

@@ -8,7 +8,7 @@ class WorkoutTemplate {
   final int? folderId;
   final String? folderName;
   final int? sequenceOrder;
-  List<WorkoutTemplateExercise> exercises;  // now mutable, non-final
+  List<WorkoutTemplateExercise> exercises; // now mutable, non-final
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -24,15 +24,15 @@ class WorkoutTemplate {
     this.updatedAt,
   }) : exercises = exercises ?? [];
 
-  factory WorkoutTemplate.fromJson(Map<String, dynamic> j) =>
-      WorkoutTemplate(
+  factory WorkoutTemplate.fromJson(Map<String, dynamic> j) => WorkoutTemplate(
         id: j['id'] as int,
         name: j['name'] as String,
         description: j['description'] as String?,
         folderId: j['folderId'] as int?,
         folderName: j['folderName'] as String?,
         sequenceOrder: j['sequenceOrder'] as int?,
-        exercises: ((j['exercises'] ?? j['workoutTemplateExercises']) as List<dynamic>?)
+        exercises: ((j['exercises'] ?? j['workoutTemplateExercises'])
+                as List<dynamic>?)
             ?.cast<Map<String, dynamic>>()
             .map(WorkoutTemplateExercise.fromJson)
             .toList(),
@@ -45,12 +45,12 @@ class WorkoutTemplate {
       );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'folderId': folderId,
-    'folderName': folderName,
-    'sequenceOrder': sequenceOrder,
-    'exercises': exercises.map((e) => e.toJson()).toList(),
-  };
+        'id': id,
+        'name': name,
+        'description': description,
+        'folderId': folderId,
+        'folderName': folderName,
+        'sequenceOrder': sequenceOrder,
+        'exercises': exercises.map((e) => e.toJson()).toList(),
+      };
 }

@@ -8,16 +8,18 @@ import '../providers/client_folders_provider.dart';
 import '../providers/clients_provider.dart';
 import '../providers/workout_templates_provider.dart';
 import '../providers/workout_folders_provider.dart';
-import '../providers/auth_provider.dart';
+import '../theme/app_density.dart';
 
 class TrainingSessionFormDialog extends StatefulWidget {
   const TrainingSessionFormDialog({
     super.key,
     required this.initialDay,
+    this.initialStartTime,
   });
 
   /// pre-selected calendar day (passed from HomePage)
   final DateTime initialDay;
+  final DateTime? initialStartTime;
 
   @override
   State<TrainingSessionFormDialog> createState() =>
@@ -27,11 +29,11 @@ class TrainingSessionFormDialog extends StatefulWidget {
 class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
   late DateTime _day;
   TimeOfDay _start = const TimeOfDay(hour: 10, minute: 0);
-  TimeOfDay _end   = const TimeOfDay(hour: 11, minute: 0);
+  TimeOfDay _end = const TimeOfDay(hour: 11, minute: 0);
   final _name = TextEditingController();
   bool _submitting = false;
 
-  List<Client>     _pickedClients = [];
+  List<Client> _pickedClients = [];
   WorkoutTemplate? _pickedTpl;
 
   final _form = GlobalKey<FormState>();
@@ -39,7 +41,13 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
   @override
   void initState() {
     super.initState();
-    _day = widget.initialDay;
+    final initialStart = widget.initialStartTime;
+    _day = initialStart ?? widget.initialDay;
+    if (initialStart != null) {
+      _start = TimeOfDay(hour: initialStart.hour, minute: initialStart.minute);
+      final initialEnd = initialStart.add(const Duration(hours: 1));
+      _end = TimeOfDay(hour: initialEnd.hour, minute: initialEnd.minute);
+    }
 
     // 🔹 defer provider loads until after first frame
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -60,13 +68,13 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
     final text = Theme.of(context).textTheme;
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: AppDensity.symmetric(horizontal: 16, vertical: 18),
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: BoxConstraints(maxWidth: AppDensity.space(760)),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: AppDensity.circular(28),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -78,23 +86,28 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
             boxShadow: [
               BoxShadow(
                 color: colors.shadow.withOpacity(0.18),
-                blurRadius: 36,
-                offset: const Offset(0, 24),
+                blurRadius: AppDensity.space(28),
+                offset: Offset(0, AppDensity.space(18)),
               ),
             ],
           ),
           child: Form(
             key: _form,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              padding: EdgeInsets.fromLTRB(
+                AppDensity.space(20),
+                AppDensity.space(20),
+                AppDensity.space(20),
+                AppDensity.space(16),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: AppDensity.all(18),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: AppDensity.circular(22),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -111,21 +124,23 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              height: 44,
-                              width: 44,
+                              height: AppDensity.space(40),
+                              width: AppDensity.space(40),
                               decoration: BoxDecoration(
                                 color: colors.primary.withOpacity(0.14),
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: AppDensity.circular(12),
                               ),
                               child: Icon(
                                 Icons.event_available_rounded,
                                 color: colors.primary,
                               ),
                             ),
-                            const SizedBox(width: 14),
+                            SizedBox(width: AppDensity.space(10)),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.only(top: 2),
+                                padding: EdgeInsets.only(
+                                  top: AppDensity.space(1.5),
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -137,18 +152,11 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                                         fontWeight: FontWeight.w800,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Schedule the session, attach the workout, and invite the right clients in one pass.',
-                                      style: text.bodyMedium?.copyWith(
-                                        color: colors.onSurfaceVariant,
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: AppDensity.space(6)),
                             IconButton(
                               visualDensity: VisualDensity.compact,
                               onPressed: () => Navigator.pop(context),
@@ -156,10 +164,17 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: AppDensity.space(10)),
+                        Text(
+                          'Schedule the session, attach the workout, and invite the right clients in one pass.',
+                          style: text.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        SizedBox(height: AppDensity.space(14)),
                         Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
+                          spacing: AppDensity.space(8),
+                          runSpacing: AppDensity.space(8),
                           children: [
                             _InfoPill(
                               icon: Icons.calendar_today_rounded,
@@ -184,35 +199,38 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: AppDensity.space(16)),
                   TextFormField(
                     controller: _name,
                     decoration: InputDecoration(
                       labelText: 'Session name',
-                      hintText: 'Upper body strength, Team conditioning, Morning group...',
+                      hintText:
+                          'Upper body strength, Team conditioning, Morning group...',
                       filled: true,
                       fillColor: colors.surfaceContainerLowest,
                       prefixIcon: const Icon(Icons.edit_calendar_rounded),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: AppDensity.circular(16),
                         borderSide: BorderSide.none,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: AppDensity.space(14)),
                   Text(
                     'Schedule',
-                    style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    style:
+                        text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: AppDensity.space(8)),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final compact = constraints.maxWidth < 430;
                       final medium = constraints.maxWidth < 620;
                       final columns = compact ? 1 : (medium ? 2 : 3);
-                      final spacing = 12.0;
+                      final spacing = AppDensity.space(10);
                       final cardWidth =
-                          (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+                          (constraints.maxWidth - (spacing * (columns - 1))) /
+                              columns;
 
                       return Wrap(
                         spacing: spacing,
@@ -269,10 +287,11 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: AppDensity.space(16)),
                   FormField<List<Client>>(
-                    validator: (_) =>
-                        _pickedClients.isEmpty ? 'Pick at least one client.' : null,
+                    validator: (_) => _pickedClients.isEmpty
+                        ? 'Pick at least one client.'
+                        : null,
                     builder: (field) => _SelectionCard(
                       icon: Icons.people_alt_rounded,
                       title: 'Clients',
@@ -295,9 +314,11 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: AppDensity.space(12)),
                   FormField<WorkoutTemplate>(
-                    validator: (_) => _pickedTpl == null ? 'Choose a workout template.' : null,
+                    validator: (_) => _pickedTpl == null
+                        ? 'Choose a workout template.'
+                        : null,
                     builder: (field) => _SelectionCard(
                       icon: Icons.fitness_center_rounded,
                       title: 'Workout template',
@@ -318,12 +339,13 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: AppDensity.space(18)),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _submitting ? null : () => Navigator.pop(context),
+                          onPressed:
+                              _submitting ? null : () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(54),
                             shape: RoundedRectangleBorder(
@@ -336,7 +358,9 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: _submitting || _pickedClients.isEmpty || _pickedTpl == null
+                          onPressed: _submitting ||
+                                  _pickedClients.isEmpty ||
+                                  _pickedTpl == null
                               ? null
                               : _submit,
                           style: FilledButton.styleFrom(
@@ -345,7 +369,8 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: Text(_submitting ? 'Creating...' : 'Create session'),
+                          child: Text(
+                              _submitting ? 'Creating...' : 'Create session'),
                         ),
                       ),
                     ],
@@ -388,9 +413,14 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      builder: (_) => _WorkoutTemplatePickerSheet(
-        workouts: workouts,
-        foldersSupported: foldersSupported,
+      builder: (_) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.75,
+        ),
+        child: _WorkoutTemplatePickerSheet(
+          workouts: workouts,
+          foldersSupported: foldersSupported,
+        ),
       ),
     );
   }
@@ -405,10 +435,15 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
       isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.white,
-      builder: (_) => _ClientPickerSheet(
-        clients: clients,
-        initialSelection: _pickedClients,
-        foldersSupported: foldersSupported,
+      builder: (_) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.75,
+        ),
+        child: _ClientPickerSheet(
+          clients: clients,
+          initialSelection: _pickedClients,
+          foldersSupported: foldersSupported,
+        ),
       ),
     );
   }
@@ -426,7 +461,7 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
     }
 
     final start = _merge(_day, _start);
-    final end   = _merge(_day, _end);
+    final end = _merge(_day, _end);
     if (end.isBefore(start)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End must be after start')),
@@ -436,11 +471,11 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
     }
 
     final dto = {
-      'id'               : 0,
-      'startTime'        : start.toIso8601String(),
-      'endTime'          : end.toIso8601String(),
-      'sessionName'      : _name.text.trim().isEmpty ? null : _name.text.trim(),
-      'clientIds'        : _pickedClients.map((c) => c.id).toList(),
+      'id': 0,
+      'startTime': start.toIso8601String(),
+      'endTime': end.toIso8601String(),
+      'sessionName': _name.text.trim().isEmpty ? null : _name.text.trim(),
+      'clientIds': _pickedClients.map((c) => c.id).toList(),
       'workoutTemplateId': _pickedTpl!.id,
     };
 
@@ -468,20 +503,38 @@ class _InfoPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: colors.surface.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(999),
+        color: colors.surface.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colors.outlineVariant.withOpacity(0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: colors.primary),
-          const SizedBox(width: 8),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: colors.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 16, color: colors.primary),
+          ),
+          const SizedBox(width: 10),
           Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
           ),
         ],
@@ -590,25 +643,28 @@ class _SelectionCard extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           value,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
                         ),
                       ],
                     ),
@@ -650,7 +706,8 @@ class _WorkoutTemplatePickerSheet extends StatefulWidget {
       _WorkoutTemplatePickerSheetState();
 }
 
-class _WorkoutTemplatePickerSheetState extends State<_WorkoutTemplatePickerSheet> {
+class _WorkoutTemplatePickerSheetState
+    extends State<_WorkoutTemplatePickerSheet> {
   String _query = '';
   int? _selectedFolderId;
   bool _showUngroupedOnly = false;
@@ -663,101 +720,126 @@ class _WorkoutTemplatePickerSheetState extends State<_WorkoutTemplatePickerSheet
           workout.name.toLowerCase().contains(_query.toLowerCase());
       if (!matchesQuery) return false;
       if (_showUngroupedOnly) return workout.folderId == null;
-      if (_selectedFolderId != null) return workout.folderId == _selectedFolderId;
+      if (_selectedFolderId != null)
+        return workout.folderId == _selectedFolderId;
       return true;
     }).toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Choose workout',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search workouts',
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (value) => setState(() => _query = value.trim()),
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ChoiceChip(
-                    label: const Text('All Workouts'),
-                    selected: !_showUngroupedOnly && _selectedFolderId == null,
-                    onSelected: (_) => setState(() {
-                      _showUngroupedOnly = false;
-                      _selectedFolderId = null;
-                    }),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outlineVariant
+                        .withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  const SizedBox(width: 8),
-                  if (widget.foldersSupported) ...[
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Choose workout',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Search workouts',
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (value) => setState(() => _query = value.trim()),
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
                     ChoiceChip(
-                      label: const Text('Ungrouped'),
-                      selected: _showUngroupedOnly,
+                      label: const Text('All Workouts'),
+                      selected:
+                          !_showUngroupedOnly && _selectedFolderId == null,
                       onSelected: (_) => setState(() {
-                        _showUngroupedOnly = true;
+                        _showUngroupedOnly = false;
                         _selectedFolderId = null;
                       }),
                     ),
                     const SizedBox(width: 8),
-                    ...folders.map(
-                      (folder) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(folder.name),
-                          selected: !_showUngroupedOnly &&
-                              _selectedFolderId == folder.id,
-                          onSelected: (_) => setState(() {
-                            _showUngroupedOnly = false;
-                            _selectedFolderId = folder.id;
-                          }),
+                    if (widget.foldersSupported) ...[
+                      ChoiceChip(
+                        label: const Text('Ungrouped'),
+                        selected: _showUngroupedOnly,
+                        onSelected: (_) => setState(() {
+                          _showUngroupedOnly = true;
+                          _selectedFolderId = null;
+                        }),
+                      ),
+                      const SizedBox(width: 8),
+                      ...folders.map(
+                        (folder) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(folder.name),
+                            selected: !_showUngroupedOnly &&
+                                _selectedFolderId == folder.id,
+                            onSelected: (_) => setState(() {
+                              _showUngroupedOnly = false;
+                              _selectedFolderId = folder.id;
+                            }),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Flexible(
-              child: filtered.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Text('No workouts found for this filter.'),
+              const SizedBox(height: 12),
+              Flexible(
+                child: filtered.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Text('No workouts found for this filter.'),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, index) {
+                          final workout = filtered[index];
+                          return ListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            title: Text(workout.name),
+                            subtitle: Text(workout.folderName ?? 'Ungrouped'),
+                            onTap: () => Navigator.pop(context, workout),
+                          );
+                        },
                       ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (_, index) {
-                        final workout = filtered[index];
-                        return ListTile(
-                          title: Text(workout.name),
-                          subtitle: Text(workout.folderName ?? 'Ungrouped'),
-                          onTap: () => Navigator.pop(context, workout),
-                        );
-                      },
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -795,135 +877,161 @@ class _ClientPickerSheetState extends State<_ClientPickerSheet> {
   Widget build(BuildContext context) {
     final folders = context.watch<ClientFoldersProvider>().items;
     final filtered = widget.clients.where((client) {
-      final matchesQuery =
-          _query.isEmpty || client.fullName.toLowerCase().contains(_query.toLowerCase());
+      final matchesQuery = _query.isEmpty ||
+          client.fullName.toLowerCase().contains(_query.toLowerCase());
       if (!matchesQuery) return false;
       if (_showUngroupedOnly) return client.folderId == null;
-      if (_selectedFolderId != null) return client.folderId == _selectedFolderId;
+      if (_selectedFolderId != null)
+        return client.folderId == _selectedFolderId;
       return true;
     }).toList()
       ..sort((a, b) => a.fullName.compareTo(b.fullName));
 
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Choose clients',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outlineVariant
+                        .withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    final selected = widget.clients
-                        .where((client) => _selectedIds.contains(client.id))
-                        .toList();
-                    Navigator.pop(context, selected);
-                  },
-                  child: const Text('Done'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search clients',
-                prefixIcon: Icon(Icons.search),
               ),
-              onChanged: (value) => setState(() => _query = value.trim()),
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+              const SizedBox(height: 12),
+              Row(
                 children: [
-                  ChoiceChip(
-                    label: const Text('All Clients'),
-                    selected: !_showUngroupedOnly && _selectedFolderId == null,
-                    onSelected: (_) => setState(() {
-                      _showUngroupedOnly = false;
-                      _selectedFolderId = null;
-                    }),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
                   ),
                   const SizedBox(width: 8),
-                  if (widget.foldersSupported) ...[
+                  const Expanded(
+                    child: Text(
+                      'Choose clients',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final selected = widget.clients
+                          .where((client) => _selectedIds.contains(client.id))
+                          .toList();
+                      Navigator.pop(context, selected);
+                    },
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Search clients',
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (value) => setState(() => _query = value.trim()),
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
                     ChoiceChip(
-                      label: const Text('Ungrouped'),
-                      selected: _showUngroupedOnly,
+                      label: const Text('All Clients'),
+                      selected:
+                          !_showUngroupedOnly && _selectedFolderId == null,
                       onSelected: (_) => setState(() {
-                        _showUngroupedOnly = true;
+                        _showUngroupedOnly = false;
                         _selectedFolderId = null;
                       }),
                     ),
                     const SizedBox(width: 8),
-                    ...folders.map(
-                      (folder) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(folder.name),
-                          selected: !_showUngroupedOnly &&
-                              _selectedFolderId == folder.id,
-                          onSelected: (_) => setState(() {
-                            _showUngroupedOnly = false;
-                            _selectedFolderId = folder.id;
-                          }),
+                    if (widget.foldersSupported) ...[
+                      ChoiceChip(
+                        label: const Text('Ungrouped'),
+                        selected: _showUngroupedOnly,
+                        onSelected: (_) => setState(() {
+                          _showUngroupedOnly = true;
+                          _selectedFolderId = null;
+                        }),
+                      ),
+                      const SizedBox(width: 8),
+                      ...folders.map(
+                        (folder) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(folder.name),
+                            selected: !_showUngroupedOnly &&
+                                _selectedFolderId == folder.id,
+                            onSelected: (_) => setState(() {
+                              _showUngroupedOnly = false;
+                              _selectedFolderId = folder.id;
+                            }),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Flexible(
-              child: filtered.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Text('No clients found for this filter.'),
+              const SizedBox(height: 12),
+              Flexible(
+                child: filtered.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Text('No clients found for this filter.'),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, index) {
+                          final client = filtered[index];
+                          final selected = _selectedIds.contains(client.id);
+                          return CheckboxListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            value: selected,
+                            title: Text(client.fullName),
+                            subtitle: Text(client.folderName ?? 'Ungrouped'),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            contentPadding: EdgeInsets.zero,
+                            onChanged: (_) => setState(() {
+                              if (selected) {
+                                _selectedIds.remove(client.id);
+                              } else {
+                                _selectedIds.add(client.id);
+                              }
+                            }),
+                          );
+                        },
                       ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (_, index) {
-                        final client = filtered[index];
-                        final selected = _selectedIds.contains(client.id);
-                        return CheckboxListTile(
-                          value: selected,
-                          title: Text(client.fullName),
-                          subtitle: Text(client.folderName ?? 'Ungrouped'),
-                          controlAffinity: ListTileControlAffinity.leading,
-                          contentPadding: EdgeInsets.zero,
-                          onChanged: (_) => setState(() {
-                            if (selected) {
-                              _selectedIds.remove(client.id);
-                            } else {
-                              _selectedIds.add(client.id);
-                            }
-                          }),
-                        );
-                      },
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

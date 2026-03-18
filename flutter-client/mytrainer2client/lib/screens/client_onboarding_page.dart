@@ -88,7 +88,10 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage>
 
     final auth = context.read<AuthProvider>();
 
-    if (auth.isAuthenticated && !auth.isTrainer && auth.role == null && validation.alreadyLinked) {
+    if (auth.isAuthenticated &&
+        !auth.isTrainer &&
+        auth.role == null &&
+        validation.alreadyLinked) {
       Future.microtask(() {
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
@@ -172,7 +175,8 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage>
   }
 
   Uri _mobileInviteUri(String token) {
-    final isAndroidWeb = kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    final isAndroidWeb =
+        kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroidWeb) {
       return Uri.parse(
         'intent://invite/client?token=$token#Intent;scheme=mytrainer;package=com.mvfitness.mytrainer2client;end',
@@ -210,14 +214,15 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage>
 
   Future<void> _logoutTrainerAndReturnToInvite() async {
     final token = widget.token;
-    final redirectPath =
-        token == null || token.isEmpty ? '/login' : '/onboard/client?token=$token';
+    final redirectPath = token == null || token.isEmpty
+        ? '/login'
+        : '/onboard/client?token=$token';
 
     setState(() => _submitting = true);
     await context.read<AuthProvider>().logout(
-      clearPendingInvite: false,
-      postLogoutRedirectPath: redirectPath,
-    );
+          clearPendingInvite: false,
+          postLogoutRedirectPath: redirectPath,
+        );
     if (!mounted) return;
     setState(() => _submitting = false);
   }
@@ -228,7 +233,10 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage>
     if (!mounted) return;
 
     final invite = _validation;
-    if (_submitting && invite != null && invite.valid && !invite.alreadyLinked) {
+    if (_submitting &&
+        invite != null &&
+        invite.valid &&
+        !invite.alreadyLinked) {
       setState(() => _submitting = false);
     }
 
@@ -376,7 +384,9 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage>
                     width: double.infinity,
                     child: isTrainer
                         ? OutlinedButton(
-                            onPressed: _submitting ? null : _logoutTrainerAndReturnToInvite,
+                            onPressed: _submitting
+                                ? null
+                                : _logoutTrainerAndReturnToInvite,
                             child: const Text('Sign out trainer'),
                           )
                         : ElevatedButton(
@@ -411,7 +421,10 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage>
                     child: const Text('Back to login'),
                   ),
                 ],
-                if (kIsWeb && !isTrainer && invite.valid && !invite.alreadyLinked) ...[
+                if (kIsWeb &&
+                    !isTrainer &&
+                    invite.valid &&
+                    !invite.alreadyLinked) ...[
                   const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: _submitting ? null : _openInApp,

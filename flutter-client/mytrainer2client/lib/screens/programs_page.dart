@@ -19,8 +19,8 @@ class _ScaffoldWithNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(title)),
-    body: Center(child: Text(title)),
-    bottomNavigationBar: const BottomNavBar(),
-  );
+        appBar: AppBar(title: Text(title)),
+        body: Center(child: Text(title)),
+        bottomNavigationBar: const BottomNavBar(),
+      );
 }

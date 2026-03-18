@@ -10,10 +10,10 @@ import '../models/muscle_group.dart';
 import 'dev_endpoints.dart';
 
 class ExercisesApiService {
-  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
-          .isNotEmpty
-      ? const String.fromEnvironment('API_BASE')
-      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+  static final _base =
+      const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 
@@ -38,12 +38,9 @@ class ExercisesApiService {
     if (res.statusCode != 200) {
       throw Exception('Failed to load exercises: ${res.statusCode}');
     }
-    final body    = jsonDecode(res.body) as Map<String, dynamic>;
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
     final content = body['content'] as List<dynamic>;
-    return content
-        .cast<Map<String, dynamic>>()
-        .map(Exercise.fromJson)
-        .toList();
+    return content.cast<Map<String, dynamic>>().map(Exercise.fromJson).toList();
   }
 
   /// GET /trainer/exercises/common?q=
@@ -55,12 +52,9 @@ class ExercisesApiService {
     if (res.statusCode != 200) {
       throw Exception('Failed to load common exercises: ${res.statusCode}');
     }
-    final body    = jsonDecode(res.body) as Map<String, dynamic>;
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
     final content = body['content'] as List<dynamic>;
-    return content
-        .cast<Map<String, dynamic>>()
-        .map(Exercise.fromJson)
-        .toList();
+    return content.cast<Map<String, dynamic>>().map(Exercise.fromJson).toList();
   }
 
   Future<Exercise> create({

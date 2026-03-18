@@ -14,6 +14,7 @@ import '../models/workout_instance_exercise.dart';
 import '../models/workout_instance_exercise_set.dart';
 import '../models/workout_template_exercise.dart';
 import '../providers/auth_provider.dart';
+import '../providers/exercise_history_provider.dart';
 import '../providers/exercises_provider.dart';
 import '../providers/social_feed_provider.dart';
 import '../providers/training_sessions_provider.dart';
@@ -22,8 +23,10 @@ import '../models/social_post.dart';
 import '../services/active_workout_service.dart';
 import '../services/training_session_realtime_service.dart';
 import '../services/workout_notification_service.dart';
+import '../theme/app_density.dart';
 import '../utils/instance_to_template_adapter.dart';
 import '../widgets/workout_template_exercise_widget.dart';
+import '../widgets/exercise_history_sheet.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/reorder_instance_exercises_panel.dart';
 
@@ -36,8 +39,7 @@ class TrainingSessionDetailPage extends StatefulWidget {
       _TrainingSessionDetailPageState();
 }
 
-class _TrainingSessionDetailPageState
-    extends State<TrainingSessionDetailPage> {
+class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   final _activeWorkout = ActiveWorkoutService();
   final _realtime = TrainingSessionRealtimeService();
   final _notifications = WorkoutNotificationService.instance;
@@ -47,7 +49,7 @@ class _TrainingSessionDetailPageState
   StreamSubscription? _realtimeSub;
 
   bool _dirtyMeta = false;
-  bool _dirtyEx   = false;
+  bool _dirtyEx = false;
   bool _busyAction = false;
 
   DateTime? _start, _end;
@@ -85,12 +87,12 @@ class _TrainingSessionDetailPageState
 
   Future<void> _loadAll() async {
     try {
-      final api  = context.read<TrainingSessionsProvider>().api;
+      final api = context.read<TrainingSessionsProvider>().api;
       final prov = context.read<WorkoutInstanceExercisesProvider>();
 
       _session = await api.getOne(id: widget.sessionId);
-      _start   = _session!.start;
-      _end     = _session!.end;
+      _start = _session!.start;
+      _end = _session!.end;
       _nameCtl.text = _session!.sessionName ?? '';
 
       await prov.load(sessionId: widget.sessionId);
@@ -125,10 +127,9 @@ class _TrainingSessionDetailPageState
   bool get _isActiveForCurrentSession =>
       _activeSnapshot?.sessionId == widget.sessionId;
 
-  Duration get _elapsed =>
-      _isActiveForCurrentSession && _activeSnapshot != null
-          ? DateTime.now().difference(_activeSnapshot!.startedAt)
-          : Duration.zero;
+  Duration get _elapsed => _isActiveForCurrentSession && _activeSnapshot != null
+      ? DateTime.now().difference(_activeSnapshot!.startedAt)
+      : Duration.zero;
 
   Duration get _plannedDuration => _end!.difference(_start!);
 
@@ -147,6 +148,32 @@ class _TrainingSessionDetailPageState
       }
     }
     return null;
+  }
+
+  Future<void> _openExerciseHistory(InstanceItem item) async {
+    if (item.instanceId <= 0 || !mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ChangeNotifierProvider.value(
+        value: context.read<ExerciseHistoryProvider>(),
+        child: ExerciseHistorySheet(
+          sessionId: widget.sessionId,
+          entryId: item.instanceId,
+          onOpenSnapshot: (snapshotSessionId) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TrainingSessionDetailPage(
+                  sessionId: snapshotSessionId,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   double get _totalWeightLifted {
@@ -247,7 +274,8 @@ class _TrainingSessionDetailPageState
     return SocialPerformanceHighlight(
       label: 'Best set volume',
       value: '${best.volume.toStringAsFixed(0)} kg',
-      detail: '${best.exerciseName} • Set ${best.setNumber} • ${best.kg.toStringAsFixed(0)}kg x ${best.reps}$performer',
+      detail:
+          '${best.exerciseName} • Set ${best.setNumber} • ${best.kg.toStringAsFixed(0)}kg x ${best.reps}$performer',
     );
   }
 
@@ -318,7 +346,8 @@ class _TrainingSessionDetailPageState
     return SocialPerformanceHighlight(
       label: 'Best reps',
       value: '${best.reps} reps',
-      detail: '${best.exerciseName}$weightPart • Set ${best.setNumber}$performer',
+      detail:
+          '${best.exerciseName}$weightPart • Set ${best.setNumber}$performer',
     );
   }
 
@@ -330,21 +359,26 @@ class _TrainingSessionDetailPageState
 
   double get _bestSetKgOverall => _groups.fold<double>(
         0,
-        (best, group) => _groupBestSetKg(group) > best ? _groupBestSetKg(group) : best,
+        (best, group) =>
+            _groupBestSetKg(group) > best ? _groupBestSetKg(group) : best,
       );
 
   int get _bestSetRepsOverall => _groups.fold<int>(
         0,
-        (best, group) => _groupBestSetReps(group) > best ? _groupBestSetReps(group) : best,
+        (best, group) =>
+            _groupBestSetReps(group) > best ? _groupBestSetReps(group) : best,
       );
 
   Future<void> _syncSocialPost() async {
-    if (_session == null || !(_session!.isCompleted ?? false) || !mounted) return;
+    if (_session == null || !(_session!.isCompleted ?? false) || !mounted) {
+      return;
+    }
 
     final provider = context.read<SocialFeedProvider>();
     final auth = context.read<AuthProvider>();
     final completedAt = _session!.actualEndTime ?? _session!.endTime;
-    final durationSeconds = (_session!.actualDuration ?? _session!.plannedDuration).inSeconds;
+    final durationSeconds =
+        (_session!.actualDuration ?? _session!.plannedDuration).inSeconds;
     final leaderboard = _leaderboard
         .take(3)
         .map(
@@ -386,9 +420,12 @@ class _TrainingSessionDetailPageState
           bestSetReps: _groupBestSetReps(group),
           rank: rankIndex >= 0 ? rankIndex + 1 : null,
           leaderboard: const [],
-          bestVolumeHighlight: _bestVolumeHighlightForGroups([group], includePerformer: false),
-          heaviestHighlight: _heaviestHighlightForGroups([group], includePerformer: false),
-          bestRepsHighlight: _bestRepsHighlightForGroups([group], includePerformer: false),
+          bestVolumeHighlight:
+              _bestVolumeHighlightForGroups([group], includePerformer: false),
+          heaviestHighlight:
+              _heaviestHighlightForGroups([group], includePerformer: false),
+          bestRepsHighlight:
+              _bestRepsHighlightForGroups([group], includePerformer: false),
         ),
       );
       return;
@@ -406,7 +443,8 @@ class _TrainingSessionDetailPageState
         durationSeconds: durationSeconds,
         totalWeightLifted: _totalWeightLifted,
         sessionTotalWeightLifted: _totalWeightLifted,
-        exerciseCount: _groups.fold<int>(0, (sum, group) => sum + group.items.length),
+        exerciseCount:
+            _groups.fold<int>(0, (sum, group) => sum + group.items.length),
         participantCount: _session!.clientIds.length,
         completedSetCount: _completedSetCountOverall,
         totalSetCount: _totalSetCountOverall,
@@ -502,9 +540,10 @@ class _TrainingSessionDetailPageState
     _nameCtl.text = updated.sessionName ?? '';
     _dirtyMeta = false;
 
-    final shouldTick = (_session?.status ?? '').toUpperCase() == 'IN_PROGRESS' &&
-        _session?.actualStartTime != null &&
-        _session?.actualEndTime == null;
+    final shouldTick =
+        (_session?.status ?? '').toUpperCase() == 'IN_PROGRESS' &&
+            _session?.actualStartTime != null &&
+            _session?.actualEndTime == null;
 
     if (shouldTick) {
       _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
@@ -558,7 +597,8 @@ class _TrainingSessionDetailPageState
     }
 
     for (final group in grouped.values) {
-      group.items.sort((a, b) => a.wte.sequenceOrder.compareTo(b.wte.sequenceOrder));
+      group.items
+          .sort((a, b) => a.wte.sequenceOrder.compareTo(b.wte.sequenceOrder));
     }
 
     _groups
@@ -578,6 +618,8 @@ class _TrainingSessionDetailPageState
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: Text(_session!.sessionName ?? 'Session ${_session!.id}'),
         actions: [
           if (!isClient)
@@ -592,41 +634,60 @@ class _TrainingSessionDetailPageState
               onPressed: _addExercises,
               child: const Icon(Icons.add),
             ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          _metaCard(isClient: isClient),
-          const SizedBox(height: 12),
-          _activityCard(isClient: isClient),
-          const SizedBox(height: 12),
-          if (!isClient && _groups.length > 1) ...[
-            _leaderboardCard(),
-            const SizedBox(height: 12),
-          ],
-          ..._groups.map(
-                (group) => _clientSection(
-                  group,
-                  isClient: isClient,
-                  clientReadOnly: clientReadOnly,
-                ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF7F8FF),
+              Color(0xFFFFFFFF),
+            ],
           ),
-          const SizedBox(height: 40),
-        ],
+        ),
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+            0,
+            AppDensity.space(10),
+            0,
+            AppDensity.space(18),
+          ),
+          children: [
+            _metaCard(isClient: isClient),
+            SizedBox(height: AppDensity.space(10)),
+            _activityCard(isClient: isClient),
+            SizedBox(height: AppDensity.space(10)),
+            if (!isClient && _groups.length > 1) ...[
+              _leaderboardCard(),
+              SizedBox(height: AppDensity.space(10)),
+            ],
+            ..._groups.map(
+              (group) => _clientSection(
+                group,
+                isClient: isClient,
+                clientReadOnly: clientReadOnly,
+              ),
+            ),
+            SizedBox(height: AppDensity.space(28)),
+          ],
+        ),
       ),
     );
   }
 
   Widget _activityCard({required bool isClient}) {
-    return Card(
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppDensity.space(14)),
+      decoration: _surfaceDecoration(),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppDensity.all(13),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 const Icon(Icons.timer_outlined),
-                const SizedBox(width: 8),
+                SizedBox(width: AppDensity.space(6)),
                 Expanded(
                   child: Text(
                     _isActiveForCurrentSession
@@ -637,10 +698,10 @@ class _TrainingSessionDetailPageState
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppDensity.space(10)),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: AppDensity.space(10),
+              runSpacing: AppDensity.space(10),
               children: [
                 _statChip(
                   label: 'Planned',
@@ -661,10 +722,10 @@ class _TrainingSessionDetailPageState
               ],
             ),
             if (!isClient) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: AppDensity.space(10)),
               Wrap(
-                spacing: 12,
-                runSpacing: 12,
+                spacing: AppDensity.space(10),
+                runSpacing: AppDensity.space(10),
                 children: [
                   if (!_isActiveForCurrentSession)
                     ElevatedButton.icon(
@@ -695,54 +756,58 @@ class _TrainingSessionDetailPageState
 
   Widget _leaderboardCard() {
     final rows = _leaderboard;
-    return Card(
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppDensity.space(14)),
+      decoration: _surfaceDecoration(),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppDensity.all(13),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 const Icon(Icons.emoji_events_outlined),
-                const SizedBox(width: 8),
+                SizedBox(width: AppDensity.space(6)),
                 Text(
                   'Session leaderboard',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppDensity.space(10)),
             ...rows.asMap().entries.map(
                   (entry) => Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
+                    margin: EdgeInsets.only(bottom: AppDensity.space(8)),
+                    padding: AppDensity.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: entry.key == 0
-                          ? const Color(0xFFFFF8E1)
-                          : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(14),
+                          ? const Color(0xFFEAF2FF)
+                          : const Color(0xFFF7FAFF),
+                      borderRadius: AppDensity.circular(12),
+                      border: Border.all(
+                        color: entry.key == 0
+                            ? const Color(0xFFD0E3FF)
+                            : const Color(0xFFE3ECFF),
+                      ),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
-                          radius: 16,
+                          radius: AppDensity.space(13),
                           backgroundColor: entry.key == 0
-                              ? const Color(0xFFFFC107)
-                              : Colors.grey.shade300,
+                              ? const Color(0xFF2F80FF)
+                              : const Color(0xFFDCE8FF),
                           child: Text(
                             '${entry.key + 1}',
                             style: TextStyle(
                               color: entry.key == 0
-                                  ? Colors.black
+                                  ? Colors.white
                                   : Colors.grey.shade900,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: AppDensity.space(8)),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,7 +822,7 @@ class _TrainingSessionDetailPageState
                                 '${entry.value.completedSets}/${entry.value.totalSets} sets completed',
                                 style: TextStyle(
                                   color: Colors.grey.shade700,
-                                  fontSize: 12,
+                                  fontSize: AppDensity.space(10.5),
                                 ),
                               ),
                             ],
@@ -765,9 +830,9 @@ class _TrainingSessionDetailPageState
                         ),
                         Text(
                           '${entry.value.totalWeightLifted.toStringAsFixed(0)} kg',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            fontSize: 16,
+                            fontSize: AppDensity.space(14),
                           ),
                         ),
                       ],
@@ -782,10 +847,11 @@ class _TrainingSessionDetailPageState
 
   Widget _statChip({required String label, required String value}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: AppDensity.symmetric(horizontal: 11, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF4F8FF),
+        borderRadius: AppDensity.circular(14),
+        border: Border.all(color: const Color(0xFFDCE8FF)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -793,16 +859,17 @@ class _TrainingSessionDetailPageState
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey.shade700,
-              fontSize: 12,
+              color: Color(0xFF6F7691),
+              fontSize: AppDensity.space(10.5),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: AppDensity.space(3)),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+            style: TextStyle(
+              fontSize: AppDensity.space(16),
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF232530),
             ),
           ),
         ],
@@ -814,18 +881,79 @@ class _TrainingSessionDetailPageState
 
   Widget _metaCard({required bool isClient}) {
     final f = DateFormat('yyyy-MM-dd   HH:mm');
-    return Card(
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppDensity.space(14)),
+      decoration: _surfaceDecoration(),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: AppDensity.all(10),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                Container(
+                  width: AppDensity.space(40),
+                  height: AppDensity.space(40),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF2FF),
+                    borderRadius: AppDensity.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.event_note_rounded,
+                    color: Color(0xFF2F80FF),
+                  ),
+                ),
+                SizedBox(width: AppDensity.space(10)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Session details',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      SizedBox(height: AppDensity.space(2)),
+                      Text(
+                        'Manage the name and schedule for this workout instance.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF6F7691),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: AppDensity.space(12)),
             TextFormField(
               controller: _nameCtl,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(
+                labelText: 'Name',
+                filled: true,
+                fillColor: const Color(0xFFF7FAFF),
+                border: OutlineInputBorder(
+                  borderRadius: AppDensity.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFFDCE8FF)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppDensity.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFFDCE8FF)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: AppDensity.circular(16),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF2F80FF),
+                    width: 1.4,
+                  ),
+                ),
+              ),
               readOnly: isClient,
-              onChanged: isClient ? null : (_) => setState(() => _dirtyMeta = true),
+              onChanged:
+                  isClient ? null : (_) => setState(() => _dirtyMeta = true),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: AppDensity.space(12)),
             Row(
               children: [
                 Expanded(
@@ -841,7 +969,7 @@ class _TrainingSessionDetailPageState
                     }),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: AppDensity.space(6)),
                 Expanded(
                   child: _dateTimeField(
                     label: 'End',
@@ -872,42 +1000,44 @@ class _TrainingSessionDetailPageState
     required ValueChanged<DateTime> onChanged,
   }) {
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: !enabled ? null : () async {
-        final d = await showDatePicker(
-          context: context,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
-          initialDate: value,
-        );
-        if (d == null) return;
-        if (!mounted) return;
-        final t = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.fromDateTime(value),
-        );
-        if (t == null) return;
-        onChanged(DateTime(d.year, d.month, d.day, t.hour, t.minute));
-      },
+      borderRadius: AppDensity.circular(14),
+      onTap: !enabled
+          ? null
+          : () async {
+              final d = await showDatePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+                initialDate: value,
+              );
+              if (d == null) return;
+              if (!mounted) return;
+              final t = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.fromDateTime(value),
+              );
+              if (t == null) return;
+              onChanged(DateTime(d.year, d.month, d.day, t.hour, t.minute));
+            },
       child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        padding: AppDensity.symmetric(horizontal: 11, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade300),
+          color: const Color(0xFFF7FAFF),
+          borderRadius: AppDensity.circular(16),
+          border: Border.all(color: const Color(0xFFDCE8FF)),
         ),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: AppDensity.space(30),
+              height: AppDensity.space(30),
               decoration: BoxDecoration(
-                color: const Color(0xFFEDE7F6),
-                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFFEAF2FF),
+                borderRadius: AppDensity.circular(10),
               ),
-              child: Icon(icon, size: 18, color: const Color(0xFF6E59A5)),
+              child: Icon(icon, size: 18, color: const Color(0xFF2F80FF)),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: AppDensity.space(8)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -915,17 +1045,18 @@ class _TrainingSessionDetailPageState
                   Text(
                     label,
                     style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 12,
+                      color: Color(0xFF6F7691),
+                      fontSize: AppDensity.space(10.5),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: AppDensity.space(3)),
                   Text(
                     fmt.format(value),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: AppDensity.space(12.5),
                       fontWeight: FontWeight.w700,
+                      color: Color(0xFF232530),
                     ),
                   ),
                 ],
@@ -995,13 +1126,14 @@ class _TrainingSessionDetailPageState
           initialChildSize: .8,
           minChildSize: .4,
           expand: false,
-          builder: (_, __) =>
-              ReorderInstanceExercisesPanel(initial: List.from(_groups.first.items)),
+          builder: (_, __) => ReorderInstanceExercisesPanel(
+              initial: List.from(_groups.first.items)),
         ),
       ),
     );
     if (updated != null) {
-      final orderedExerciseIds = updated.map((item) => item.wte.exercise.id).toList();
+      final orderedExerciseIds =
+          updated.map((item) => item.wte.exercise.id).toList();
       setState(() {
         for (final group in _groups) {
           group.items.sort((a, b) {
@@ -1034,18 +1166,17 @@ class _TrainingSessionDetailPageState
   }
 
   Future<void> _saveAllInternal({required bool showFeedback}) async {
-    final api  = context.read<TrainingSessionsProvider>().api;
+    final api = context.read<TrainingSessionsProvider>().api;
     final prov = context.read<WorkoutInstanceExercisesProvider>();
 
     if (_dirtyMeta) {
       final dto = _session!.toJson()
         ..addAll({
-          'startTime'  : _start!.toIso8601String(),
-          'endTime'    : _end!.toIso8601String(),
+          'startTime': _start!.toIso8601String(),
+          'endTime': _end!.toIso8601String(),
           'sessionName': _nameCtl.text.trim(),
         });
-      _session =
-      await api.update(id: _session!.id, dto: dto);
+      _session = await api.update(id: _session!.id, dto: dto);
       _dirtyMeta = false;
     }
 
@@ -1221,10 +1352,16 @@ class _TrainingSessionDetailPageState
     required bool isClient,
     required bool clientReadOnly,
   }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+        AppDensity.space(14),
+        0,
+        AppDensity.space(14),
+        AppDensity.space(10),
+      ),
+      decoration: _surfaceDecoration(),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: AppDensity.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1233,9 +1370,16 @@ class _TrainingSessionDetailPageState
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    child: Text(_initials(group.clientName)),
+                    backgroundColor: const Color(0xFFEAF2FF),
+                    child: Text(
+                      _initials(group.clientName),
+                      style: const TextStyle(
+                        color: Color(0xFF2F80FF),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: AppDensity.space(8)),
                   Expanded(
                     child: Text(
                       group.clientName,
@@ -1247,24 +1391,24 @@ class _TrainingSessionDetailPageState
                     children: [
                       Text(
                         '${_groupTotalWeightLifted(group).toStringAsFixed(0)} kg',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontSize: AppDensity.space(14),
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: AppDensity.space(2)),
                       Text(
                         '${_groupCompletedSets(group)}/${_groupSetCount(group)} sets',
                         style: TextStyle(
                           color: Colors.grey.shade700,
-                          fontSize: 12,
+                          fontSize: AppDensity.space(10.5),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppDensity.space(6)),
             ],
             ...group.items.map(
               (it) => WorkoutTemplateExerciseWidget(
@@ -1277,6 +1421,16 @@ class _TrainingSessionDetailPageState
                 canEditExerciseNotes: !isClient,
                 canEditSetNotes: !isClient,
                 isReadOnly: clientReadOnly,
+                headerActions: [
+                  IconButton(
+                    tooltip: 'Exercise history',
+                    onPressed: () => _openExerciseHistory(it),
+                    icon: const Icon(
+                      Icons.insights_rounded,
+                      color: Color(0xFF2F80FF),
+                    ),
+                  ),
+                ],
                 onChanged: () {
                   setState(() => _dirtyEx = true);
                   _syncActiveWorkoutNotification();
@@ -1290,10 +1444,26 @@ class _TrainingSessionDetailPageState
   }
 
   String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    final parts =
+        name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+
+  BoxDecoration _surfaceDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: AppDensity.circular(24),
+      border: Border.all(color: const Color(0xFFDCE8FF)),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF2F80FF).withOpacity(0.06),
+          blurRadius: 24,
+          offset: const Offset(0, 12),
+        ),
+      ],
+    );
   }
 }
 
@@ -1332,15 +1502,15 @@ extension _ToInstance on WorkoutTemplateExercise {
         sets: sets
             .map(
               (s) => WorkoutInstanceExerciseSet(
-            id: s.id,
-            workoutExerciseId: instanceId,
-            setNumber: s.setNumber,
-            completed: s.completed,
-            setContextType: s.setContextType,
-            notes: s.notes,
-            values: Map.of(s.values),
-          ),
-        )
+                id: s.id,
+                workoutExerciseId: instanceId,
+                setNumber: s.setNumber,
+                completed: s.completed,
+                setContextType: s.setContextType,
+                notes: s.notes,
+                values: Map.of(s.values),
+              ),
+            )
             .toList(),
       );
 }
@@ -1372,6 +1542,7 @@ class ClientLeaderboardEntry {
     required this.totalSets,
   });
 }
+
 class _ExercisePerformanceSnapshot {
   final String clientName;
   final String exerciseName;
@@ -1389,4 +1560,3 @@ class _ExercisePerformanceSnapshot {
     required this.reps,
   });
 }
-

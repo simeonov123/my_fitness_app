@@ -1,7 +1,7 @@
 class WorkoutInstanceExerciseSet {
-  int id;                    // db PK
-  int workoutExerciseId;     // parent FK
-  int setNumber;             // 1-based
+  int id; // db PK
+  int workoutExerciseId; // parent FK
+  int setNumber; // 1-based
   bool completed;
   String? setContextType;
   String? notes;
@@ -19,9 +19,9 @@ class WorkoutInstanceExerciseSet {
 
   /* ─── json ─── */
   factory WorkoutInstanceExerciseSet.fromJson(
-      Map<String, dynamic> j, {
-        required int workoutExerciseId,
-      }) =>
+    Map<String, dynamic> j, {
+    required int workoutExerciseId,
+  }) =>
       WorkoutInstanceExerciseSet(
         id: (j['id'] as num).toInt(),
         workoutExerciseId: workoutExerciseId,
@@ -36,14 +36,14 @@ class WorkoutInstanceExerciseSet {
       );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'workoutExerciseId': workoutExerciseId,
-    'setNumber': setNumber,
-    'completed': completed,
-    'setContextType': setContextType,
-    'notes': notes,
-    'data': values.entries
-        .map((e) => {'type': e.key, 'value': e.value})
-        .toList(),
-  };
+        'id': id,
+        'workoutExerciseId': workoutExerciseId,
+        'setNumber': setNumber,
+        'completed': completed,
+        'setContextType': setContextType,
+        'notes': notes,
+        'data': values.entries
+            .map((e) => {'type': e.key, 'value': e.value})
+            .toList(),
+      };
 }

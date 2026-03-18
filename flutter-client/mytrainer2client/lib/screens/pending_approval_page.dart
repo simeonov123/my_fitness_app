@@ -45,7 +45,8 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
 
       if (!refreshed) {
         setState(() {
-          _error = 'Approval is still pending. Try again after your account has been approved.';
+          _error =
+              'Approval is still pending. Try again after your account has been approved.';
         });
       }
     } catch (e) {
@@ -91,7 +92,8 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                   children: [
                     const Text(
                       'Your registration was received.',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -115,7 +117,8 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                       const SizedBox(height: 16),
                       Text(
                         _error!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.error),
                       ),
                     ],
                     const SizedBox(height: 24),
@@ -125,7 +128,8 @@ class _PendingApprovalPageState extends State<PendingApprovalPage> {
                       children: [
                         FilledButton(
                           onPressed: _refreshing ? null : _refreshApproval,
-                          child: Text(_refreshing ? 'Checking...' : 'Refresh now'),
+                          child:
+                              Text(_refreshing ? 'Checking...' : 'Refresh now'),
                         ),
                         OutlinedButton(
                           onPressed: _callNow,

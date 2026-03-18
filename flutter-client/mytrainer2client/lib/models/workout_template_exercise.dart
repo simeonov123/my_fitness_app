@@ -44,31 +44,28 @@ class WorkoutTemplateExercise {
       sets: rawSets
           .cast<Map<String, dynamic>>()
           .map((m) => WorkoutTemplateExerciseSet.fromJson(
-        m,
-        workoutExerciseId: parentId,
-      ))
+                m,
+                workoutExerciseId: parentId,
+              ))
           .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'exerciseId': exercise.id,
-    'sequenceOrder': sequenceOrder,
-    'setType': setType,
-    'setParams': setParams,
-    'notes': notes,
-    'sets': sets.map((s) => s.toJson()).toList(),
-  };
+        'id': id,
+        'exerciseId': exercise.id,
+        'sequenceOrder': sequenceOrder,
+        'setType': setType,
+        'setParams': setParams,
+        'notes': notes,
+        'sets': sets.map((s) => s.toJson()).toList(),
+      };
 
   /// param keys in order, falling back to exercise.defaultSetParams
   List<String> get paramKeys {
     final raw = setParams?.split(',') ??
         exercise.defaultSetParams?.split(',') ??
         <String>[];
-    return raw
-        .where((s) => s.trim().isNotEmpty)
-        .map((s) => s.trim())
-        .toList();
+    return raw.where((s) => s.trim().isNotEmpty).map((s) => s.trim()).toList();
   }
 }

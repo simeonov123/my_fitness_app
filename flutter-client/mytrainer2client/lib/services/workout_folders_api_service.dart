@@ -17,10 +17,10 @@ class WorkoutFoldersUnavailableException implements Exception {
 }
 
 class WorkoutFoldersApiService {
-  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
-          .isNotEmpty
-      ? const String.fromEnvironment('API_BASE')
-      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+  static final _base =
+      const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 
@@ -45,7 +45,8 @@ class WorkoutFoldersApiService {
       );
     }
     if (res.statusCode != 200) {
-      throw Exception('Failed to load workout folders (${res.statusCode}): ${res.body}');
+      throw Exception(
+          'Failed to load workout folders (${res.statusCode}): ${res.body}');
     }
     final body = jsonDecode(res.body) as List<dynamic>;
     return body
@@ -67,7 +68,8 @@ class WorkoutFoldersApiService {
       );
     }
     if (res.statusCode != 200) {
-      throw Exception('Failed to create workout folder (${res.statusCode}): ${res.body}');
+      throw Exception(
+          'Failed to create workout folder (${res.statusCode}): ${res.body}');
     }
     return WorkoutFolder.fromJson(jsonDecode(res.body));
   }
@@ -85,7 +87,8 @@ class WorkoutFoldersApiService {
       );
     }
     if (res.statusCode != 200) {
-      throw Exception('Failed to update workout folder (${res.statusCode}): ${res.body}');
+      throw Exception(
+          'Failed to update workout folder (${res.statusCode}): ${res.body}');
     }
     return WorkoutFolder.fromJson(jsonDecode(res.body));
   }
@@ -99,7 +102,8 @@ class WorkoutFoldersApiService {
       );
     }
     if (res.statusCode != 204) {
-      throw Exception('Failed to delete workout folder ($id): ${res.statusCode}');
+      throw Exception(
+          'Failed to delete workout folder ($id): ${res.statusCode}');
     }
   }
 }

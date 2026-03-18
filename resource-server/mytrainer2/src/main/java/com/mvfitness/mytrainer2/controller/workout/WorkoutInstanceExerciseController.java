@@ -1,6 +1,7 @@
 // src/main/java/com/mvfitness/mytrainer2/controller/workout/WorkoutInstanceExerciseController.java
 package com.mvfitness.mytrainer2.controller.workout;
 
+import com.mvfitness.mytrainer2.dto.ExerciseHistoryDto;
 import com.mvfitness.mytrainer2.dto.WorkoutInstanceExerciseDto;
 import com.mvfitness.mytrainer2.service.workout.WorkoutInstanceExerciseService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,17 @@ public class WorkoutInstanceExerciseController {
             @RequestBody List<WorkoutInstanceExerciseDto> dtos
     ) {
         return svc.replaceAll(kc(auth), sessionId, dtos);
+    }
+
+    @GetMapping("/{exerciseEntryId}/history")
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
+    public ExerciseHistoryDto history(
+            JwtAuthenticationToken auth,
+            @PathVariable Long sessionId,
+            @PathVariable Long exerciseEntryId,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return svc.history(kc(auth), sessionId, exerciseEntryId, limit);
     }
 
     /* ───────── DELETE ONE ───────── */

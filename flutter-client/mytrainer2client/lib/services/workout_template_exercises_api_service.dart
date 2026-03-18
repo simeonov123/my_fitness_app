@@ -9,10 +9,10 @@ import '../models/workout_template_exercise.dart';
 import 'dev_endpoints.dart';
 
 class WorkoutTemplateExercisesApiService {
-  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
-          .isNotEmpty
-      ? const String.fromEnvironment('API_BASE')
-      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+  static final _base =
+      const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 

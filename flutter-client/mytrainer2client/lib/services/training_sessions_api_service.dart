@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/page_response.dart';
+import '../models/exercise_history.dart';
 import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
 import 'auth_service.dart';
@@ -42,10 +43,9 @@ class TrainingSessionsApiService {
     required DateTime from,
     required DateTime to,
   }) async {
-    String fmt(DateTime d) =>
-        '${d.year.toString().padLeft(4, '0')}-'
-            '${d.month.toString().padLeft(2, '0')}-'
-            '${d.day.toString().padLeft(2, '0')}';
+    String fmt(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
 
     final uri = Uri.parse(
         '$_base/trainer/training-sessions/calendar?from=${fmt(from)}&to=${fmt(to)}');
@@ -58,8 +58,7 @@ class TrainingSessionsApiService {
     final out = <DateTime, int>{};
     for (final m in (jsonDecode(res.body) as List<dynamic>)
         .cast<Map<String, dynamic>>()) {
-      out[DateTime.parse(m['date'] as String)] =
-          (m['count'] as num).toInt();
+      out[DateTime.parse(m['date'] as String)] = (m['count'] as num).toInt();
     }
     return out;
   }
@@ -134,7 +133,7 @@ class TrainingSessionsApiService {
   }) async {
     final uri = Uri.parse('$_base/trainer/training-sessions');
     final res =
-    await http.post(uri, headers: await _hdr(token), body: jsonEncode(dto));
+        await http.post(uri, headers: await _hdr(token), body: jsonEncode(dto));
     if (res.statusCode != 200 && res.statusCode != 201) {
       _fail('POST session failed', res);
     }
@@ -148,7 +147,7 @@ class TrainingSessionsApiService {
   }) async {
     final uri = Uri.parse('$_base/trainer/training-sessions/$id');
     final res =
-    await http.put(uri, headers: await _hdr(token), body: jsonEncode(dto));
+        await http.put(uri, headers: await _hdr(token), body: jsonEncode(dto));
     if (res.statusCode != 200) {
       _fail('PUT session failed', res);
     }
@@ -177,7 +176,7 @@ class TrainingSessionsApiService {
     required int sessionId,
   }) async {
     final uri =
-    Uri.parse('$_base/trainer/training-sessions/$sessionId/instance');
+        Uri.parse('$_base/trainer/training-sessions/$sessionId/instance');
     final res = await http.get(uri, headers: await _hdr(token));
     if (res.statusCode != 200) {
       _fail('GET instance failed', res);
@@ -194,7 +193,7 @@ class TrainingSessionsApiService {
     required List<WorkoutInstanceExercise> items,
   }) async {
     final uri =
-    Uri.parse('$_base/trainer/training-sessions/$sessionId/instance');
+        Uri.parse('$_base/trainer/training-sessions/$sessionId/instance');
     final res = await http.put(uri,
         headers: await _hdr(token),
         body: jsonEncode(items.map((e) => e.toJson()).toList()));
@@ -205,5 +204,23 @@ class TrainingSessionsApiService {
         .cast<Map<String, dynamic>>()
         .map(WorkoutInstanceExercise.fromJson)
         .toList();
+  }
+
+  Future<ExerciseHistory> getInstanceExerciseHistory({
+    String? token,
+    required int sessionId,
+    required int entryId,
+    int limit = 5,
+  }) async {
+    final uri = Uri.parse(
+      '$_base/trainer/training-sessions/$sessionId/instance/$entryId/history?limit=$limit',
+    );
+    final res = await http.get(uri, headers: await _hdr(token));
+    if (res.statusCode != 200) {
+      _fail('GET exercise history failed', res);
+    }
+    return ExerciseHistory.fromJson(
+      jsonDecode(res.body) as Map<String, dynamic>,
+    );
   }
 }

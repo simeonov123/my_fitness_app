@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/muscle_group.dart';
 import '../providers/exercises_provider.dart';
 import '../providers/muscle_groups_provider.dart';
+import '../theme/app_density.dart';
 
 class ExerciseFormDialog extends StatefulWidget {
   const ExerciseFormDialog({super.key});
@@ -77,9 +78,8 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
     try {
       final created = await context.read<ExercisesProvider>().create(
             name: _nameCtrl.text.trim(),
-            description: _descCtrl.text.trim().isEmpty
-                ? null
-                : _descCtrl.text.trim(),
+            description:
+                _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
             defaultSetType: _selectedPreset.defaultSetType,
             defaultSetParams: _selectedPreset.defaultSetParams,
             muscleGroups: _selectedMuscleGroups.toList(growable: false),
@@ -151,122 +151,227 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   @override
   Widget build(BuildContext context) {
     final muscleGroupsProvider = context.watch<MuscleGroupsProvider>();
-    return AlertDialog(
-      title: const Text('New Exercise'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name *'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Required' : null,
-              ),
-              TextFormField(
-                controller: _descCtrl,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<_ExercisePreset>(
-                initialValue: _selectedPreset,
-                decoration: const InputDecoration(labelText: 'Default tracking'),
-                items: _presets
-                    .map(
-                      (preset) => DropdownMenuItem<_ExercisePreset>(
-                        value: preset,
-                        child: Text(preset.label),
+    final theme = Theme.of(context);
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: AppDensity.symmetric(horizontal: 16, vertical: 18),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          AppDensity.space(18),
+          AppDensity.space(18),
+          AppDensity.space(18),
+          AppDensity.space(14),
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: AppDensity.circular(26),
+          border: Border.all(color: const Color(0xFFDCE8FF)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2F80FF).withOpacity(0.08),
+              blurRadius: AppDensity.space(24),
+              offset: Offset(0, AppDensity.space(12)),
+            ),
+          ],
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: AppDensity.space(40),
+                      height: AppDensity.space(40),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF2FF),
+                        borderRadius: AppDensity.circular(14),
                       ),
-                    )
-                    .toList(growable: false),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _selectedPreset = value);
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Muscle Groups',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      child: const Icon(
+                        Icons.sports_gymnastics_rounded,
+                        color: Color(0xFF2F80FF),
+                      ),
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: _creatingMuscleGroup ? null : _createCustomMuscleGroup,
-                    icon: _creatingMuscleGroup
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.add),
-                    label: const Text('Custom'),
-                  ),
-                ],
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _selectedMuscleGroups.isEmpty
-                      ? 'Select one or more muscle groups.'
-                      : '${_selectedMuscleGroups.length} selected',
-                  style: Theme.of(context).textTheme.bodySmall,
+                    SizedBox(width: AppDensity.space(10)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'New exercise',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: AppDensity.space(3)),
+                          Text(
+                            'Add a custom movement with default tracking and muscle groups.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFF6F7691),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              if (muscleGroupsProvider.loading &&
-                  muscleGroupsProvider.items.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: muscleGroupsProvider.items
+                SizedBox(height: AppDensity.space(14)),
+                TextFormField(
+                  controller: _nameCtrl,
+                  decoration:
+                      _fieldDecoration('Name', 'Incline dumbbell press'),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? 'Required' : null,
+                ),
+                SizedBox(height: AppDensity.space(10)),
+                TextFormField(
+                  controller: _descCtrl,
+                  decoration: _fieldDecoration(
+                      'Description', 'Optional coaching cue or context'),
+                  maxLines: 3,
+                ),
+                SizedBox(height: AppDensity.space(10)),
+                DropdownButtonFormField<_ExercisePreset>(
+                  value: _selectedPreset,
+                  decoration: _fieldDecoration(
+                      'Default tracking', 'Choose a set format'),
+                  items: _presets
                       .map(
-                        (group) => FilterChip(
-                          label: Text(group.name),
-                          selected: _selectedMuscleGroups.contains(group),
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedMuscleGroups.add(group);
-                              } else {
-                                _selectedMuscleGroups.remove(group);
-                              }
-                            });
-                          },
+                        (preset) => DropdownMenuItem<_ExercisePreset>(
+                          value: preset,
+                          child: Text(preset.label),
                         ),
                       )
                       .toList(growable: false),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedPreset = value);
+                  },
                 ),
-            ],
+                SizedBox(height: AppDensity.space(12)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Muscle groups',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _creatingMuscleGroup
+                          ? null
+                          : _createCustomMuscleGroup,
+                      icon: _creatingMuscleGroup
+                          ? SizedBox(
+                              width: AppDensity.space(12),
+                              height: AppDensity.space(12),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.add),
+                      label: const Text('Custom'),
+                    ),
+                  ],
+                ),
+                Text(
+                  _selectedMuscleGroups.isEmpty
+                      ? 'Select one or more muscle groups.'
+                      : '${_selectedMuscleGroups.length} selected',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF6F7691),
+                  ),
+                ),
+                SizedBox(height: AppDensity.space(6)),
+                if (muscleGroupsProvider.loading &&
+                    muscleGroupsProvider.items.isEmpty)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: AppDensity.space(12),
+                    ),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: muscleGroupsProvider.items
+                        .map(
+                          (group) => FilterChip(
+                            label: Text(group.name),
+                            selected: _selectedMuscleGroups.contains(group),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedMuscleGroups.add(group);
+                                } else {
+                                  _selectedMuscleGroups.remove(group);
+                                }
+                              });
+                            },
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                SizedBox(height: AppDensity.space(14)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: _submitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    SizedBox(width: AppDensity.space(8)),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _submitting ? null : _submit,
+                        child: _submitting
+                            ? SizedBox(
+                                width: AppDensity.space(18),
+                                height: AppDensity.space(18),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Create'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+    );
+  }
+
+  InputDecoration _fieldDecoration(String label, String hint) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: const Color(0xFFF7FAFF),
+      border: OutlineInputBorder(
+        borderRadius: AppDensity.circular(18),
+        borderSide: const BorderSide(color: Color(0xFFDCE8FF)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: AppDensity.circular(18),
+        borderSide: const BorderSide(color: Color(0xFFDCE8FF)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: AppDensity.circular(18),
+        borderSide: const BorderSide(
+          color: Color(0xFF2F80FF),
+          width: 1.4,
         ),
-        ElevatedButton(
-          onPressed: _submitting ? null : _submit,
-          child: _submitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Create'),
-        ),
-      ],
+      ),
     );
   }
 }

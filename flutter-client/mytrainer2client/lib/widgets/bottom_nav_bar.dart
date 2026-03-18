@@ -7,12 +7,12 @@ class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
 
   static const _trainerItems = [
-    _NavTarget(0, '/home',       Icons.home,       'Home'),
-    _NavTarget(1, '/workout',    Icons.fitness_center, 'Workout'),
-    _NavTarget(2, '/social',     Icons.forum,      'Social'),
-    _NavTarget(3, '/programs',   Icons.list_alt,   'Programs'),
-    _NavTarget(4, '/clients',    Icons.people,     'Clients'),
-    _NavTarget(5, '/nutrition',  Icons.restaurant, 'Nutrition'),
+    _NavTarget(0, '/home', Icons.home, 'Home'),
+    _NavTarget(1, '/workout', Icons.fitness_center, 'Workout'),
+    _NavTarget(2, '/social', Icons.forum, 'Social'),
+    _NavTarget(3, '/programs', Icons.list_alt, 'Programs'),
+    _NavTarget(4, '/clients', Icons.people, 'Clients'),
+    _NavTarget(5, '/nutrition', Icons.restaurant, 'Nutrition'),
   ];
 
   static const _clientItems = [
@@ -37,7 +37,8 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacementNamed(context, items[idx].route);
       },
       items: items
-          .map((t) => BottomNavigationBarItem(icon: Icon(t.icon), label: t.label))
+          .map((t) =>
+              BottomNavigationBarItem(icon: Icon(t.icon), label: t.label))
           .toList(),
     );
   }

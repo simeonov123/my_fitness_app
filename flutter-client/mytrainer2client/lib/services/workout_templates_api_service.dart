@@ -10,10 +10,10 @@ import '../models/workout_template.dart';
 import 'dev_endpoints.dart';
 
 class WorkoutTemplatesApiService {
-  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
-          .isNotEmpty
-      ? const String.fromEnvironment('API_BASE')
-      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+  static final _base =
+      const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 
@@ -56,12 +56,12 @@ class WorkoutTemplatesApiService {
     final jsonMap = jsonDecode(res.body) as Map<String, dynamic>;
     return PageResponse.fromJson(
       jsonMap,
-          (m) => WorkoutTemplate.fromJson(m),
+      (m) => WorkoutTemplate.fromJson(m),
     );
   }
 
   Future<WorkoutTemplate> create(WorkoutTemplate t) async {
-    final uri     = Uri.parse('$_base/trainer/workout-templates');
+    final uri = Uri.parse('$_base/trainer/workout-templates');
     final headers = await _headers();
     final res = await http.post(
       uri,
@@ -77,7 +77,7 @@ class WorkoutTemplatesApiService {
   }
 
   Future<WorkoutTemplate> update(WorkoutTemplate t) async {
-    final uri     = Uri.parse('$_base/trainer/workout-templates/${t.id}');
+    final uri = Uri.parse('$_base/trainer/workout-templates/${t.id}');
     final headers = await _headers();
     final res = await http.put(
       uri,
@@ -93,7 +93,7 @@ class WorkoutTemplatesApiService {
   }
 
   Future<void> delete(int id) async {
-    final uri     = Uri.parse('$_base/trainer/workout-templates/$id');
+    final uri = Uri.parse('$_base/trainer/workout-templates/$id');
     final headers = await _headers();
     final res = await http.delete(uri, headers: headers);
     if (res.statusCode != 204) {

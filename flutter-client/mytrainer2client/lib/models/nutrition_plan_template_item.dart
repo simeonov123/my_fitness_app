@@ -14,16 +14,16 @@ class NutritionPlanTemplateItem {
 
   factory NutritionPlanTemplateItem.fromJson(Map<String, dynamic> j) =>
       NutritionPlanTemplateItem(
-        id:            j['id'] ?? 0,
-        itemName:      j['itemName'] ?? '',
-        details:       j['details'],
+        id: j['id'] ?? 0,
+        itemName: j['itemName'] ?? '',
+        details: j['details'],
         sequenceOrder: j['sequenceOrder'],
       );
 
   Map<String, dynamic> toJson() => {
-    'id'           : id,
-    'itemName'     : itemName,
-    'details'      : details,
-    'sequenceOrder': sequenceOrder,
-  };
+        'id': id,
+        'itemName': itemName,
+        'details': details,
+        'sequenceOrder': sequenceOrder,
+      };
 }

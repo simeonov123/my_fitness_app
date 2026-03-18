@@ -1,8 +1,8 @@
 /// Domain model for one workout / PT session on the calendar timeline.
 class Session {
   final int id;
-  final DateTime start;   // inclusive
-  final DateTime end;     // exclusive
+  final DateTime start; // inclusive
+  final DateTime end; // exclusive
   final List<String> clients;
 
   Session({

@@ -1,9 +1,9 @@
 // lib/models/workout_template_exercise_set.dart
 
 class WorkoutTemplateExerciseSet {
-  int id;                  // 0 = not yet persisted
-  int workoutExerciseId;   // now passed in by the caller
-  int setNumber;           // 1,2,3,...
+  int id; // 0 = not yet persisted
+  int workoutExerciseId; // now passed in by the caller
+  int setNumber; // 1,2,3,...
   bool completed;
   String? setContextType;
   String? notes;
@@ -40,9 +40,9 @@ class WorkoutTemplateExerciseSet {
 
   /// now requires the parent WTE id
   factory WorkoutTemplateExerciseSet.fromJson(
-      Map<String, dynamic> j, {
-        required int workoutExerciseId,
-      }) {
+    Map<String, dynamic> j, {
+    required int workoutExerciseId,
+  }) {
     final dataList = (j['data'] as List<dynamic>?) ?? <dynamic>[];
     return WorkoutTemplateExerciseSet(
       id: (j['id'] as num).toInt(),
@@ -59,14 +59,14 @@ class WorkoutTemplateExerciseSet {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'workoutExerciseId': workoutExerciseId,
-    'setNumber': setNumber,
-    'completed': completed,
-    'setContextType': setContextType,
-    'notes': notes,
-    'data': values.entries
-        .map((e) => {'type': e.key, 'value': e.value})
-        .toList(),
-  };
+        'id': id,
+        'workoutExerciseId': workoutExerciseId,
+        'setNumber': setNumber,
+        'completed': completed,
+        'setContextType': setContextType,
+        'notes': notes,
+        'data': values.entries
+            .map((e) => {'type': e.key, 'value': e.value})
+            .toList(),
+      };
 }

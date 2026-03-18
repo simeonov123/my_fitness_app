@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/client.dart';
 import '../models/client_folder.dart';
+import '../theme/app_density.dart';
 
 class ReorderClientsResult {
   final List<ClientFolder> folders;
@@ -43,8 +44,9 @@ class _ReorderClientsPanelState extends State<ReorderClientsPanel> {
         sortedClients.where((client) => client.folderId == null).toList();
     _folderClients = {
       for (final folder in _folders)
-        folder.id:
-            sortedClients.where((client) => client.folderId == folder.id).toList(),
+        folder.id: sortedClients
+            .where((client) => client.folderId == folder.id)
+            .toList(),
     };
   }
 
@@ -169,26 +171,61 @@ class _ReorderClientsPanelState extends State<ReorderClientsPanel> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: Color(0xFFF9FBFF),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        AppDensity.space(14),
+        AppDensity.space(10),
+        AppDensity.space(14),
+        AppDensity.space(14),
+      ),
       child: Column(
         children: [
+          Container(
+            width: AppDensity.space(34),
+            height: AppDensity.space(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD5D9E7),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          SizedBox(height: AppDensity.space(10)),
           Row(
             children: [
-              const Text(
-                'Organize clients',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              const Expanded(
+                child: Text(
+                  'Organize clients',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF232530),
+                  ),
+                ),
               ),
-              const Spacer(),
-              IconButton(
-                onPressed: _persistAndClose,
-                icon: const Icon(Icons.check),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2F80FF),
+                  borderRadius: AppDensity.circular(14),
+                ),
+                child: IconButton(
+                  onPressed: _persistAndClose,
+                  icon: const Icon(Icons.check_rounded, color: Colors.white),
+                ),
               ),
             ],
           ),
-          const Divider(),
+          SizedBox(height: AppDensity.space(4)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Drag clients between folders, reorder them, and save the new roster layout.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF6F7691),
+                  ),
+            ),
+          ),
+          SizedBox(height: AppDensity.space(12)),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -212,7 +249,8 @@ class _ReorderClientsPanelState extends State<ReorderClientsPanel> {
                       },
                       itemBuilder: (_, index) => _buildClientTile(
                         _ungrouped[index],
-                        key: ValueKey('ungrouped-client-${_ungrouped[index].id}'),
+                        key: ValueKey(
+                            'ungrouped-client-${_ungrouped[index].id}'),
                         reorderIndex: index,
                       ),
                     ),
@@ -304,11 +342,18 @@ class _DragSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade300),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFDCE8FF)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2F80FF).withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,12 +366,17 @@ class _DragSection extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF232530),
+                          ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF6F7691),
+                          ),
                     ),
                   ],
                 ),
@@ -368,10 +418,10 @@ class _DropLane extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFFE3F2FD) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: active ? const Color(0xFFEAF2FF) : const Color(0xFFF7FAFF),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: active ? const Color(0xFF1976D2) : Colors.grey.shade400,
+              color: active ? const Color(0xFF2F80FF) : const Color(0xFFDCE8FF),
               width: active ? 2 : 1,
             ),
           ),
@@ -379,14 +429,17 @@ class _DropLane extends StatelessWidget {
             children: [
               Icon(
                 active ? Icons.move_down : Icons.input,
-                color: active ? const Color(0xFF1976D2) : Colors.grey.shade700,
+                color:
+                    active ? const Color(0xFF2F80FF) : const Color(0xFF66738F),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   active ? 'Release to move client here' : hint,
                   style: TextStyle(
-                    color: active ? const Color(0xFF1976D2) : Colors.grey.shade800,
+                    color: active
+                        ? const Color(0xFF2F80FF)
+                        : const Color(0xFF495874),
                     fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
@@ -410,26 +463,76 @@ class _ClientPanelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        title: Text(client.fullName),
-        subtitle: client.email?.isNotEmpty == true
-            ? Text(
-                client.email!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            : null,
-        trailing: reorderIndex == null
-            ? const Icon(Icons.open_with)
-            : ReorderableDragStartListener(
-                index: reorderIndex!,
-                child: const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(Icons.drag_handle),
+      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAFF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFDCE8FF)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF2FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              size: 20,
+              color: Color(0xFF2F80FF),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  client.fullName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF232530),
+                  ),
                 ),
-              ),
+                if (client.email?.isNotEmpty == true) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    client.email!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF6F7691),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          trailingWidget,
+        ],
+      ),
+    );
+  }
+
+  Widget get trailingWidget {
+    if (reorderIndex == null) {
+      return const Padding(
+        padding: EdgeInsets.all(8),
+        child: Icon(Icons.open_with_rounded, color: Color(0xFF5D6B88)),
+      );
+    }
+    return ReorderableDragStartListener(
+      index: reorderIndex!,
+      child: const Padding(
+        padding: EdgeInsets.all(8),
+        child: Icon(Icons.drag_handle_rounded, color: Color(0xFF5D6B88)),
       ),
     );
   }

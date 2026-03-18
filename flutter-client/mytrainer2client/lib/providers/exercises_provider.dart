@@ -8,17 +8,20 @@ class ExercisesProvider extends ChangeNotifier {
   final _api = ExercisesApiService();
 
   List<Exercise> _all = [];
-  bool  _loading = false;
+  bool _loading = false;
   String _search = '';
 
   /* ───────── getters ───────── */
 
   bool get loading => _loading;
 
-  List<Exercise> get list => _all.where(
-        (e) => _search.isEmpty ||
-        e.name.toLowerCase().contains(_search.toLowerCase()),
-  ).toList(growable: false);
+  List<Exercise> get list => _all
+      .where(
+        (e) =>
+            _search.isEmpty ||
+            e.name.toLowerCase().contains(_search.toLowerCase()),
+      )
+      .toList(growable: false);
 
   List<Exercise> _sortExercises(Iterable<Exercise> source) {
     final sorted = source.toList(growable: false);
@@ -34,7 +37,7 @@ class ExercisesProvider extends ChangeNotifier {
   /* ───────── internal helper ───────── */
 
   Future<void> _load(Future<List<Exercise>> Function() fetch) async {
-    if (_loading) return;               // guard against duplicate calls
+    if (_loading) return; // guard against duplicate calls
     _loading = true;
 
     // defer the first notify until the next micro-task; this makes it
@@ -48,9 +51,9 @@ class ExercisesProvider extends ChangeNotifier {
 
   /* ───────── public API (unchanged signature) ───────── */
 
-  Future<void> load()            => _load(() => _api.list());
-  Future<void> loadCommon()      => _load(() => _api.listCommon());
-  Future<void> loadAvailable()   => _load(() async {
+  Future<void> load() => _load(() => _api.list());
+  Future<void> loadCommon() => _load(() => _api.listCommon());
+  Future<void> loadAvailable() => _load(() async {
         final common = await _api.listCommon();
         final custom = await _api.list();
         final byId = <int, Exercise>{};

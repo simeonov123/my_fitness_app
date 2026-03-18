@@ -49,23 +49,23 @@ class WorkoutInstanceExercise {
       sets: (j['sets'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>()
           .map((m) => WorkoutInstanceExerciseSet.fromJson(
-        m,
-        workoutExerciseId: parentId,
-      ))
+                m,
+                workoutExerciseId: parentId,
+              ))
           .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'workoutInstanceId': workoutInstanceId,
-    'clientId': clientId,
-    'clientName': clientName,
-    'exerciseId': exercise.id,
-    'sequenceOrder': sequenceOrder,
-    'setType': setType,
-    'setParams': setParams,
-    'notes': notes,
-    'sets': sets.map((s) => s.toJson()).toList(),
-  };
+        'id': id,
+        'workoutInstanceId': workoutInstanceId,
+        'clientId': clientId,
+        'clientName': clientName,
+        'exerciseId': exercise.id,
+        'sequenceOrder': sequenceOrder,
+        'setType': setType,
+        'setParams': setParams,
+        'notes': notes,
+        'sets': sets.map((s) => s.toJson()).toList(),
+      };
 }

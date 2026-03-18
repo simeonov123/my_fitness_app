@@ -20,7 +20,7 @@ class _ReorderInstanceExercisesPanelState
   @override
   void initState() {
     super.initState();
-    _list = List.from(widget.initial);   // make a mutable copy
+    _list = List.from(widget.initial); // make a mutable copy
     _renumber();
   }
 
@@ -32,7 +32,7 @@ class _ReorderInstanceExercisesPanelState
 
   void _done() {
     _renumber();
-    Navigator.of(context).pop(_list);    // return new order
+    Navigator.of(context).pop(_list); // return new order
   }
 
   @override

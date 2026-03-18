@@ -1,10 +1,9 @@
-// File: lib/widgets/client_widget.dart
-
 import 'package:flutter/material.dart';
 import 'package:avatar_plus/avatar_plus.dart';
 import '../models/client.dart';
+import '../theme/app_density.dart';
 
-class ClientWidget extends StatefulWidget {
+class ClientWidget extends StatelessWidget {
   final Client client;
   final VoidCallback? onTap;
   final VoidCallback? onInviteTap;
@@ -17,85 +16,181 @@ class ClientWidget extends StatefulWidget {
   });
 
   @override
-  State<ClientWidget> createState() => _ClientWidgetState();
-}
-
-class _ClientWidgetState extends State<ClientWidget> {
-  @override
   Widget build(BuildContext context) {
-    final c = widget.client;
+    final theme = Theme.of(context);
+    final seed = client.id != 0 ? client.id.toString() : client.fullName;
+    final createdAt = _formatStamp(client.createdAt);
+    final updatedAt = _formatStamp(client.updatedAt);
 
-    // A *stable* seed → avatar colour won’t jump between rebuilds.
-    final seed = c.id != 0 ? c.id.toString() : c.fullName;
-
-    // Format timestamps for display (fall back to raw string if needed)
-    final createdAt = c.createdAt?.toLocal().toString().split('.').first;
-    final updatedAt = c.updatedAt?.toLocal().toString().split('.').first;
-
+    final cardRadius = AppDensity.radius(24);
     return InkWell(
-      onTap: widget.onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(cardRadius),
+      child: Container(
+        margin: AppDensity.symmetric(horizontal: 12, vertical: 6),
+        padding: AppDensity.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7FAFF),
+          borderRadius: BorderRadius.circular(cardRadius),
+          border: Border.all(color: const Color(0xFFDCE8FF)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2F80FF).withOpacity(0.05),
+              blurRadius: AppDensity.space(18),
+              offset: Offset(0, AppDensity.space(8)),
+            ),
+          ],
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipOval(
-              child: AvatarPlus(
-                seed,
-                width: 56,
-                height: 56,
-                fit: BoxFit.cover,
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                borderRadius: AppDensity.circular(999),
+                border: Border.all(color: const Color(0xFFD7E5FF)),
+              ),
+              child: ClipOval(
+                child: AvatarPlus(
+                  seed,
+                  width: AppDensity.space(48),
+                  height: AppDensity.space(48),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: AppDensity.space(14)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    c.fullName,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    client.fullName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF232530),
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (c.email != null && c.email!.isNotEmpty)
+                  if (client.email != null && client.email!.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 2),
+                      padding: EdgeInsets.only(top: AppDensity.space(4)),
                       child: Text(
-                        c.email!,
-                        style: Theme.of(context).textTheme.bodySmall,
+                        client.email!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF6F7691),
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  if (createdAt != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        'Created: $createdAt',
-                        style: Theme.of(context).textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  if (updatedAt != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        'Updated: $updatedAt',
-                        style: Theme.of(context).textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                  SizedBox(height: AppDensity.space(10)),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (createdAt != null)
+                        _ClientMetaPill(
+                          icon: Icons.calendar_today_rounded,
+                          label: 'Created $createdAt',
+                        ),
+                      if (updatedAt != null)
+                        _ClientMetaPill(
+                          icon: Icons.update_rounded,
+                          label: 'Updated $updatedAt',
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            if (widget.onInviteTap != null)
-              IconButton(
-                tooltip: 'Invite client to onboard',
-                onPressed: widget.onInviteTap,
-                icon: const Icon(Icons.person_add_alt_1_outlined),
-              ),
-            const Icon(Icons.chevron_right, size: 20),
+            SizedBox(width: AppDensity.space(8)),
+            Column(
+              children: [
+                if (onInviteTap != null)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF2FF),
+                      borderRadius: AppDensity.circular(12),
+                    ),
+                    child: IconButton(
+                      tooltip: 'Invite client to onboard',
+                      onPressed: onInviteTap,
+                      icon: const Icon(
+                        Icons.person_add_alt_1_rounded,
+                        color: Color(0xFF2F80FF),
+                      ),
+                    ),
+                  ),
+                SizedBox(height: AppDensity.space(6)),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: AppDensity.icon(15),
+                  color: Color(0xFF8A93AA),
+                ),
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+String? _formatStamp(DateTime? value) {
+  if (value == null) return null;
+  final local = value.toLocal();
+  final month = _clientMonths[local.month - 1];
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$month ${local.day}, ${local.hour}:$minute';
+}
+
+const List<String> _clientMonths = <String>[
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+class _ClientMetaPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _ClientMetaPill({
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: AppDensity.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: AppDensity.circular(999),
+        border: Border.all(color: const Color(0xFFDCE8FF)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: AppDensity.icon(13), color: const Color(0xFF2F80FF)),
+          SizedBox(width: AppDensity.space(5)),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: const Color(0xFF4D5A78),
+                  fontWeight: FontWeight.w700,
+                ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

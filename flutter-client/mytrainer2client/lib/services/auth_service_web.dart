@@ -164,7 +164,9 @@ class AuthService implements _AuthServiceBase {
       host: current.host,
       port: current.hasPort ? current.port : null,
       path: redirectUri.path.isEmpty ? '/login' : redirectUri.path,
-      queryParameters: redirectUri.queryParameters.isEmpty ? null : redirectUri.queryParameters,
+      queryParameters: redirectUri.queryParameters.isEmpty
+          ? null
+          : redirectUri.queryParameters,
     ).toString();
 
     // Clear browser storage aggressively so stale auth/invite state does not survive logout.

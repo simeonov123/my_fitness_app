@@ -15,18 +15,15 @@ class SessionStore {
   ValueListenable<List<Session>> get listenable => _notifier;
   List<Session> get sessions => _notifier.value;
 
-  void setAll(List<Session> list) =>
-      _notifier.value = List.unmodifiable(list);
+  void setAll(List<Session> list) => _notifier.value = List.unmodifiable(list);
 
-  void add(Session s) =>
-      _notifier.value = [..._notifier.value, s];
+  void add(Session s) => _notifier.value = [..._notifier.value, s];
 
   /// Removes the pill *and* dispatches a backend delete.
   Future<void> remove(BuildContext ctx, int id) async {
     await ctx.read<TrainingSessionsProvider>().deleteOne(id: id);
 
-    _notifier.value =
-        _notifier.value.where((e) => e.id != id).toList();
+    _notifier.value = _notifier.value.where((e) => e.id != id).toList();
   }
 
   /// Local mock helper

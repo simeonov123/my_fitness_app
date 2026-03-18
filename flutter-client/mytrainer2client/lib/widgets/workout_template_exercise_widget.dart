@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/workout_template_exercise.dart';
 import '../models/workout_template_exercise_set.dart';
 import '../l10n/app_localizations.dart';
+import '../theme/app_density.dart';
 
 const _setContextOptions = <String>[
   'WARMUP',
@@ -19,6 +20,7 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
   final bool canEditExerciseNotes;
   final bool canEditSetNotes;
   final bool isReadOnly;
+  final List<Widget> headerActions;
 
   const WorkoutTemplateExerciseWidget({
     super.key,
@@ -29,6 +31,7 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
     this.canEditExerciseNotes = true,
     this.canEditSetNotes = true,
     this.isReadOnly = false,
+    this.headerActions = const [],
   });
 
   @override
@@ -147,10 +150,10 @@ class _WorkoutTemplateExerciseWidgetState
       backgroundColor: Colors.white,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          left: AppDensity.space(14),
+          right: AppDensity.space(14),
+          top: AppDensity.space(14),
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + AppDensity.space(14),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -160,7 +163,7 @@ class _WorkoutTemplateExerciseWidgetState
               title,
               style: Theme.of(ctx).textTheme.titleMedium,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppDensity.space(10)),
             TextField(
               controller: controller,
               maxLines: 4,
@@ -171,7 +174,7 @@ class _WorkoutTemplateExerciseWidgetState
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppDensity.space(10)),
             Row(
               children: [
                 TextButton(
@@ -183,7 +186,7 @@ class _WorkoutTemplateExerciseWidgetState
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Cancel'),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: AppDensity.space(8)),
                 FilledButton(
                   onPressed: () => Navigator.pop(ctx, controller.text),
                   child: const Text('Save'),
@@ -199,10 +202,23 @@ class _WorkoutTemplateExerciseWidgetState
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+    const accent = Color(0xFF2F80FF);
+    return Container(
+      margin: AppDensity.symmetric(vertical: 8, horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: AppDensity.circular(24),
+        border: Border.all(color: const Color(0xFFDCE8FF)),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withOpacity(0.06),
+            blurRadius: AppDensity.space(20),
+            offset: Offset(0, AppDensity.space(10)),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: AppDensity.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -210,6 +226,20 @@ class _WorkoutTemplateExerciseWidgetState
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: AppDensity.space(38),
+                  height: AppDensity.space(38),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF2FF),
+                    borderRadius: AppDensity.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.fitness_center_rounded,
+                    color: Color(0xFF2F80FF),
+                    size: AppDensity.icon(18),
+                  ),
+                ),
+                SizedBox(width: AppDensity.space(10)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,53 +247,75 @@ class _WorkoutTemplateExerciseWidgetState
                       Text(
                         widget.wte.exercise.name,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
+                          color: Color(0xFF232530),
                         ),
                       ),
                       if ((widget.wte.setType ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.wte.setType!,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        SizedBox(height: AppDensity.space(4)),
+                        Container(
+                          padding: AppDensity.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF4F8FF),
+                            borderRadius: AppDensity.circular(999),
+                          ),
+                          child: Text(
+                            widget.wte.setType!,
+                            style: const TextStyle(
+                              color: Color(0xFF45608D),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                if (widget.canEditExerciseNotes)
-                  IconButton(
-                    tooltip: widget.wte.notes?.trim().isNotEmpty == true
-                        ? 'Edit pinned note'
-                        : 'Add pinned note',
-                    onPressed: _editExerciseNote,
-                    icon: Icon(
-                      Icons.push_pin_outlined,
-                      color: widget.wte.notes?.trim().isNotEmpty == true
-                          ? const Color(0xFFEF6C00)
-                          : Colors.grey[600],
-                    ),
+                if (widget.headerActions.isNotEmpty ||
+                    widget.canEditExerciseNotes)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ...widget.headerActions,
+                      if (widget.canEditExerciseNotes)
+                        IconButton(
+                          tooltip: widget.wte.notes?.trim().isNotEmpty == true
+                              ? 'Edit pinned note'
+                              : 'Add pinned note',
+                          onPressed: _editExerciseNote,
+                          icon: Icon(
+                            Icons.push_pin_outlined,
+                            color: widget.wte.notes?.trim().isNotEmpty == true
+                                ? const Color(0xFF2F80FF)
+                                : Colors.grey[600],
+                          ),
+                        ),
+                    ],
                   ),
               ],
             ),
             if (widget.wte.notes?.trim().isNotEmpty == true) ...[
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.only(top: 6, bottom: 12),
-                padding: const EdgeInsets.all(10),
+                margin: EdgeInsets.only(
+                  top: AppDensity.space(6),
+                  bottom: AppDensity.space(10),
+                ),
+                padding: AppDensity.all(9),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFFCC80)),
+                  color: const Color(0xFFF4F8FF),
+                  borderRadius: AppDensity.circular(12),
+                  border: Border.all(color: const Color(0xFFDCE8FF)),
                 ),
                 child: Text(
                   widget.wte.notes!.trim(),
                   style: const TextStyle(
-                    color: Color(0xFF7A4A00),
+                    color: Color(0xFF3E4A67),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -271,11 +323,11 @@ class _WorkoutTemplateExerciseWidgetState
             ],
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: AppDensity.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFFBFAFD),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE7E2EF)),
+                color: const Color(0xFFF9FBFF),
+                borderRadius: AppDensity.circular(18),
+                border: Border.all(color: const Color(0xFFDCE8FF)),
               ),
               child: Column(
                 children: [
@@ -297,19 +349,22 @@ class _WorkoutTemplateExerciseWidgetState
                           style: const TextStyle(color: Colors.white),
                         ),
                       ),
-                      onDismissed: widget.isReadOnly ? null : (_) => _removeSet(i),
+                      onDismissed:
+                          widget.isReadOnly ? null : (_) => _removeSet(i),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: widget.showCompletion && _localSets[i].completed
-                              ? const Color(0xFFEAF7EE)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          color:
+                              widget.showCompletion && _localSets[i].completed
+                                  ? const Color(0xFFEFF7FF)
+                                  : Colors.white,
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: widget.showCompletion && _localSets[i].completed
-                                ? const Color(0xFF9FD3AE)
-                                : const Color(0xFFEAE6F1),
+                            color:
+                                widget.showCompletion && _localSets[i].completed
+                                    ? const Color(0xFF9CC8FF)
+                                    : const Color(0xFFDCE8FF),
                           ),
                         ),
                         child: Column(
@@ -319,7 +374,8 @@ class _WorkoutTemplateExerciseWidgetState
                               children: [
                                 Expanded(
                                   child: Text(
-                                    loc.set_number(_localSets[i].setNumber.toString()),
+                                    loc.set_number(
+                                        _localSets[i].setNumber.toString()),
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       decoration: widget.showCompletion &&
@@ -339,8 +395,12 @@ class _WorkoutTemplateExerciseWidgetState
                                     splashRadius: 18,
                                     icon: Icon(
                                       Icons.push_pin_outlined,
-                                      color: _localSets[i].notes?.trim().isNotEmpty == true
-                                          ? const Color(0xFFEF6C00)
+                                      color: _localSets[i]
+                                                  .notes
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true
+                                          ? const Color(0xFF2F80FF)
                                           : Colors.grey[600],
                                     ),
                                   ),
@@ -352,9 +412,11 @@ class _WorkoutTemplateExerciseWidgetState
                                         ? null
                                         : (value) {
                                             setState(() {
-                                              _localSets[i].completed = value ?? false;
+                                              _localSets[i].completed =
+                                                  value ?? false;
                                             });
-                                            widget.wte.sets = List.from(_localSets);
+                                            widget.wte.sets =
+                                                List.from(_localSets);
                                             widget.onChanged();
                                           },
                                   ),
@@ -367,14 +429,15 @@ class _WorkoutTemplateExerciseWidgetState
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF8E1),
+                                  color: const Color(0xFFF4F8FF),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFFFE082)),
+                                  border: Border.all(
+                                      color: const Color(0xFFDCE8FF)),
                                 ),
                                 child: Text(
                                   _localSets[i].notes!.trim(),
                                   style: const TextStyle(
-                                    color: Color(0xFF7A4A00),
+                                    color: Color(0xFF3E4A67),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -388,29 +451,27 @@ class _WorkoutTemplateExerciseWidgetState
                                   borderRadius: BorderRadius.circular(999),
                                   child: Padding(
                                     padding: const EdgeInsets.only(right: 10),
-                                    child: _contextChip(_localSets[i].setContextType),
+                                    child: _contextChip(
+                                        _localSets[i].setContextType),
                                   ),
                                 ),
                                 for (var key in widget.wte.paramKeys)
                                   Expanded(
                                     child: Padding(
                                       padding: const EdgeInsets.only(right: 8),
-                                      child: TextFormField(
-                                        initialValue:
-                                            _localSets[i].values[key]?.toStringAsFixed(0),
-                                        decoration:
-                                            InputDecoration(labelText: _label(key, loc)),
+                                      child: _SetValueField(
+                                        value: _localSets[i]
+                                            .values[key]
+                                            ?.toStringAsFixed(0),
+                                        labelText: _label(key, loc),
                                         readOnly: widget.isReadOnly,
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly
-                                        ],
                                         onChanged: widget.isReadOnly
                                             ? null
                                             : (s) {
                                                 _localSets[i].values[key] =
                                                     double.tryParse(s) ?? 0.0;
-                                                widget.wte.sets = List.from(_localSets);
+                                                widget.wte.sets =
+                                                    List.from(_localSets);
                                                 widget.onChanged();
                                               },
                                       ),
@@ -432,8 +493,8 @@ class _WorkoutTemplateExerciseWidgetState
                       icon: const Icon(Icons.add),
                       label: Text(loc.add_set),
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE8DEF8),
-                        foregroundColor: const Color(0xFF4A4458),
+                        backgroundColor: const Color(0xFF2F80FF),
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -482,11 +543,11 @@ class _WorkoutTemplateExerciseWidgetState
 
   Widget _contextChip(String? type) {
     final (Color bg, Color fg, String text) = switch (type) {
-      'WARMUP' => (const Color(0xFFE3F2FD), const Color(0xFF1565C0), 'WU'),
-      'FAILURE' => (const Color(0xFFFFEBEE), const Color(0xFFC62828), 'F'),
-      'DROP' => (const Color(0xFFFFF3E0), const Color(0xFFEF6C00), 'DS'),
-      'FORCED' => (const Color(0xFFF3E5F5), const Color(0xFF6A1B9A), 'FS'),
-      _ => (const Color(0xFFEEEEEE), const Color(0xFF616161), '+'),
+      'WARMUP' => (const Color(0xFFEAF2FF), const Color(0xFF2F80FF), 'WU'),
+      'FAILURE' => (const Color(0xFFE8F1FF), const Color(0xFF2B5FB8), 'F'),
+      'DROP' => (const Color(0xFFF2F7FF), const Color(0xFF4B74C9), 'DS'),
+      'FORCED' => (const Color(0xFFF4F8FF), const Color(0xFF5A6CCF), 'FS'),
+      _ => (const Color(0xFFEFF4FF), const Color(0xFF5A6B8F), '+'),
     };
 
     return Container(
@@ -503,6 +564,107 @@ class _WorkoutTemplateExerciseWidgetState
           fontSize: 12,
         ),
       ),
+    );
+  }
+}
+
+class _SetValueField extends StatefulWidget {
+  const _SetValueField({
+    required this.value,
+    required this.labelText,
+    required this.readOnly,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final String labelText;
+  final bool readOnly;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  State<_SetValueField> createState() => _SetValueFieldState();
+}
+
+class _SetValueFieldState extends State<_SetValueField> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value ?? '');
+    _focusNode = FocusNode();
+    _focusNode.addListener(_handleFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SetValueField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextText = widget.value ?? '';
+    if (_controller.text != nextText && !_focusNode.hasFocus) {
+      _controller.text = nextText;
+    }
+  }
+
+  void _handleFocusChange() {
+    if (_focusNode.hasFocus && _controller.text.isNotEmpty) {
+      _controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controller.text.length,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_handleFocusChange)
+      ..dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      focusNode: _focusNode,
+      decoration: InputDecoration(
+        labelText: widget.labelText,
+        filled: true,
+        fillColor: const Color(0xFFF7FAFF),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: Color(0xFFDCE8FF),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: Color(0xFFDCE8FF),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: Color(0xFF2F80FF),
+            width: 1.3,
+          ),
+        ),
+      ),
+      readOnly: widget.readOnly,
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      onTap: () {
+        if (_controller.text.isNotEmpty) {
+          _controller.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _controller.text.length,
+          );
+        }
+      },
+      onChanged: widget.onChanged,
     );
   }
 }

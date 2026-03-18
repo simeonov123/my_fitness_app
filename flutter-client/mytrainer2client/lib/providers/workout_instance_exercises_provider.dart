@@ -9,8 +9,7 @@ class WorkoutInstanceExercisesProvider extends ChangeNotifier {
   List<WorkoutInstanceExercise> _items = [];
 
   bool get loading => _loading;
-  List<WorkoutInstanceExercise> get items =>
-      List.unmodifiable(_items);
+  List<WorkoutInstanceExercise> get items => List.unmodifiable(_items);
 
   Future<void> load({
     required int sessionId,

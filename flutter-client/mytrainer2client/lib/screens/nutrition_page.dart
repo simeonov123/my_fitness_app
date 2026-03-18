@@ -31,10 +31,10 @@ class _NutritionPageState extends State<NutritionPage> {
     });
 
     context.read<NutritionTemplatesProvider>().load(
-      toPage: page,
-      newSearch: search,
-      newSort: _sort,
-    );
+          toPage: page,
+          newSearch: search,
+          newSort: _sort,
+        );
   }
 
   Future<void> _openCreateDialog() async {
@@ -116,8 +116,7 @@ class _NutritionPageState extends State<NutritionPage> {
                   tpl: sorted[i],
                   onTap: () => showDialog(
                     context: context,
-                    builder: (_) =>
-                        NutritionTemplateFormDialog(tpl: sorted[i]),
+                    builder: (_) => NutritionTemplateFormDialog(tpl: sorted[i]),
                   ),
                 ),
               ),

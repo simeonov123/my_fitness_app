@@ -10,10 +10,10 @@ import 'dev_endpoints.dart';
 
 /// Service for CRUD operations on Trainer → Clients
 class ClientsApiService {
-  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
-          .isNotEmpty
-      ? const String.fromEnvironment('API_BASE')
-      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+  static final _base =
+      const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 
@@ -51,15 +51,15 @@ class ClientsApiService {
       },
     );
 
-    final res     = await http.get(uri, headers: await _headers());
+    final res = await http.get(uri, headers: await _headers());
     if (res.statusCode != 200) {
       throw Exception(
         'Failed to load clients (${res.statusCode}): ${res.body}',
       );
     }
 
-    final data    = await _json(res);
-    final items   = (data['content'] as List)
+    final data = await _json(res);
+    final items = (data['content'] as List)
         .cast<Map<String, dynamic>>()
         .map((j) => Client.fromJson(j))
         .toList();

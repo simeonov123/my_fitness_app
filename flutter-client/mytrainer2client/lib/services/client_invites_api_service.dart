@@ -8,10 +8,10 @@ import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 class ClientInvitesApiService {
-  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
-          .isNotEmpty
-      ? const String.fromEnvironment('API_BASE')
-      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+  static final _base =
+      const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 
@@ -30,7 +30,8 @@ class ClientInvitesApiService {
     final uri = Uri.parse('$_base/trainer/clients/$clientId/invites');
     final res = await http.get(uri, headers: await _headers());
     if (res.statusCode != 200) {
-      throw Exception('Failed to load invites (${res.statusCode}): ${res.body}');
+      throw Exception(
+          'Failed to load invites (${res.statusCode}): ${res.body}');
     }
     final body = jsonDecode(res.body) as List<dynamic>;
     return body
@@ -43,7 +44,8 @@ class ClientInvitesApiService {
     final uri = Uri.parse('$_base/trainer/clients/$clientId/invites');
     final res = await http.post(uri, headers: await _headers());
     if (res.statusCode != 200 && res.statusCode != 201) {
-      throw Exception('Failed to create invite (${res.statusCode}): ${res.body}');
+      throw Exception(
+          'Failed to create invite (${res.statusCode}): ${res.body}');
     }
     return ClientInvite.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
@@ -67,7 +69,8 @@ class ClientInvitesApiService {
     );
     final res = await http.post(uri, headers: await _headers());
     if (res.statusCode != 200) {
-      throw Exception('Failed to revoke invite (${res.statusCode}): ${res.body}');
+      throw Exception(
+          'Failed to revoke invite (${res.statusCode}): ${res.body}');
     }
     return ClientInvite.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }

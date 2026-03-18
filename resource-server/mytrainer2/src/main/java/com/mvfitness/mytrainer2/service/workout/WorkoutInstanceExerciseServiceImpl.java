@@ -2,16 +2,26 @@
 package com.mvfitness.mytrainer2.service.workout;
 
 import com.mvfitness.mytrainer2.domain.*;
+import com.mvfitness.mytrainer2.dto.ExerciseHasSetsDto;
+import com.mvfitness.mytrainer2.dto.ExerciseHistoryDto;
+import com.mvfitness.mytrainer2.dto.ExerciseHistorySnapshotDto;
+import com.mvfitness.mytrainer2.dto.ExerciseHistorySummaryDto;
 import com.mvfitness.mytrainer2.dto.WorkoutInstanceExerciseDto;
+import com.mvfitness.mytrainer2.mapper.ExerciseHasSetsMapper;
 import com.mvfitness.mytrainer2.mapper.WorkoutInstanceExerciseMapper;
 import com.mvfitness.mytrainer2.repository.*;
 import com.mvfitness.mytrainer2.service.session.TrainingSessionRealtimeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -194,6 +204,64 @@ public class WorkoutInstanceExerciseServiceImpl
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ExerciseHistoryDto history(String kc, Long sessionId, Long entryId, int limit) {
+        accessibleSessionOr404(kc, sessionId);
+
+        WorkoutInstanceExercise current = repo.findById(entryId)
+                .orElseThrow(() -> new IllegalArgumentException("Entry not found"));
+        if (!current.getWorkoutInstance().getTrainingSession().getId().equals(sessionId)) {
+            throw new IllegalArgumentException("Entry not in that session");
+        }
+
+        if (!isTrainer(kc)) {
+            User accountUser = accountUserOr404(kc);
+            Client entryClient = current.getWorkoutInstance().getClient();
+            if (entryClient.getAccountUser() == null
+                    || !entryClient.getAccountUser().getId().equals(accountUser.getId())) {
+                throw new IllegalArgumentException("Entry not in that session");
+            }
+        }
+
+        Long clientId = current.getWorkoutInstance().getClient().getId();
+        Long exerciseId = current.getExercise().getId();
+        int clampedLimit = Math.max(1, Math.min(limit, 5));
+
+        List<Long> historyIds = repo.findHistoryIdsForClientExercise(
+                clientId,
+                exerciseId,
+                sessionId,
+                PageRequest.of(0, clampedLimit)
+        );
+
+        List<WorkoutInstanceExercise> history = historyIds.isEmpty()
+                ? List.of()
+                : repo.findAllWithDetailsByIdIn(historyIds);
+
+        Map<Long, Integer> order = new LinkedHashMap<>();
+        for (int i = 0; i < historyIds.size(); i++) {
+            order.put(historyIds.get(i), i);
+        }
+
+        history = history.stream()
+                .sorted(Comparator.comparingInt(e -> order.getOrDefault(e.getId(), Integer.MAX_VALUE)))
+                .toList();
+
+        history.forEach(this::initializeHistoryEntry);
+
+        return new ExerciseHistoryDto(
+                clientId,
+                current.getWorkoutInstance().getClient().getFullName(),
+                exerciseId,
+                current.getExercise().getName(),
+                current.getSetType(),
+                current.getSetParams(),
+                buildSummary(current, history),
+                history.stream().map(this::toSnapshotDto).toList()
+        );
+    }
+
+    @Override
     public void deleteOne(String kc, Long sessionId, Long entryId) {
         TrainingSession session = accessibleSessionOr404(kc, sessionId);                        // guard
         var ent = repo.findById(entryId)
@@ -215,4 +283,208 @@ public class WorkoutInstanceExerciseServiceImpl
         repo.flush();
         realtime.publishInstanceUpdated(sessionId, subscriberKc -> list(subscriberKc, sessionId));
     }
+
+    private void initializeHistoryEntry(WorkoutInstanceExercise entry) {
+        entry.getWorkoutInstanceExerciseHasSets().forEach(set -> set.getSetData().size());
+        if (entry.getWorkoutInstance().getTrainingSession() != null) {
+            entry.getWorkoutInstance().getTrainingSession().getStartTime();
+        }
+        if (entry.getWorkoutInstance().getClient() != null) {
+            entry.getWorkoutInstance().getClient().getFullName();
+        }
+        if (entry.getExercise() != null) {
+            entry.getExercise().getName();
+        }
+    }
+
+    private ExerciseHistorySnapshotDto toSnapshotDto(WorkoutInstanceExercise entry) {
+        ExerciseMetrics metrics = collectMetrics(List.of(entry));
+        TrainingSession session = entry.getWorkoutInstance().getTrainingSession();
+        List<ExerciseHasSetsDto> sets = ExerciseHasSetsMapper.toDtoListFromInstance(
+                entry.getWorkoutInstanceExerciseHasSets()
+        );
+        int completedSetCount = (int) entry.getWorkoutInstanceExerciseHasSets().stream()
+                .filter(set -> Boolean.TRUE.equals(set.getCompleted()))
+                .count();
+
+        return new ExerciseHistorySnapshotDto(
+                session.getId(),
+                session.getSessionName(),
+                session.getStartTime(),
+                entry.getWorkoutInstance().getId(),
+                entry.getId(),
+                entry.getSetType(),
+                entry.getSetParams(),
+                completedSetCount,
+                entry.getWorkoutInstanceExerciseHasSets().size(),
+                metrics.bestReps(),
+                metrics.bestOneRepMax(),
+                metrics.bestSetVolume(),
+                metrics.bestWeight(),
+                metrics.bestDurationSeconds(),
+                metrics.bestDistanceKm(),
+                sets
+        );
+    }
+
+    private ExerciseHistorySummaryDto buildSummary(
+            WorkoutInstanceExercise current,
+            List<WorkoutInstanceExercise> history
+    ) {
+        ExerciseMetrics metrics = collectMetrics(history);
+        return new ExerciseHistorySummaryDto(
+                metrics.averageBestRepsPerSession(),
+                metrics.bestOneRepMax(),
+                metrics.bestSetVolume(),
+                metrics.bestWeight(),
+                metrics.bestDurationSeconds(),
+                metrics.bestDistanceKm(),
+                metrics.fastestPaceSecondsPerKm(),
+                supportedMetrics(current, history)
+        );
+    }
+
+    private ExerciseMetrics collectMetrics(List<WorkoutInstanceExercise> entries) {
+        List<Double> bestRepsPerEntry = new ArrayList<>();
+        Double bestOneRepMax = null;
+        Double bestSetVolume = null;
+        Double bestWeight = null;
+        Double bestDurationSeconds = null;
+        Double bestDistanceKm = null;
+        Double fastestPaceSecondsPerKm = null;
+
+        for (WorkoutInstanceExercise entry : entries) {
+            Double sessionBestReps = null;
+
+            for (WorkoutInstanceExerciseHasSets set : entry.getWorkoutInstanceExerciseHasSets()) {
+                if (!Boolean.TRUE.equals(set.getCompleted())) {
+                    continue;
+                }
+
+                Double reps = valueFor(set, SetType.REPS);
+                Double kg = valueFor(set, SetType.KG);
+                Double time = valueFor(set, SetType.TIME);
+                Double km = valueFor(set, SetType.KM);
+
+                if (reps != null) {
+                    sessionBestReps = max(sessionBestReps, reps);
+                }
+                if (kg != null) {
+                    bestWeight = max(bestWeight, kg);
+                }
+                if (time != null) {
+                    bestDurationSeconds = max(bestDurationSeconds, time);
+                }
+                if (km != null) {
+                    bestDistanceKm = max(bestDistanceKm, km);
+                }
+                if (kg != null && reps != null && reps > 0) {
+                    bestSetVolume = max(bestSetVolume, kg * reps);
+                    bestOneRepMax = max(bestOneRepMax, kg * (1.0 + (reps / 30.0)));
+                }
+                if (time != null && km != null && time > 0 && km > 0) {
+                    fastestPaceSecondsPerKm = min(fastestPaceSecondsPerKm, time / km);
+                }
+            }
+
+            if (sessionBestReps != null) {
+                bestRepsPerEntry.add(sessionBestReps);
+            }
+        }
+
+        Double averageBestRepsPerSession = null;
+        if (!bestRepsPerEntry.isEmpty()) {
+            averageBestRepsPerSession = bestRepsPerEntry.stream()
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
+        }
+
+        Double bestReps = bestRepsPerEntry.stream().max(Double::compareTo).orElse(null);
+
+        return new ExerciseMetrics(
+                averageBestRepsPerSession,
+                bestReps,
+                bestOneRepMax,
+                bestSetVolume,
+                bestWeight,
+                bestDurationSeconds,
+                bestDistanceKm,
+                fastestPaceSecondsPerKm
+        );
+    }
+
+    private List<String> supportedMetrics(
+            WorkoutInstanceExercise current,
+            List<WorkoutInstanceExercise> history
+    ) {
+        var keys = new java.util.LinkedHashSet<String>();
+        if (current.getSetParams() != null) {
+            for (String raw : current.getSetParams().split(",")) {
+                String trimmed = raw.trim().toUpperCase();
+                if (!trimmed.isEmpty()) {
+                    keys.add(trimmed);
+                }
+            }
+        }
+        for (WorkoutInstanceExercise entry : history) {
+            for (WorkoutInstanceExerciseHasSets set : entry.getWorkoutInstanceExerciseHasSets()) {
+                set.getSetData().forEach(data -> keys.add(data.getType().name()));
+            }
+        }
+
+        List<String> supported = new ArrayList<>();
+        if (keys.contains("REPS")) {
+            supported.add("averageBestRepsPerSet");
+        }
+        if (keys.contains("KG") && keys.contains("REPS")) {
+            supported.add("estimatedOneRepMax");
+            supported.add("bestSetVolume");
+            supported.add("bestWeight");
+        } else if (keys.contains("KG")) {
+            supported.add("bestWeight");
+        }
+        if (keys.contains("TIME")) {
+            supported.add("bestDurationSeconds");
+        }
+        if (keys.contains("KM")) {
+            supported.add("bestDistanceKm");
+        }
+        if (keys.contains("TIME") && keys.contains("KM")) {
+            supported.add("fastestPaceSecondsPerKm");
+        }
+        return supported;
+    }
+
+    private Double valueFor(WorkoutInstanceExerciseHasSets set, SetType type) {
+        return set.getSetData().stream()
+                .filter(d -> d.getType() == type && d.getValue() != null)
+                .map(SetData::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Double max(Double left, Double right) {
+        if (left == null) return right;
+        if (right == null) return left;
+        return Math.max(left, right);
+    }
+
+    private Double min(Double left, Double right) {
+        if (left == null) return right;
+        if (right == null) return left;
+        return Math.min(left, right);
+    }
+
+    private record ExerciseMetrics(
+            Double averageBestRepsPerSession,
+            Double bestReps,
+            Double bestOneRepMax,
+            Double bestSetVolume,
+            Double bestWeight,
+            Double bestDurationSeconds,
+            Double bestDistanceKm,
+            Double fastestPaceSecondsPerKm
+    ) {}
 }

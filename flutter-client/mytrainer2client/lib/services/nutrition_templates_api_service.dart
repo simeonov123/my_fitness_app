@@ -10,10 +10,10 @@ import 'dev_endpoints.dart';
 
 /// Service for CRUD operations on Trainer → Nutrition Templates
 class NutritionTemplatesApiService {
-  static final _base = const String.fromEnvironment('API_BASE', defaultValue: '')
-          .isNotEmpty
-      ? const String.fromEnvironment('API_BASE')
-      : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+  static final _base =
+      const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
+          ? const String.fromEnvironment('API_BASE')
+          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
 
   final AuthService _auth = AuthService();
 
@@ -51,7 +51,7 @@ class NutritionTemplatesApiService {
       },
     );
 
-    final res  = await http.get(uri, headers: await _headers());
+    final res = await http.get(uri, headers: await _headers());
     if (res.statusCode != 200) {
       throw Exception(
         'Failed to load nutrition templates (${res.statusCode}): ${res.body}',
@@ -72,8 +72,8 @@ class NutritionTemplatesApiService {
 
   /// Create a new nutrition plan template.
   Future<NutritionPlanTemplate> create(
-      NutritionPlanTemplate t,
-      ) async {
+    NutritionPlanTemplate t,
+  ) async {
     final uri = Uri.parse('$_base/trainer/nutrition-templates');
     final res = await http.post(
       uri,
@@ -92,8 +92,8 @@ class NutritionTemplatesApiService {
 
   /// Update an existing nutrition plan template.
   Future<NutritionPlanTemplate> update(
-      NutritionPlanTemplate t,
-      ) async {
+    NutritionPlanTemplate t,
+  ) async {
     final uri = Uri.parse('$_base/trainer/nutrition-templates/${t.id}');
     final res = await http.put(
       uri,
@@ -112,8 +112,8 @@ class NutritionTemplatesApiService {
 
   /// Delete a nutrition plan template by ID.
   Future<void> delete(
-      int id,
-      ) async {
+    int id,
+  ) async {
     final uri = Uri.parse('$_base/trainer/nutrition-templates/$id');
     final res = await http.delete(uri, headers: await _headers());
     if (res.statusCode != 204 && res.statusCode != 200) {

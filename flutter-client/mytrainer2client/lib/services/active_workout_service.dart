@@ -46,7 +46,8 @@ class ActiveWorkoutService {
         sessionId,
         ActiveWorkoutSnapshot.fromJson(value as Map<String, dynamic>),
       );
-    })..remove(0);
+    })
+      ..remove(0);
   }
 
   Future<ActiveWorkoutSnapshot?> load(int sessionId) async =>

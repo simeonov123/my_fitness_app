@@ -23,30 +23,30 @@ class Client {
   });
 
   factory Client.fromJson(Map<String, dynamic> j) => Client(
-    id:        (j['id'] as num?)?.toInt() ?? 0,
-    fullName:  (j['fullName']  ?? '') as String,
-    email:      j['email']  as String?,
-    phone:      j['phone']  as String?,
-    folderId:   (j['folderId'] as num?)?.toInt(),
-    folderName: j['folderName'] as String?,
-    sequenceOrder: (j['sequenceOrder'] as num?)?.toInt(),
-    createdAt:  j['createdAt'] != null
-        ? DateTime.parse(j['createdAt'] as String)
-        : null,
-    updatedAt:  j['updatedAt'] != null
-        ? DateTime.parse(j['updatedAt'] as String)
-        : null,
-  );
+        id: (j['id'] as num?)?.toInt() ?? 0,
+        fullName: (j['fullName'] ?? '') as String,
+        email: j['email'] as String?,
+        phone: j['phone'] as String?,
+        folderId: (j['folderId'] as num?)?.toInt(),
+        folderName: j['folderName'] as String?,
+        sequenceOrder: (j['sequenceOrder'] as num?)?.toInt(),
+        createdAt: j['createdAt'] != null
+            ? DateTime.parse(j['createdAt'] as String)
+            : null,
+        updatedAt: j['updatedAt'] != null
+            ? DateTime.parse(j['updatedAt'] as String)
+            : null,
+      );
 
   Map<String, dynamic> toJson() => {
-    'id'      : id,
-    'fullName': fullName,
-    'email'   : email,
-    'phone'   : phone,
-    'folderId': folderId,
-    'folderName': folderName,
-    'sequenceOrder': sequenceOrder,
-    'createdAt': createdAt?.toIso8601String(),
-    'updatedAt': updatedAt?.toIso8601String(),
-  };
+        'id': id,
+        'fullName': fullName,
+        'email': email,
+        'phone': phone,
+        'folderId': folderId,
+        'folderName': folderName,
+        'sequenceOrder': sequenceOrder,
+        'createdAt': createdAt?.toIso8601String(),
+        'updatedAt': updatedAt?.toIso8601String(),
+      };
 }

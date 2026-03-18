@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/session.dart';
 import '../screens/training_session_detail_page.dart';
+import '../theme/app_density.dart';
 
 /// Overflow (“group”) card shown on the timeline.
 ///
@@ -26,30 +27,26 @@ class SessionGroupCard extends StatelessWidget {
 
   /* ─ styling constants ─ */
 
-  static const double _r = 10; // pill radius
-  static const double _rowH = 28; // mini‑row height
-  static const double _rowGap = 6; // gap between mini‑rows
+  static final double _r = AppDensity.radius(10);
+  static final double _rowH = AppDensity.space(24);
+  static final double _rowGap = AppDensity.space(5);
+  static final double _padV = AppDensity.space(4);
+  static final double _padH = AppDensity.space(4);
 
   /// one visual row incl. gap — timeline uses this
   static double get rowHeight => _rowH + _rowGap;
 
-  Color get _accent {
-    const colors = [
-      Color(0xff1976d2),
-      Color(0xffd32f2f),
-      Color(0xff388e3c),
-      Color(0xfff57c00),
-      Color(0xff7b1fa2),
-    ];
-    return colors[paletteIndex % colors.length];
-  }
+  Color get _accent => const Color(0xff0a84ff);
 
   @override
   Widget build(BuildContext context) {
-    final bg = _accent.withValues(alpha: 0.16);
+    final colors = Theme.of(context).colorScheme;
+    final bg = _accent.withOpacity(0.16);
+
+    final innerHeight = (height - (_padV * 2)).clamp(_rowH, double.infinity);
 
     /* how many rows fit vertically inside pill? */
-    final int rowsThatFit = ((height + _rowGap) / (_rowH + _rowGap))
+    final int rowsThatFit = ((innerHeight + _rowGap) / (_rowH + _rowGap))
         .floor()
         .clamp(1, hidden.length);
 
@@ -65,20 +62,30 @@ class SessionGroupCard extends StatelessWidget {
         onTap: () => _showListDialog(context), // tap empty pill
         child: Container(
           decoration: BoxDecoration(
-            color: bg,
-            border: Border.all(color: _accent.withValues(alpha: 0.6)),
+            color: Color.alphaBlend(
+              colors.surface.withOpacity(0.92),
+              bg,
+            ),
+            borderRadius: BorderRadius.circular(_r),
+            border: Border.all(color: _accent.withOpacity(0.48)),
+            boxShadow: [
+              BoxShadow(
+                color: colors.shadow.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: _padH, vertical: _padV),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (int i = 0; i < visibleSessions.length; i++) ...[
                 _miniRow(context, visibleSessions[i]),
-                if (i != visibleSessions.length - 1)
-                  const SizedBox(height: _rowGap),
+                if (i != visibleSessions.length - 1) SizedBox(height: _rowGap),
               ],
               if (overflow) ...[
-                if (visibleSessions.isNotEmpty) const SizedBox(height: _rowGap),
+                if (visibleSessions.isNotEmpty) SizedBox(height: _rowGap),
                 _placeholderRow(context, remaining),
               ],
             ],
@@ -90,23 +97,41 @@ class SessionGroupCard extends StatelessWidget {
 
   /* ─ mini‑row for a single hidden session ─ */
   Widget _miniRow(BuildContext ctx, Session s) {
+    final fmt = DateFormat.Hm();
     return InkWell(
       onTap: () => _openDetails(ctx, s.id),
       borderRadius: BorderRadius.circular(6),
       child: Container(
         height: _rowH,
         decoration: BoxDecoration(
-          color: _accent.withValues(alpha: 0.12),
+          color: _accent.withOpacity(0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _accent.withValues(alpha: 0.6)),
+          border: Border.all(color: _accent.withOpacity(0.45)),
         ),
-        alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Text(
-          s.clients.join(', '),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(fontSize: 13),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                s.clients.join(', '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              fmt.format(s.start),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                    color: _accent,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ],
         ),
       ),
     );
@@ -121,9 +146,9 @@ class SessionGroupCard extends StatelessWidget {
       child: Container(
         height: _rowH,
         decoration: BoxDecoration(
-          color: _accent.withValues(alpha: 0.12),
+          color: _accent.withOpacity(0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _accent.withValues(alpha: 0.6)),
+          border: Border.all(color: _accent.withOpacity(0.45)),
         ),
         alignment: Alignment.center,
         child: Text(label, style: Theme.of(ctx).textTheme.titleMedium),
@@ -134,31 +159,86 @@ class SessionGroupCard extends StatelessWidget {
   /* ─ dialogs ─ */
 
   void _showListDialog(BuildContext ctx) {
-    // Calculate the height needed for the list (rows + gaps + padding).
-    const double vPad = 24 * 2; // top + bottom padding inside sheet
+    // Calculate the height needed for the list and the custom header.
+    const double dragHandleBlock = 28;
+    const double headerBlock = 72;
+    const double sheetBottomPad = 24;
     const double sepGap = 10; // separator gap between tiles
     final int rows = hidden.length;
-    final double listHeight =
-        rows * _rowH + (rows - 1) * sepGap + vPad; // total desired height
+    final double listHeight = rows * 48 + (rows - 1) * sepGap + sheetBottomPad;
+    final double totalHeight = dragHandleBlock + headerBlock + listHeight;
     final double maxH = MediaQuery.of(ctx).size.height * 0.9;
-    final bool needsScroll = listHeight > maxH;
+    final bool needsScroll = totalHeight > maxH;
 
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(ctx).colorScheme.surface,
       builder: (_) => Material(
-        color: Colors.white,
+        color: Theme.of(ctx).colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: needsScroll ? maxH : listHeight,
-          child: ListView.separated(
-            physics: needsScroll ? null : const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            itemCount: hidden.length,
-            separatorBuilder: (_, __) => const SizedBox(height: sepGap),
-            itemBuilder: (_, i) => _dialogTile(ctx, hidden[i]),
+          height: needsScroll ? maxH : totalHeight,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: AppDensity.space(10)),
+              Center(
+                child: Container(
+                  width: AppDensity.space(36),
+                  height: AppDensity.space(4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx)
+                        .colorScheme
+                        .outlineVariant
+                        .withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppDensity.space(18),
+                  AppDensity.space(14),
+                  AppDensity.space(18),
+                  AppDensity.space(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Overlapping sessions',
+                      style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${hidden.length} sessions in this time slot',
+                      style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  physics:
+                      needsScroll ? null : const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    AppDensity.space(18),
+                    AppDensity.space(8),
+                    AppDensity.space(18),
+                    AppDensity.space(20),
+                  ),
+                  itemCount: hidden.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: sepGap),
+                  itemBuilder: (_, i) => _dialogTile(ctx, hidden[i]),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -174,30 +254,51 @@ class SessionGroupCard extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(6),
       child: Container(
-        height: _rowH,
+        height: 48,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _accent.withValues(alpha: 0.6)),
+          color: Theme.of(ctx).colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _accent.withOpacity(0.32)),
         ),
         child: Row(
           children: [
-            Container(width: 4, color: _accent),
-            const SizedBox(width: 6),
+            Container(
+              width: 5,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: _accent,
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(14),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 s.clients.join(', '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    Theme.of(ctx).textTheme.bodyMedium?.copyWith(fontSize: 13),
+                style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '${fmt.format(s.start)} – ${fmt.format(s.end)}',
-              style: Theme.of(ctx).textTheme.bodySmall,
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _accent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${fmt.format(s.start)} – ${fmt.format(s.end)}',
+                style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                      color: _accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
           ],
         ),
       ),

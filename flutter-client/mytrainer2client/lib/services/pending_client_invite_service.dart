@@ -9,7 +9,8 @@ class PendingClientInviteService {
   static const _key = 'pending_client_invite_token';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  Future<void> saveToken(String token) => _storage.write(key: _key, value: token);
+  Future<void> saveToken(String token) =>
+      _storage.write(key: _key, value: token);
 
   Future<String?> readToken() => _storage.read(key: _key);
 

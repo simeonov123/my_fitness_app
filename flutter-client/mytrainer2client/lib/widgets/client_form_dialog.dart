@@ -7,6 +7,7 @@ import '../models/client.dart';
 import '../models/client_folder.dart';
 import '../providers/client_folders_provider.dart';
 import '../providers/clients_provider.dart';
+import '../theme/app_density.dart';
 
 class ClientFormDialog extends StatefulWidget {
   /// If [client] is non-null, we’re _editing_; otherwise we’re creating.
@@ -85,67 +86,168 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.client != null;
     final folders = context.watch<ClientFoldersProvider>().items;
-    return AlertDialog(
-      title: Text(isEdit ? 'Edit Client' : 'Add Client'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Full name *'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-              ),
-              TextFormField(
-                controller: _emailCtrl,
-                decoration: const InputDecoration(labelText: 'E-mail'),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              TextFormField(
-                controller: _phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Phone'),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<int?>(
-                initialValue: _selectedFolderId,
-                decoration: const InputDecoration(labelText: 'Folder'),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('No folder'),
-                  ),
-                  ...folders.map(
-                    (folder) => DropdownMenuItem<int?>(
-                      value: folder.id,
-                      child: Text(folder.name),
+    final theme = Theme.of(context);
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: AppDensity.symmetric(horizontal: 16, vertical: 18),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          AppDensity.space(18),
+          AppDensity.space(18),
+          AppDensity.space(18),
+          AppDensity.space(14),
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: AppDensity.circular(26),
+          border: Border.all(color: const Color(0xFFDCE8FF)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2F80FF).withOpacity(0.08),
+              blurRadius: AppDensity.space(24),
+              offset: Offset(0, AppDensity.space(12)),
+            ),
+          ],
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: AppDensity.space(40),
+                      height: AppDensity.space(40),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF2FF),
+                        borderRadius: AppDensity.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.person_add_alt_1_rounded,
+                        color: Color(0xFF2F80FF),
+                      ),
                     ),
-                  ),
-                ],
-                onChanged: (value) => setState(() => _selectedFolderId = value),
-              ),
-            ],
+                    SizedBox(width: AppDensity.space(10)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isEdit ? 'Edit client' : 'Add client',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: AppDensity.space(3)),
+                          Text(
+                            'Capture the essentials and place the client in the right folder.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFF6F7691),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: AppDensity.space(14)),
+                TextFormField(
+                  controller: _nameCtrl,
+                  decoration: _fieldDecoration('Full name', 'Simeon Simeonov'),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Name is required'
+                      : null,
+                ),
+                SizedBox(height: AppDensity.space(10)),
+                TextFormField(
+                  controller: _emailCtrl,
+                  decoration: _fieldDecoration('E-mail', 'name@example.com'),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                SizedBox(height: AppDensity.space(10)),
+                TextFormField(
+                  controller: _phoneCtrl,
+                  decoration: _fieldDecoration('Phone', '+359 ...'),
+                  keyboardType: TextInputType.phone,
+                ),
+                SizedBox(height: AppDensity.space(10)),
+                DropdownButtonFormField<int?>(
+                  value: _selectedFolderId,
+                  decoration: _fieldDecoration('Folder', 'Choose a folder'),
+                  items: [
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('No folder'),
+                    ),
+                    ...folders.map(
+                      (folder) => DropdownMenuItem<int?>(
+                        value: folder.id,
+                        child: Text(folder.name),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedFolderId = value),
+                ),
+                SizedBox(height: AppDensity.space(14)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: _submitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    SizedBox(width: AppDensity.space(8)),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _submitting ? null : _submit,
+                        child: _submitting
+                            ? SizedBox(
+                                width: AppDensity.space(18),
+                                height: AppDensity.space(18),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Save'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+    );
+  }
+
+  InputDecoration _fieldDecoration(String label, String hint) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: const Color(0xFFF7FAFF),
+      border: OutlineInputBorder(
+        borderRadius: AppDensity.circular(18),
+        borderSide: const BorderSide(color: Color(0xFFDCE8FF)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: AppDensity.circular(18),
+        borderSide: const BorderSide(color: Color(0xFFDCE8FF)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: AppDensity.circular(18),
+        borderSide: const BorderSide(
+          color: Color(0xFF2F80FF),
+          width: 1.4,
         ),
-        ElevatedButton(
-          onPressed: _submitting ? null : _submit,
-          child: _submitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Save'),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -1,3 +1,4 @@
+import '../models/exercise_history.dart';
 import '../models/workout_instance_exercise.dart';
 import 'training_sessions_api_service.dart';
 
@@ -13,6 +14,16 @@ class WorkoutInstanceExercisesApiService {
     required int sessionId,
     required List<WorkoutInstanceExercise> items,
   }) =>
-      _tsApi.replaceInstanceExercises(
-          sessionId: sessionId, items: items);
+      _tsApi.replaceInstanceExercises(sessionId: sessionId, items: items);
+
+  Future<ExerciseHistory> history({
+    required int sessionId,
+    required int entryId,
+    int limit = 5,
+  }) =>
+      _tsApi.getInstanceExerciseHistory(
+        sessionId: sessionId,
+        entryId: entryId,
+        limit: limit,
+      );
 }

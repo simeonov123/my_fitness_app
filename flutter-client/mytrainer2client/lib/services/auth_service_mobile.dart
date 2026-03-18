@@ -8,10 +8,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dev_endpoints.dart';
 
 /// OAuth2 / OIDC settings for your Keycloak realm and client.
-final _issuer                = keycloakRealmUrl;
-const _clientId              = 'mytrainer2client';
-const _redirectUri           = 'com.mvfitness.mytrainer2client://oauthredirect';
-const _postLogoutRedirectUri = 'com.mvfitness.mytrainer2client://logoutredirect';
+final _issuer = keycloakRealmUrl;
+const _clientId = 'mytrainer2client';
+const _redirectUri = 'com.mvfitness.mytrainer2client://oauthredirect';
+const _postLogoutRedirectUri =
+    'com.mvfitness.mytrainer2client://logoutredirect';
 
 /// A singleton service that manages:
 ///  • access & refresh tokens
@@ -23,7 +24,7 @@ class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
 
-  final FlutterAppAuth       _appAuth = const FlutterAppAuth();
+  final FlutterAppAuth _appAuth = const FlutterAppAuth();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   String? _accessToken;
@@ -36,10 +37,11 @@ class AuthService {
 
   /// Reads any previously‐saved tokens from secure storage.
   Future<void> loadFromStorage() async {
-    _accessToken  = await _storage.read(key: 'access_token');
+    _accessToken = await _storage.read(key: 'access_token');
     _refreshToken = await _storage.read(key: 'refresh_token');
-    _idToken      = await _storage.read(key: 'id_token');
-    debugPrint('🔑 Loaded tokens: access=${_accessToken!=null}, refresh=${_refreshToken!=null}');
+    _idToken = await _storage.read(key: 'id_token');
+    debugPrint(
+        '🔑 Loaded tokens: access=${_accessToken != null}, refresh=${_refreshToken != null}');
   }
 
   Future<void> reloadFromStorage() => loadFromStorage();
@@ -65,14 +67,14 @@ class AuthService {
       final res = await _appAuth.authorizeAndExchangeCode(req);
       if (res == null) return false;
 
-      _accessToken  = res.accessToken;
-      _idToken      = res.idToken;
+      _accessToken = res.accessToken;
+      _idToken = res.idToken;
       _refreshToken = res.refreshToken;
 
       // Save tokens
-      await _storage.write(key: 'access_token',  value: _accessToken);
+      await _storage.write(key: 'access_token', value: _accessToken);
       await _storage.write(key: 'refresh_token', value: _refreshToken);
-      await _storage.write(key: 'id_token',       value: _idToken);
+      await _storage.write(key: 'id_token', value: _idToken);
 
       debugPrint('✅ Login success; tokens stored');
       return true;
@@ -118,13 +120,13 @@ class AuthService {
       final res = await _appAuth.token(req);
       if (res == null) return false;
 
-      _accessToken  = res.accessToken;
-      _idToken      = res.idToken;
+      _accessToken = res.accessToken;
+      _idToken = res.idToken;
       _refreshToken = res.refreshToken ?? _refreshToken;
 
-      await _storage.write(key: 'access_token',  value: _accessToken);
+      await _storage.write(key: 'access_token', value: _accessToken);
       await _storage.write(key: 'refresh_token', value: _refreshToken);
-      await _storage.write(key: 'id_token',       value: _idToken);
+      await _storage.write(key: 'id_token', value: _idToken);
 
       debugPrint('🔄 Refresh success');
       return true;
@@ -173,9 +175,9 @@ class AuthService {
 
     // Clear storage aggressively so stale invite/auth state does not survive logout.
     await _storage.deleteAll();
-    _accessToken  = null;
+    _accessToken = null;
     _refreshToken = null;
-    _idToken      = null;
+    _idToken = null;
     debugPrint('🔒 Cleared tokens and secure storage');
 
     // Optionally revoke refresh token

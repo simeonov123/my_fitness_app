@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:mytrainer2client/providers/client_folders_provider.dart';
+import 'package:mytrainer2client/providers/exercise_history_provider.dart';
 import 'package:mytrainer2client/providers/exercises_provider.dart';
 import 'package:mytrainer2client/providers/muscle_groups_provider.dart';
 import 'package:mytrainer2client/providers/nutrition_templates_provider.dart';
@@ -30,12 +31,15 @@ import 'routes.dart';
 import 'models/client.dart';
 import 'screens/client_detail_page.dart';
 import 'screens/client_onboarding_page.dart';
+import 'theme/app_density.dart';
+import 'theme/app_theme.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final initialInviteToken = await InviteLinkService.instance.captureInitialInviteToken();
+  final initialInviteToken =
+      await InviteLinkService.instance.captureInitialInviteToken();
   if (initialInviteToken != null && initialInviteToken.isNotEmpty) {
     await PendingClientInviteService().saveToken(initialInviteToken);
   }
@@ -57,13 +61,13 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => WorkoutTemplatesProvider()),
         ChangeNotifierProvider(create: (_) => ExercisesProvider()),
         ChangeNotifierProvider(create: (_) => MuscleGroupsProvider()),
-        ChangeNotifierProvider(create: (_) => WorkoutTemplateExercisesProvider()),
+        ChangeNotifierProvider(
+            create: (_) => WorkoutTemplateExercisesProvider()),
         ChangeNotifierProvider(create: (_) => TrainingSessionsProvider()),
-        ChangeNotifierProvider(create: (_) => WorkoutInstanceExercisesProvider()),
+        ChangeNotifierProvider(
+            create: (_) => WorkoutInstanceExercisesProvider()),
+        ChangeNotifierProvider(create: (_) => ExerciseHistoryProvider()),
         ChangeNotifierProvider(create: (_) => SocialFeedProvider()),
-
-
-
       ],
       child: const MyApp(),
     ),
@@ -83,6 +87,16 @@ class MyApp extends StatelessWidget {
           child: MaterialApp(
             navigatorKey: appNavigatorKey,
             title: 'MVFitness',
+            theme: AppTheme.light(),
+            builder: (context, child) {
+              final data = MediaQuery.of(context);
+              return MediaQuery(
+                data: data.copyWith(
+                  textScaler: const TextScaler.linear(AppDensity.textScale),
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
             locale: localeProv.locale,
             localizationsDelegates: const [
               AppLocalizations.delegate,
@@ -98,7 +112,8 @@ class MyApp extends StatelessWidget {
                   : const Locale('en');
             },
 
-            initialRoute: WidgetsBinding.instance.platformDispatcher.defaultRouteName,
+            initialRoute:
+                WidgetsBinding.instance.platformDispatcher.defaultRouteName,
             routes: appRoutes,
 
             // Catch routes with query params here.

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/client.dart';
 import '../models/client_invite.dart';
 import '../services/client_invites_api_service.dart';
+import '../theme/app_density.dart';
 
 class ClientInviteDialog extends StatefulWidget {
   final Client client;
@@ -121,11 +122,14 @@ class _ClientInviteDialogState extends State<ClientInviteDialog> {
     final latest = _invites.isNotEmpty ? _invites.first : null;
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: AppDensity.symmetric(horizontal: 16, vertical: 18),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 760),
+        constraints: BoxConstraints(
+          maxWidth: AppDensity.space(740),
+          maxHeight: AppDensity.space(1000),
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppDensity.all(18),
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : Column(
@@ -139,9 +143,10 @@ class _ClientInviteDialogState extends State<ClientInviteDialog> {
                             children: [
                               Text(
                                 'Invite ${widget.client.fullName}',
-                                style: Theme.of(context).textTheme.headlineSmall,
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
                               ),
-                              const SizedBox(height: 6),
+                              SizedBox(height: AppDensity.space(4)),
                               Text(
                                 latest == null
                                     ? 'Create an onboarding invite for mobile or web.'
@@ -152,40 +157,45 @@ class _ClientInviteDialogState extends State<ClientInviteDialog> {
                           ),
                         ),
                         IconButton(
-                          onPressed: _submitting ? null : () => Navigator.pop(context),
+                          onPressed:
+                              _submitting ? null : () => Navigator.pop(context),
                           icon: const Icon(Icons.close),
                         ),
                       ],
                     ),
                     if (_error != null) ...[
-                      const SizedBox(height: 14),
+                      SizedBox(height: AppDensity.space(12)),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(14),
+                        padding: AppDensity.all(12),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: AppDensity.circular(14),
                         ),
                         child: Text(
                           _error!,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ],
-                    const SizedBox(height: 18),
+                    SizedBox(height: AppDensity.space(14)),
                     if (latest != null) ...[
                       _InviteHeroCard(
                         invite: latest,
                         statusColor: _statusColor(context, latest),
                         statusIcon: _statusIcon(latest),
-                        onCopyIos: () => _copyInvite(latest.iosInviteUrl, 'iPhone invite'),
-                        onCopyAndroid: () => _copyInvite(latest.androidInviteUrl, 'Android invite'),
-                        onCopyWeb: () => _copyInvite(latest.webInviteUrl, 'Web invite'),
+                        onCopyIos: () =>
+                            _copyInvite(latest.iosInviteUrl, 'iPhone invite'),
+                        onCopyAndroid: () => _copyInvite(
+                            latest.androidInviteUrl, 'Android invite'),
+                        onCopyWeb: () =>
+                            _copyInvite(latest.webInviteUrl, 'Web invite'),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppDensity.space(12)),
                     ],
                     Row(
                       children: [
@@ -196,24 +206,27 @@ class _ClientInviteDialogState extends State<ClientInviteDialog> {
                             label: const Text('Refresh'),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: AppDensity.space(10)),
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: _loading || _submitting ? null : _createInvite,
+                            onPressed:
+                                _loading || _submitting ? null : _createInvite,
                             icon: const Icon(Icons.person_add_alt_1_rounded),
-                            label: Text(latest == null ? 'Create invite' : 'New invite'),
+                            label: Text(latest == null
+                                ? 'Create invite'
+                                : 'New invite'),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: AppDensity.space(16)),
                     Text(
                       'Invite history',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: AppDensity.space(8)),
                     Expanded(
                       child: _invites.isEmpty
                           ? Center(
@@ -224,7 +237,8 @@ class _ClientInviteDialogState extends State<ClientInviteDialog> {
                             )
                           : ListView.separated(
                               itemCount: _invites.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, __) =>
+                                  SizedBox(height: AppDensity.space(10)),
                               itemBuilder: (_, index) {
                                 final invite = _invites[index];
                                 return _InviteHistoryCard(
@@ -235,11 +249,17 @@ class _ClientInviteDialogState extends State<ClientInviteDialog> {
                                   createdLabel: _formatTime(invite.createdAt),
                                   acceptedLabel: _formatTime(invite.acceptedAt),
                                   busy: _submitting,
-                                  onCopyIos: () => _copyInvite(invite.iosInviteUrl, 'iPhone invite'),
-                                  onCopyAndroid: () => _copyInvite(invite.androidInviteUrl, 'Android invite'),
-                                  onCopyWeb: () => _copyInvite(invite.webInviteUrl, 'Web invite'),
+                                  onCopyIos: () => _copyInvite(
+                                      invite.iosInviteUrl, 'iPhone invite'),
+                                  onCopyAndroid: () => _copyInvite(
+                                      invite.androidInviteUrl,
+                                      'Android invite'),
+                                  onCopyWeb: () => _copyInvite(
+                                      invite.webInviteUrl, 'Web invite'),
                                   onRegenerate: () => _regenerateInvite(invite),
-                                  onRevoke: invite.isPending ? () => _revokeInvite(invite) : null,
+                                  onRevoke: invite.isPending
+                                      ? () => _revokeInvite(invite)
+                                      : null,
                                 );
                               },
                             ),
@@ -273,9 +293,9 @@ class _InviteHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: AppDensity.all(14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: AppDensity.circular(18),
         gradient: const LinearGradient(
           colors: [Color(0xFF0B132B), Color(0xFF1C2541), Color(0xFF3A506B)],
           begin: Alignment.topLeft,
@@ -288,16 +308,16 @@ class _InviteHeroCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: AppDensity.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
+                  color: statusColor.withOpacity(0.18),
+                  borderRadius: AppDensity.circular(999),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(statusIcon, color: Colors.white, size: 16),
-                    const SizedBox(width: 6),
+                    SizedBox(width: AppDensity.space(5)),
                     Text(
                       invite.status,
                       style: const TextStyle(
@@ -312,31 +332,40 @@ class _InviteHeroCard extends StatelessWidget {
               const Icon(Icons.send_to_mobile_rounded, color: Colors.white70),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: AppDensity.space(12)),
+          Text(
             'Share onboarding link',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: AppDensity.space(21),
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppDensity.space(6)),
           Text(
             'Choose the link that matches the device your client will use.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.78),
+              color: Colors.white.withOpacity(0.78),
               height: 1.35,
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: AppDensity.space(14)),
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: AppDensity.space(8),
+            runSpacing: AppDensity.space(8),
             children: [
-              _QuickLinkButton(label: 'iPhone invite', icon: Icons.phone_iphone_rounded, onTap: onCopyIos),
-              _QuickLinkButton(label: 'Android invite', icon: Icons.android_rounded, onTap: onCopyAndroid),
-              _QuickLinkButton(label: 'Web invite', icon: Icons.language_rounded, onTap: onCopyWeb),
+              _QuickLinkButton(
+                  label: 'iPhone invite',
+                  icon: Icons.phone_iphone_rounded,
+                  onTap: onCopyIos),
+              _QuickLinkButton(
+                  label: 'Android invite',
+                  icon: Icons.android_rounded,
+                  onTap: onCopyAndroid),
+              _QuickLinkButton(
+                  label: 'Web invite',
+                  icon: Icons.language_rounded,
+                  onTap: onCopyWeb),
             ],
           ),
         ],
@@ -377,10 +406,13 @@ class _InviteHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppDensity.all(13),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(18),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.45),
+        borderRadius: AppDensity.circular(16),
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
@@ -389,7 +421,7 @@ class _InviteHistoryCard extends StatelessWidget {
           Row(
             children: [
               Icon(statusIcon, color: statusColor, size: 18),
-              const SizedBox(width: 8),
+              SizedBox(width: AppDensity.space(6)),
               Text(
                 invite.status,
                 style: const TextStyle(fontWeight: FontWeight.w800),
@@ -401,25 +433,39 @@ class _InviteHistoryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: AppDensity.space(8)),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               _MetaChip(label: 'Expires $expiresLabel'),
-              if (invite.isAccepted) _MetaChip(label: 'Accepted $acceptedLabel'),
+              if (invite.isAccepted)
+                _MetaChip(label: 'Accepted $acceptedLabel'),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: AppDensity.space(12)),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _ActionChip(icon: Icons.phone_iphone_rounded, label: 'iPhone', onTap: onCopyIos),
-              _ActionChip(icon: Icons.android_rounded, label: 'Android', onTap: onCopyAndroid),
-              _ActionChip(icon: Icons.language_rounded, label: 'Web', onTap: onCopyWeb),
-              _ActionChip(icon: Icons.refresh_rounded, label: 'Regenerate', onTap: busy ? null : onRegenerate),
-              _ActionChip(icon: Icons.block_rounded, label: 'Revoke', onTap: busy ? null : onRevoke),
+              _ActionChip(
+                  icon: Icons.phone_iphone_rounded,
+                  label: 'iPhone',
+                  onTap: onCopyIos),
+              _ActionChip(
+                  icon: Icons.android_rounded,
+                  label: 'Android',
+                  onTap: onCopyAndroid),
+              _ActionChip(
+                  icon: Icons.language_rounded, label: 'Web', onTap: onCopyWeb),
+              _ActionChip(
+                  icon: Icons.refresh_rounded,
+                  label: 'Regenerate',
+                  onTap: busy ? null : onRegenerate),
+              _ActionChip(
+                  icon: Icons.block_rounded,
+                  label: 'Revoke',
+                  onTap: busy ? null : onRevoke),
             ],
           ),
         ],
@@ -443,18 +489,18 @@ class _QuickLinkButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppDensity.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: AppDensity.symmetric(horizontal: 11, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: AppDensity.circular(14),
+          color: Colors.white.withOpacity(0.12),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Colors.white),
-            const SizedBox(width: 8),
+            SizedBox(width: AppDensity.space(6)),
             Text(
               label,
               style: const TextStyle(
@@ -498,9 +544,9 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: AppDensity.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppDensity.circular(999),
         color: Theme.of(context).colorScheme.surface,
       ),
       child: Text(
