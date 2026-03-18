@@ -150,6 +150,13 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
     return null;
   }
 
+  bool get _isSoloSession =>
+      (_session?.sessionType ?? '').toUpperCase() == 'SOLO';
+
+  int get _participantCount => _isSoloSession
+      ? 1
+      : (_session?.clientIds.length ?? _groups.length);
+
   Future<void> _openExerciseHistory(InstanceItem item) async {
     if (item.instanceId <= 0 || !mounted) return;
 
@@ -445,7 +452,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
         sessionTotalWeightLifted: _totalWeightLifted,
         exerciseCount:
             _groups.fold<int>(0, (sum, group) => sum + group.items.length),
-        participantCount: _session!.clientIds.length,
+        participantCount: _participantCount,
         completedSetCount: _completedSetCountOverall,
         totalSetCount: _totalSetCountOverall,
         bestSetKg: _bestSetKgOverall,
@@ -572,7 +579,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
         () => InstanceClientGroup(
           workoutInstanceId: ie.workoutInstanceId,
           clientId: ie.clientId,
-          clientName: ie.clientName ?? 'Client',
+          clientName: ie.clientName ?? (_isSoloSession ? 'You' : 'Client'),
           items: [],
         ),
       );
@@ -716,8 +723,8 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                   value: '${_totalWeightLifted.toStringAsFixed(0)} kg',
                 ),
                 _statChip(
-                  label: 'Clients',
-                  value: '${_groups.length}',
+                  label: _isSoloSession ? 'Participant' : 'Clients',
+                  value: '$_participantCount',
                 ),
               ],
             ),
@@ -1322,6 +1329,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   }
 
   String _clientSummary() {
+    if (_isSoloSession) return 'Personal workout recap';
     final count = _session?.clientIds.length ?? 0;
     if (count == 0) return 'No clients assigned';
     if (count == 1) return 'Performed by 1 client';

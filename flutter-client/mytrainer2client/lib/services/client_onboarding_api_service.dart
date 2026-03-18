@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/client_invite_validation.dart';
@@ -8,7 +7,7 @@ import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 class ClientOnboardingApiService {
-  static final _baseUrl = kIsWeb ? 'http://localhost:8080' : apiBaseUrl;
+  static final _baseUrl = apiBaseUrl;
   final AuthService _auth = AuthService();
 
   Future<ClientInviteValidation> validate(String token) async {

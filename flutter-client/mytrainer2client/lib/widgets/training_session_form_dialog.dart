@@ -27,11 +27,15 @@ class TrainingSessionFormDialog extends StatefulWidget {
 }
 
 class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
+  static const String _clientSessionType = 'CLIENT';
+  static const String _soloSessionType = 'SOLO';
+
   late DateTime _day;
   TimeOfDay _start = const TimeOfDay(hour: 10, minute: 0);
   TimeOfDay _end = const TimeOfDay(hour: 11, minute: 0);
   final _name = TextEditingController();
   bool _submitting = false;
+  String _sessionType = _clientSessionType;
 
   List<Client> _pickedClients = [];
   WorkoutTemplate? _pickedTpl;
@@ -166,7 +170,9 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                         ),
                         SizedBox(height: AppDensity.space(10)),
                         Text(
-                          'Schedule the session, attach the workout, and invite the right clients in one pass.',
+                          _sessionType == _soloSessionType
+                              ? 'Schedule your own session, attach a workout, and train through the same flow yourself.'
+                              : 'Schedule the session, attach the workout, and invite the right clients in one pass.',
                           style: text.bodyMedium?.copyWith(
                             color: colors.onSurfaceVariant,
                           ),
@@ -189,10 +195,14 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                               label: _end.format(context),
                             ),
                             _InfoPill(
-                              icon: Icons.groups_rounded,
-                              label: _pickedClients.isEmpty
-                                  ? 'No clients yet'
-                                  : '${_pickedClients.length} selected',
+                              icon: _sessionType == _soloSessionType
+                                  ? Icons.person_rounded
+                                  : Icons.groups_rounded,
+                              label: _sessionType == _soloSessionType
+                                  ? 'Solo session'
+                                  : (_pickedClients.isEmpty
+                                      ? 'No clients yet'
+                                      : '${_pickedClients.length} selected'),
                             ),
                           ],
                         ),
@@ -200,6 +210,37 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                     ),
                   ),
                   SizedBox(height: AppDensity.space(16)),
+                  Text(
+                    'Session type',
+                    style:
+                        text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: AppDensity.space(8)),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment<String>(
+                        value: _clientSessionType,
+                        icon: Icon(Icons.groups_rounded),
+                        label: Text('Client'),
+                      ),
+                      ButtonSegment<String>(
+                        value: _soloSessionType,
+                        icon: Icon(Icons.person_rounded),
+                        label: Text('Solo'),
+                      ),
+                    ],
+                    selected: {_sessionType},
+                    onSelectionChanged: (selection) {
+                      final next = selection.first;
+                      setState(() {
+                        _sessionType = next;
+                        if (_sessionType == _soloSessionType) {
+                          _pickedClients = [];
+                        }
+                      });
+                    },
+                  ),
+                  SizedBox(height: AppDensity.space(14)),
                   TextFormField(
                     controller: _name,
                     decoration: InputDecoration(
@@ -288,33 +329,45 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                     },
                   ),
                   SizedBox(height: AppDensity.space(16)),
-                  FormField<List<Client>>(
-                    validator: (_) => _pickedClients.isEmpty
-                        ? 'Pick at least one client.'
-                        : null,
-                    builder: (field) => _SelectionCard(
-                      icon: Icons.people_alt_rounded,
-                      title: 'Clients',
-                      value: _pickedClients.isEmpty
-                          ? 'Choose who is joining this session'
-                          : '${_pickedClients.length} client${_pickedClients.length == 1 ? '' : 's'} selected',
-                      subtitle: _pickedClients.isEmpty
-                          ? 'Search by name, folder, or ungrouped clients.'
-                          : _pickedClients.map((c) => c.fullName).join(', '),
-                      errorText: field.errorText,
-                      onTap: () async {
-                        final picked = await _showClientPicker(
-                          clients: cProv.items,
-                          foldersSupported: clientFolderProv.supported,
-                        );
-                        if (picked != null) {
-                          setState(() => _pickedClients = picked);
-                          field.didChange(picked);
-                        }
-                      },
+                  if (_sessionType == _clientSessionType) ...[
+                    FormField<List<Client>>(
+                      validator: (_) => _pickedClients.isEmpty
+                          ? 'Pick at least one client.'
+                          : null,
+                      builder: (field) => _SelectionCard(
+                        icon: Icons.people_alt_rounded,
+                        title: 'Clients',
+                        value: _pickedClients.isEmpty
+                            ? 'Choose who is joining this session'
+                            : '${_pickedClients.length} client${_pickedClients.length == 1 ? '' : 's'} selected',
+                        subtitle: _pickedClients.isEmpty
+                            ? 'Search by name, folder, or ungrouped clients.'
+                            : _pickedClients.map((c) => c.fullName).join(', '),
+                        errorText: field.errorText,
+                        onTap: () async {
+                          final picked = await _showClientPicker(
+                            clients: cProv.items,
+                            foldersSupported: clientFolderProv.supported,
+                          );
+                          if (picked != null) {
+                            setState(() => _pickedClients = picked);
+                            field.didChange(picked);
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                  SizedBox(height: AppDensity.space(12)),
+                    SizedBox(height: AppDensity.space(12)),
+                  ] else ...[
+                    _SelectionCard(
+                      icon: Icons.person_rounded,
+                      title: 'Solo session',
+                      value: 'You are the participant',
+                      subtitle:
+                          'This session will be attached to your own workout history.',
+                      onTap: () {},
+                    ),
+                    SizedBox(height: AppDensity.space(12)),
+                  ],
                   FormField<WorkoutTemplate>(
                     validator: (_) => _pickedTpl == null
                         ? 'Choose a workout template.'
@@ -359,7 +412,8 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                       Expanded(
                         child: FilledButton(
                           onPressed: _submitting ||
-                                  _pickedClients.isEmpty ||
+                                  (_sessionType == _clientSessionType &&
+                                      _pickedClients.isEmpty) ||
                                   _pickedTpl == null
                               ? null
                               : _submit,
@@ -452,8 +506,12 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
     setState(() => _submitting = true);
     if (!_form.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select at least one client and one workout.'),
+        SnackBar(
+          content: Text(
+            _sessionType == _soloSessionType
+                ? 'Choose a workout to create a solo session.'
+                : 'Select at least one client and one workout.',
+          ),
         ),
       );
       setState(() => _submitting = false);
@@ -476,16 +534,9 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
       'endTime': end.toIso8601String(),
       'sessionName': _name.text.trim().isEmpty ? null : _name.text.trim(),
       'clientIds': _pickedClients.map((c) => c.id).toList(),
+      'sessionType': _sessionType,
       'workoutTemplateId': _pickedTpl!.id,
     };
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Submitting clients ${_pickedClients.map((c) => c.id).join(', ')} workout ${_pickedTpl!.id}',
-        ),
-      ),
-    );
     Navigator.pop(context, dto);
   }
 }

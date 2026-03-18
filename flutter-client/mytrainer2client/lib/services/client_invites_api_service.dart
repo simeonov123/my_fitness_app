@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/client_invite.dart';
@@ -11,7 +10,7 @@ class ClientInvitesApiService {
   static final _base =
       const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
           ? const String.fromEnvironment('API_BASE')
-          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+          : apiBaseUrl;
 
   final AuthService _auth = AuthService();
 

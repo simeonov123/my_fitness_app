@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' show Rect;
 
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -8,6 +9,7 @@ class SocialStoryExportService {
   Future<void> exportPng({
     required Uint8List bytes,
     required String fileName,
+    Rect? sharePositionOrigin,
   }) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileName.png');
@@ -16,6 +18,7 @@ class SocialStoryExportService {
       [XFile(file.path)],
       text: 'Workout recap',
       subject: 'Workout recap',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 }

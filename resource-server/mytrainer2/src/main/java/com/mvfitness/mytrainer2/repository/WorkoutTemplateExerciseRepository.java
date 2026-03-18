@@ -1,6 +1,7 @@
 // src/main/java/com/mvfitness/mytrainer2/repository/WorkoutTemplateExerciseRepository.java
 package com.mvfitness.mytrainer2.repository;
 
+import com.mvfitness.mytrainer2.domain.Exercise;
 import com.mvfitness.mytrainer2.domain.WorkoutTemplateExercise;
 import com.mvfitness.mytrainer2.domain.WorkoutTemplate;
 import jakarta.transaction.Transactional;
@@ -32,6 +33,6 @@ public interface WorkoutTemplateExerciseRepository
       """)
     void deleteByWorkoutTemplateId(Long templateId);
 
-
+    List<WorkoutTemplateExercise> findByExercise(Exercise exercise);
 
 }

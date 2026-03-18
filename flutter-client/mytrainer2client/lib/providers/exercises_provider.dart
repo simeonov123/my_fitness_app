@@ -82,6 +82,27 @@ class ExercisesProvider extends ChangeNotifier {
     return created;
   }
 
+  Future<Exercise> update({
+    required int id,
+    required String name,
+    String? description,
+    required String defaultSetType,
+    required String defaultSetParams,
+    List<MuscleGroup> muscleGroups = const [],
+  }) async {
+    final updated = await _api.update(
+      id: id,
+      name: name,
+      description: description,
+      defaultSetType: defaultSetType,
+      defaultSetParams: defaultSetParams,
+      muscleGroups: muscleGroups,
+    );
+    _all = _sortExercises([..._all.where((e) => e.id != updated.id), updated]);
+    notifyListeners();
+    return updated;
+  }
+
   void search(String q) {
     _search = q;
     notifyListeners();

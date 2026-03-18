@@ -27,7 +27,7 @@ public class WorkoutInstance extends BaseTimestampedEntity {
 
     // client_id -> clients.id
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id", nullable = false)
+    @JoinColumn(name = "client_id")
     private Client client;
 
     // workout_template_id -> workout_templates.id

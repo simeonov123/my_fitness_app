@@ -23,6 +23,7 @@ import 'providers/api_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/clients_provider.dart';
 import 'services/auth_service.dart';
+import 'services/app_config.dart';
 import 'services/invite_link_service.dart';
 import 'services/pending_client_invite_service.dart';
 import 'services/workout_notification_service.dart';
@@ -86,7 +87,7 @@ class MyApp extends StatelessWidget {
           enabled: true,
           child: MaterialApp(
             navigatorKey: appNavigatorKey,
-            title: 'MVFitness',
+            title: AppConfig.appTitle,
             theme: AppTheme.light(),
             builder: (context, child) {
               final data = MediaQuery.of(context);

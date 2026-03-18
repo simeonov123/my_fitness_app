@@ -37,11 +37,33 @@ public interface WorkoutInstanceExerciseRepository extends JpaRepository<Workout
     );
 
     @Query("""
+            select wie.id
+              from WorkoutInstanceExercise wie
+              join wie.workoutInstance wi
+              join wi.trainingSession ts
+              join ts.trainer t
+              join wie.exercise e
+             where wi.client is null
+               and t.id = :trainerId
+               and e.id = :exerciseId
+               and ts.id <> :sessionId
+               and ts.isCompleted = true
+               and upper(coalesce(ts.sessionType, 'CLIENT')) = 'SOLO'
+             order by ts.startTime desc, wi.performedAt desc, wie.sequenceOrder asc
+            """)
+    List<Long> findHistoryIdsForTrainerSoloExercise(
+            @Param("trainerId") Long trainerId,
+            @Param("exerciseId") Long exerciseId,
+            @Param("sessionId") Long sessionId,
+            Pageable pageable
+    );
+
+    @Query("""
             select distinct wie
               from WorkoutInstanceExercise wie
               join fetch wie.workoutInstance wi
               join fetch wi.trainingSession ts
-              join fetch wi.client c
+              left join fetch wi.client c
               join fetch wie.exercise e
              where wie.id in :ids
             """)

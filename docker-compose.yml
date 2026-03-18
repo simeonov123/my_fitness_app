@@ -4,15 +4,15 @@ services:
     image: mysql:8
     container_name: my_fitness_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: myfitness
-      MYSQL_USER: fitness_user
-      MYSQL_PASSWORD: userpass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-myfitness}
+      MYSQL_USER: ${MYSQL_USER:-fitness_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-userpass}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./db:/docker-entrypoint-initdb.d
     ports:
-      - "3307:3306"
+      - "${MYSQL_HOST_PORT:-3307}:3306"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -28,15 +28,15 @@ services:
     depends_on:
       - mysql
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: adminpass
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-adminpass}
       # DB Settings
       KC_DB: mysql
       KC_DB_URL_HOST: mysql
       KC_DB_URL_PORT: 3306
-      KC_DB_URL_DATABASE: keycloak
-      KC_DB_USERNAME: keycloak_user
-      KC_DB_PASSWORD: keycloakpass
+      KC_DB_URL_DATABASE: ${KEYCLOAK_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME:-keycloak_user}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloakpass}
 
       # ── FOR LOCAL TESTING ON EMULATOR ────────────────────────────────────────────
       # KC_HOSTNAME_PORT: 8081
@@ -52,9 +52,9 @@ services:
     volumes:
       - ./db:/opt/keycloak/data/import
     command: >
-      start-dev --http-port=8081
+      start-dev --http-port=${KEYCLOAK_HTTP_PORT:-8081}
     ports:
-      - "8081:8081"
+      - "${KEYCLOAK_HOST_PORT:-8081}:${KEYCLOAK_HTTP_PORT:-8081}"
     restart: unless-stopped
 
 
@@ -64,15 +64,15 @@ services:
       dockerfile: Dockerfile
     container_name: my_fitness_resource
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/myfitness
-      SPRING_DATASOURCE_USERNAME: fitness_user
-      SPRING_DATASOURCE_PASSWORD: userpass
-      KEYCLOAK_AUTH_URL: http://keycloak:8081/realms/myrealm
-      KEYCLOAK_ISSUER_URI: http://${DEV_LAN_HOST:-localhost}:8081/realms/myrealm
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8081/realms/myrealm/protocol/openid-connect/certs
-      KEYCLOAK_ALLOWED_ISSUERS: http://localhost:8081/realms/myrealm,http://10.0.2.2:8081/realms/myrealm,http://${DEV_LAN_HOST:-localhost}:8081/realms/myrealm
-      APP_CLIENT_INVITE_BASE_URL: mytrainer://invite/client
-      APP_CLIENT_WEB_INVITE_BASE_URL: http://localhost:3000/onboard/client
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/myfitness}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-fitness_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-userpass}
+      KEYCLOAK_AUTH_URL: ${KEYCLOAK_INTERNAL_REALM_URL:-http://keycloak:8081/realms/myrealm}
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:-http://${DEV_LAN_HOST:-localhost}:8081/realms/myrealm}
+      KEYCLOAK_JWK_SET_URI: ${KEYCLOAK_JWK_SET_URI:-http://keycloak:8081/realms/myrealm/protocol/openid-connect/certs}
+      KEYCLOAK_ALLOWED_ISSUERS: ${KEYCLOAK_ALLOWED_ISSUERS:-http://localhost:8081/realms/myrealm,http://10.0.2.2:8081/realms/myrealm,http://${DEV_LAN_HOST:-localhost}:8081/realms/myrealm}
+      APP_CLIENT_INVITE_BASE_URL: ${APP_CLIENT_INVITE_BASE_URL:-mytrainer://invite/client}
+      APP_CLIENT_WEB_INVITE_BASE_URL: ${APP_CLIENT_WEB_INVITE_BASE_URL:-http://localhost:3000/onboard/client}
       # SPRING_LIQUIBASE_CLEAR_CHECKSUMS: "true"
     depends_on:
       mysql:
@@ -80,8 +80,8 @@ services:
       keycloak:
         condition: service_started
     ports:
-      - "8080:8080"     # normal app port
-      - "5005:5005"     # <-- debug port
+      - "${RESOURCE_SERVER_HOST_PORT:-8080}:8080"
+      - "${RESOURCE_SERVER_DEBUG_PORT:-5005}:5005"
     restart: unless-stopped
     command: >
       java
@@ -96,7 +96,7 @@ services:
     depends_on:
       - resource-server
     ports:
-      - "80:80"
+      - "${FLUTTER_HOST_PORT:-80}:80"
     restart: unless-stopped
 
   adminer:
@@ -106,7 +106,7 @@ services:
       mysql:
         condition: service_healthy
     ports:
-      - "8082:8080"
+      - "${ADMINER_HOST_PORT:-8082}:8080"
     restart: unless-stopped
 
 volumes:

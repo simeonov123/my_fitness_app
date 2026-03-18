@@ -214,12 +214,15 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   SizedBox(height: AppDensity.space(14)),
-                  SessionsTimeline(
-                    day: _selectedDay,
-                    onLongPressTime: (startAt) async {
-                      HapticFeedback.mediumImpact();
-                      await _openCreateSessionDialog(startAt);
-                    },
+                  SizedBox(
+                    height: AppDensity.space(560),
+                    child: SessionsTimeline(
+                      day: _selectedDay,
+                      onLongPressTime: (startAt) async {
+                        HapticFeedback.mediumImpact();
+                        await _openCreateSessionDialog(startAt);
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -332,9 +335,9 @@ class _CalendarHero extends StatelessWidget {
     final text = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -346,8 +349,8 @@ class _CalendarHero extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: colors.shadow.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -360,23 +363,23 @@ class _CalendarHero extends StatelessWidget {
               children: [
                 Text(
                   monthLabel,
-                  style: text.headlineMedium?.copyWith(
+                  style: text.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
-                    letterSpacing: -0.8,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   '$weekdayLabel • $yearLabel',
-                  style: text.titleMedium?.copyWith(
+                  style: text.titleSmall?.copyWith(
                     color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   summaryLabel,
-                  style: text.bodyMedium?.copyWith(
+                  style: text.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
@@ -384,21 +387,31 @@ class _CalendarHero extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               FilledButton.tonal(
                 onPressed: onToday,
-                child: const Text('Today'),
+                style: FilledButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text(
+                  'Today',
+                  style: TextStyle(fontSize: 12),
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Container(
-                width: 76,
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                width: 58,
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: colors.surface.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: colors.outlineVariant.withOpacity(0.4),
                   ),
@@ -407,14 +420,14 @@ class _CalendarHero extends StatelessWidget {
                   children: [
                     Text(
                       dayLabel,
-                      style: text.displaySmall?.copyWith(
+                      style: text.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w900,
-                        letterSpacing: -1.4,
+                        letterSpacing: -1.0,
                       ),
                     ),
                     Text(
                       weekdayLabel.substring(0, 3).toUpperCase(),
-                      style: text.labelMedium?.copyWith(
+                      style: text.labelSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: colors.onSurfaceVariant,
                       ),

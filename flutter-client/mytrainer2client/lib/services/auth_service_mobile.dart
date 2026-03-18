@@ -5,14 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dev_endpoints.dart';
+import 'app_config.dart';
 
 /// OAuth2 / OIDC settings for your Keycloak realm and client.
-final _issuer = keycloakRealmUrl;
-const _clientId = 'mytrainer2client';
-const _redirectUri = 'com.mvfitness.mytrainer2client://oauthredirect';
-const _postLogoutRedirectUri =
-    'com.mvfitness.mytrainer2client://logoutredirect';
+final _issuer = AppConfig.keycloakRealmUrl;
+const _clientId = AppConfig.oidcClientId;
+const _redirectUri = AppConfig.mobileRedirectUri;
+const _postLogoutRedirectUri = AppConfig.mobilePostLogoutRedirectUri;
 
 /// A singleton service that manages:
 ///  • access & refresh tokens
@@ -60,7 +59,7 @@ class AuthService {
       discoveryUrl: '$_issuer/.well-known/openid-configuration',
       scopes: ['openid', 'profile', 'email', 'offline_access'],
       promptValues: interactive ? null : ['none'],
-      allowInsecureConnections: true, // DEV ONLY; remove in prod
+      allowInsecureConnections: AppConfig.allowInsecureConnections,
     );
 
     try {
@@ -113,7 +112,7 @@ class AuthService {
       refreshToken: _refreshToken!,
       discoveryUrl: '$_issuer/.well-known/openid-configuration',
       scopes: ['openid', 'profile', 'email', 'offline_access'],
-      allowInsecureConnections: true,
+      allowInsecureConnections: AppConfig.allowInsecureConnections,
     );
 
     try {
@@ -189,7 +188,7 @@ class AuthService {
           grantType: 'refresh_token',
           refreshToken: refreshToken,
           discoveryUrl: '$_issuer/.well-known/openid-configuration',
-          allowInsecureConnections: true,
+          allowInsecureConnections: AppConfig.allowInsecureConnections,
         ));
         debugPrint('🔒 Revocation request sent');
       } catch (_) {}
@@ -200,9 +199,9 @@ class AuthService {
       await _appAuth.endSession(EndSessionRequest(
         idTokenHint: idTokenHint,
         postLogoutRedirectUrl: _postLogoutRedirectUri,
-        allowInsecureConnections: true,
+        allowInsecureConnections: AppConfig.allowInsecureConnections,
         serviceConfiguration: AuthorizationServiceConfiguration(
-          endSessionEndpoint: keycloakLogoutUrl,
+          endSessionEndpoint: AppConfig.keycloakLogoutUrl,
           authorizationEndpoint: '',
           tokenEndpoint: '',
         ),

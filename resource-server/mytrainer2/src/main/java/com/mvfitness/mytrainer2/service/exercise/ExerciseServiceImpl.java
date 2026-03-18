@@ -4,11 +4,13 @@ package com.mvfitness.mytrainer2.service.exercise;
 import com.mvfitness.mytrainer2.domain.Exercise;
 import com.mvfitness.mytrainer2.domain.MuscleGroup;
 import com.mvfitness.mytrainer2.domain.User;
+import com.mvfitness.mytrainer2.domain.WorkoutTemplateExercise;
 import com.mvfitness.mytrainer2.dto.ExerciseDto;
 import com.mvfitness.mytrainer2.mapper.ExerciseMapper;
 import com.mvfitness.mytrainer2.repository.ExerciseRepository;
 import com.mvfitness.mytrainer2.repository.MuscleGroupRepository;
 import com.mvfitness.mytrainer2.repository.UserRepository;
+import com.mvfitness.mytrainer2.repository.WorkoutTemplateExerciseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ public class ExerciseServiceImpl implements ExerciseService {
     private final ExerciseRepository repo;
     private final MuscleGroupRepository muscleGroups;
     private final UserRepository users;
+    private final WorkoutTemplateExerciseRepository workoutTemplateExercises;
 
     private User trainerOr404(String kcId){
         User u = users.findByKeycloakUserId(kcId);
@@ -92,6 +95,7 @@ public class ExerciseServiceImpl implements ExerciseService {
         User trainer = trainerOr404(kcId);
         ExerciseMapper.updateEntity(e,dto);
         applyMuscleGroups(trainer, e, dto);
+        syncTemplateExerciseDefaults(e);
         return ExerciseMapper.toDto(repo.save(e));
     }
 
@@ -117,5 +121,14 @@ public class ExerciseServiceImpl implements ExerciseService {
                                 group.getTrainer().getId().equals(trainer.getId())))
                 .toList();
         e.getMuscleGroups().addAll(groups);
+    }
+
+    private void syncTemplateExerciseDefaults(Exercise exercise) {
+        List<WorkoutTemplateExercise> templateEntries =
+                workoutTemplateExercises.findByExercise(exercise);
+        for (var entry : templateEntries) {
+            entry.setSetType(exercise.getDefaultSetType());
+            entry.setSetParams(exercise.getDefaultSetParams());
+        }
     }
 }

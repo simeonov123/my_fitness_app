@@ -6,6 +6,8 @@ import '../providers/navigation_provider.dart';
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
 
+  static const _comingSoonRoutes = {'/programs', '/nutrition'};
+
   static const _trainerItems = [
     _NavTarget(0, '/home', Icons.home, 'Home'),
     _NavTarget(1, '/workout', Icons.fitness_center, 'Workout'),
@@ -32,9 +34,16 @@ class BottomNavBar extends StatelessWidget {
       currentIndex: currentIndex >= 0 ? currentIndex : 0,
       type: BottomNavigationBarType.fixed,
       onTap: (idx) {
+        final target = items[idx];
+        if (_comingSoonRoutes.contains(target.route)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${target.label} is coming soon')),
+          );
+          return;
+        }
         nav.setIndex(idx);
         // pushReplacement to avoid stacking many screens
-        Navigator.pushReplacementNamed(context, items[idx].route);
+        Navigator.pushReplacementNamed(context, target.route);
       },
       items: items
           .map((t) =>

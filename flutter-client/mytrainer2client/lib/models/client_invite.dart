@@ -1,3 +1,5 @@
+import '../services/app_config.dart';
+
 class ClientInvite {
   final int id;
   final int clientId;
@@ -30,7 +32,7 @@ class ClientInvite {
 
   String get iosInviteUrl => inviteUrl;
   String get androidInviteUrl =>
-      'intent://invite/client?token=$inviteToken#Intent;scheme=mytrainer;package=com.mvfitness.mytrainer2client;end';
+      'intent://invite/client?token=$inviteToken#Intent;scheme=${AppConfig.appUriScheme};package=${AppConfig.androidAppPackage};end';
 
   factory ClientInvite.fromJson(Map<String, dynamic> json) => ClientInvite(
         id: (json['id'] ?? 0) as int,

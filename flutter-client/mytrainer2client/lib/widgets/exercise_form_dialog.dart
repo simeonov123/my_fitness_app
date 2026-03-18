@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/muscle_group.dart';
+import '../models/exercise.dart';
 import '../providers/exercises_provider.dart';
 import '../providers/muscle_groups_provider.dart';
 import '../theme/app_density.dart';
 
 class ExerciseFormDialog extends StatefulWidget {
-  const ExerciseFormDialog({super.key});
+  const ExerciseFormDialog({
+    super.key,
+    this.initialExercise,
+  });
+
+  final Exercise? initialExercise;
 
   @override
   State<ExerciseFormDialog> createState() => _ExerciseFormDialogState();
@@ -23,6 +29,8 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   final Set<MuscleGroup> _selectedMuscleGroups = <MuscleGroup>{};
   bool _submitting = false;
   bool _creatingMuscleGroup = false;
+
+  bool get _isEditing => widget.initialExercise != null;
 
   @override
   void initState() {
@@ -55,6 +63,18 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       ),
     ];
     _selectedPreset = _presets.first;
+    final initialExercise = widget.initialExercise;
+    if (initialExercise != null) {
+      _nameCtrl.text = initialExercise.name;
+      _descCtrl.text = initialExercise.description ?? '';
+      _selectedPreset = _presets.firstWhere(
+        (preset) =>
+            preset.defaultSetType == initialExercise.defaultSetType &&
+            preset.defaultSetParams == initialExercise.defaultSetParams,
+        orElse: () => _selectedPreset,
+      );
+      _selectedMuscleGroups.addAll(initialExercise.muscleGroups);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final provider = context.read<MuscleGroupsProvider>();
@@ -76,20 +96,37 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
 
     setState(() => _submitting = true);
     try {
-      final created = await context.read<ExercisesProvider>().create(
-            name: _nameCtrl.text.trim(),
-            description:
-                _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-            defaultSetType: _selectedPreset.defaultSetType,
-            defaultSetParams: _selectedPreset.defaultSetParams,
-            muscleGroups: _selectedMuscleGroups.toList(growable: false),
-          );
+      final provider = context.read<ExercisesProvider>();
+      final created = _isEditing
+          ? await provider.update(
+              id: widget.initialExercise!.id,
+              name: _nameCtrl.text.trim(),
+              description:
+                  _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+              defaultSetType: _selectedPreset.defaultSetType,
+              defaultSetParams: _selectedPreset.defaultSetParams,
+              muscleGroups: _selectedMuscleGroups.toList(growable: false),
+            )
+          : await provider.create(
+              name: _nameCtrl.text.trim(),
+              description:
+                  _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+              defaultSetType: _selectedPreset.defaultSetType,
+              defaultSetParams: _selectedPreset.defaultSetParams,
+              muscleGroups: _selectedMuscleGroups.toList(growable: false),
+            );
       if (!mounted) return;
       Navigator.of(context).pop(created);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create exercise: $e')),
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Failed to update exercise: $e'
+                : 'Failed to create exercise: $e',
+          ),
+        ),
       );
       setState(() => _submitting = false);
     }
@@ -201,14 +238,16 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'New exercise',
+                            _isEditing ? 'Edit exercise' : 'New exercise',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           SizedBox(height: AppDensity.space(3)),
                           Text(
-                            'Add a custom movement with default tracking and muscle groups.',
+                            _isEditing
+                                ? 'Update the movement name, tracking preset, and muscle groups.'
+                                : 'Add a custom movement with default tracking and muscle groups.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: const Color(0xFF6F7691),
                             ),
@@ -331,14 +370,14 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: _submitting ? null : _submit,
-                        child: _submitting
-                            ? SizedBox(
-                                width: AppDensity.space(18),
+                            child: _submitting
+                                ? SizedBox(
+                                    width: AppDensity.space(18),
                                 height: AppDensity.space(18),
                                 child:
                                     CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Create'),
+                                  )
+                            : Text(_isEditing ? 'Save' : 'Create'),
                       ),
                     ),
                   ],

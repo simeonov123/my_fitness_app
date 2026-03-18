@@ -62,6 +62,19 @@ public class WorkoutInstanceExerciseServiceImpl
                 || !user.getClientInvites().isEmpty();
     }
 
+    private String participantName(WorkoutInstance instance) {
+        if (instance.getClient() != null) {
+            return instance.getClient().getFullName();
+        }
+        if (instance.getTrainingSession() != null && instance.getTrainingSession().getTrainer() != null) {
+            String fullName = instance.getTrainingSession().getTrainer().getFullName();
+            if (fullName != null && !fullName.isBlank()) {
+                return fullName;
+            }
+        }
+        return "Solo";
+    }
+
     private Client clientProfileOr404(String kc) {
         User user = userOr404(kc);
         return clients.findByAccountUser(user)
@@ -106,15 +119,16 @@ public class WorkoutInstanceExerciseServiceImpl
             list = list.stream()
                     .filter(e -> {
                         Client client = e.getWorkoutInstance().getClient();
-                        return client.getAccountUser() != null
+                        return client != null
+                                && client.getAccountUser() != null
                                 && client.getAccountUser().getId().equals(accountUser.getId());
                     })
                     .toList();
         }
         return list.stream()
                 .sorted((a, b) -> {
-                    int byClient = a.getWorkoutInstance().getClient().getFullName()
-                            .compareToIgnoreCase(b.getWorkoutInstance().getClient().getFullName());
+                    int byClient = participantName(a.getWorkoutInstance())
+                            .compareToIgnoreCase(participantName(b.getWorkoutInstance()));
                     if (byClient != 0) return byClient;
                     return Integer.compare(a.getSequenceOrder(), b.getSequenceOrder());
                 })
@@ -134,7 +148,12 @@ public class WorkoutInstanceExerciseServiceImpl
         Map<Long, WorkoutInstance> workoutInstancesById = session.getWorkoutInstances().stream()
                 .collect(Collectors.toMap(WorkoutInstance::getId, Function.identity()));
         Map<Long, WorkoutInstance> workoutInstancesByClientId = session.getWorkoutInstances().stream()
+                .filter(wi -> wi.getClient() != null)
                 .collect(Collectors.toMap(wi -> wi.getClient().getId(), Function.identity()));
+        WorkoutInstance soloInstance = session.getWorkoutInstances().stream()
+                .filter(wi -> wi.getClient() == null)
+                .findFirst()
+                .orElse(null);
 
         WorkoutInstance ownInstance = null;
         Long ownClientId = null;
@@ -181,6 +200,9 @@ public class WorkoutInstanceExerciseServiceImpl
                 if (wi == null && dto.clientId() != null) {
                     wi = workoutInstancesByClientId.get(dto.clientId());
                 }
+                if (wi == null && dto.clientId() == null) {
+                    wi = soloInstance;
+                }
             } else {
                 wi = ownInstance;
             }
@@ -217,22 +239,33 @@ public class WorkoutInstanceExerciseServiceImpl
         if (!isTrainer(kc)) {
             User accountUser = accountUserOr404(kc);
             Client entryClient = current.getWorkoutInstance().getClient();
-            if (entryClient.getAccountUser() == null
+            if (entryClient == null
+                    || entryClient.getAccountUser() == null
                     || !entryClient.getAccountUser().getId().equals(accountUser.getId())) {
                 throw new IllegalArgumentException("Entry not in that session");
             }
         }
 
-        Long clientId = current.getWorkoutInstance().getClient().getId();
         Long exerciseId = current.getExercise().getId();
         int clampedLimit = Math.max(1, Math.min(limit, 5));
 
-        List<Long> historyIds = repo.findHistoryIdsForClientExercise(
-                clientId,
-                exerciseId,
-                sessionId,
-                PageRequest.of(0, clampedLimit)
-        );
+        List<Long> historyIds;
+        if (current.getWorkoutInstance().getClient() != null) {
+            Long clientId = current.getWorkoutInstance().getClient().getId();
+            historyIds = repo.findHistoryIdsForClientExercise(
+                    clientId,
+                    exerciseId,
+                    sessionId,
+                    PageRequest.of(0, clampedLimit)
+            );
+        } else {
+            historyIds = repo.findHistoryIdsForTrainerSoloExercise(
+                    current.getWorkoutInstance().getTrainingSession().getTrainer().getId(),
+                    exerciseId,
+                    sessionId,
+                    PageRequest.of(0, clampedLimit)
+            );
+        }
 
         List<WorkoutInstanceExercise> history = historyIds.isEmpty()
                 ? List.of()
@@ -249,9 +282,14 @@ public class WorkoutInstanceExerciseServiceImpl
 
         history.forEach(this::initializeHistoryEntry);
 
+        Long historyOwnerId = current.getWorkoutInstance().getClient() != null
+                ? current.getWorkoutInstance().getClient().getId()
+                : null;
+        String historyOwnerName = participantName(current.getWorkoutInstance());
+
         return new ExerciseHistoryDto(
-                clientId,
-                current.getWorkoutInstance().getClient().getFullName(),
+                historyOwnerId,
+                historyOwnerName,
                 exerciseId,
                 current.getExercise().getName(),
                 current.getSetType(),
@@ -274,7 +312,8 @@ public class WorkoutInstanceExerciseServiceImpl
             }
             User accountUser = accountUserOr404(kc);
             Client entryClient = ent.getWorkoutInstance().getClient();
-            if (entryClient.getAccountUser() == null
+            if (entryClient == null
+                    || entryClient.getAccountUser() == null
                     || !entryClient.getAccountUser().getId().equals(accountUser.getId())) {
                 throw new IllegalArgumentException("Entry not in that session");
             }

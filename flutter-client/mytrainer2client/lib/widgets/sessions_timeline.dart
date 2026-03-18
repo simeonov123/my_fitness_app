@@ -46,28 +46,32 @@ class SessionsTimeline extends StatelessWidget {
             decoration: BoxDecoration(
               color: colors.surfaceContainerLowest,
             ),
-            child: Padding(
-              padding: EdgeInsets.only(right: AppDensity.space(6)),
-              child: SizedBox(
-                height: fullHeight,
-                child: Stack(
-                  children: [
-                    Row(
+            child: Scrollbar(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.only(right: AppDensity.space(6)),
+                  child: SizedBox(
+                    height: fullHeight,
+                    child: Stack(
                       children: [
-                        _timeColumn(context),
-                        Expanded(
-                          child: _TimelinePressSurface(
-                            day: day,
-                            pxPerMin: _pxPerMin,
-                            onLongPressTime: onLongPressTime,
-                            child: _paint(context, clusters),
-                          ),
+                        Row(
+                          children: [
+                            _timeColumn(context),
+                            Expanded(
+                              child: _TimelinePressSurface(
+                                day: day,
+                                pxPerMin: _pxPerMin,
+                                onLongPressTime: onLongPressTime,
+                                child: _paint(context, clusters),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (DateUtils.isSameDay(day, DateTime.now()))
+                          _nowLine(context),
                       ],
                     ),
-                    if (DateUtils.isSameDay(day, DateTime.now()))
-                      _nowLine(context),
-                  ],
+                  ),
                 ),
               ),
             ),

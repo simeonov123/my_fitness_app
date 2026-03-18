@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
+import '../models/exercise.dart';
 import '../models/workout_template_exercise.dart';
 import '../providers/workout_templates_provider.dart';
 import '../theme/app_density.dart';
+import 'exercise_form_dialog.dart';
 
 /// Returns the updated List<WorkoutTemplateExercise> when done.
 class ReorderExercisesPanel extends StatefulWidget {
@@ -48,6 +50,29 @@ class _ReorderExercisesPanelState extends State<ReorderExercisesPanel> {
         .updateExercisesOrder(widget.templateId, _list);
     // Pop and return updated list
     Navigator.of(context).pop(_list);
+  }
+
+  Future<void> _editExercise(int index) async {
+    final current = _list[index];
+    final updated = await showDialog<Exercise>(
+      context: context,
+      builder: (_) => ExerciseFormDialog(
+        initialExercise: current.exercise,
+      ),
+    );
+    if (updated == null || !mounted) return;
+
+    setState(() {
+      _list[index] = WorkoutTemplateExercise(
+        id: current.id,
+        exercise: updated,
+        sequenceOrder: current.sequenceOrder,
+        setType: updated.defaultSetType,
+        setParams: updated.defaultSetParams,
+        notes: current.notes,
+        sets: current.sets,
+      );
+    });
   }
 
   @override
@@ -190,6 +215,13 @@ class _ReorderExercisesPanelState extends State<ReorderExercisesPanel> {
                             ],
                           ],
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Color(0xFF2F80FF),
+                        ),
+                        onPressed: () => _editExercise(idx),
                       ),
                       IconButton(
                         icon: const Icon(

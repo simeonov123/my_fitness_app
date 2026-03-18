@@ -31,6 +31,9 @@ class SessionsCalendar extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 390;
         final rowHeight = compact ? AppDensity.space(44) : AppDensity.space(50);
+        final weekdayFontSize = compact ? 12.5 : 13.5;
+        final dayFontSize = compact ? 16.0 : 17.0;
+        final markerFontSize = compact ? 9.0 : 10.0;
 
         return Container(
           decoration: BoxDecoration(
@@ -73,26 +76,31 @@ class SessionsCalendar extends StatelessWidget {
               defaultTextStyle: text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colors.onSurface,
+                    fontSize: dayFontSize,
                   ) ??
                   const TextStyle(),
               weekendTextStyle: text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colors.onSurfaceVariant,
+                    fontSize: dayFontSize,
                   ) ??
                   const TextStyle(),
               outsideTextStyle: text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w500,
                     color: colors.outline,
+                    fontSize: dayFontSize,
                   ) ??
                   const TextStyle(),
               selectedTextStyle: text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: colors.onPrimary,
+                    fontSize: dayFontSize,
                   ) ??
                   const TextStyle(),
               todayTextStyle: text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: colors.primary,
+                    fontSize: dayFontSize,
                   ) ??
                   const TextStyle(),
               selectedDecoration: BoxDecoration(
@@ -116,11 +124,13 @@ class SessionsCalendar extends StatelessWidget {
               weekdayStyle: text.labelMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.onSurfaceVariant,
+                    fontSize: weekdayFontSize,
                   ) ??
                   const TextStyle(),
               weekendStyle: text.labelMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.onSurfaceVariant,
+                    fontSize: weekdayFontSize,
                   ) ??
                   const TextStyle(),
             ),
@@ -164,7 +174,7 @@ class SessionsCalendar extends StatelessWidget {
                               color: selectedDay
                                   ? colors.primary
                                   : colors.onPrimary,
-                              fontSize: AppDensity.space(8.5),
+                              fontSize: markerFontSize,
                             ) ??
                             const TextStyle(),
                       ),

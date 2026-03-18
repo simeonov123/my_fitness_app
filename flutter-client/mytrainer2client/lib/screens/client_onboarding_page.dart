@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/client_invite_validation.dart';
 import '../providers/auth_provider.dart';
+import '../services/app_config.dart';
 import '../services/client_onboarding_api_service.dart';
 import '../services/pending_client_invite_service.dart';
 
@@ -179,10 +180,10 @@ class _ClientOnboardingPageState extends State<ClientOnboardingPage>
         kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroidWeb) {
       return Uri.parse(
-        'intent://invite/client?token=$token#Intent;scheme=mytrainer;package=com.mvfitness.mytrainer2client;end',
+        'intent://invite/client?token=$token#Intent;scheme=${AppConfig.appUriScheme};package=${AppConfig.androidAppPackage};end',
       );
     }
-    return Uri.parse('mytrainer://invite/client?token=$token');
+    return Uri.parse('${AppConfig.appUriScheme}://invite/client?token=$token');
   }
 
   Future<void> _openInApp() async {

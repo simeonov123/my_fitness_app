@@ -25,11 +25,21 @@ public final class WorkoutInstanceExerciseMapper {
     /* ───────────────────  ENTITY ➜ DTO  ─────────────────── */
 
     public static WorkoutInstanceExerciseDto toDto(WorkoutInstanceExercise e) {
+        String ownerName = e.getWorkoutInstance().getClient() != null
+                ? e.getWorkoutInstance().getClient().getFullName()
+                : ((e.getWorkoutInstance().getTrainingSession() != null
+                && e.getWorkoutInstance().getTrainingSession().getTrainer() != null
+                && e.getWorkoutInstance().getTrainingSession().getTrainer().getFullName() != null
+                && !e.getWorkoutInstance().getTrainingSession().getTrainer().getFullName().isBlank())
+                ? e.getWorkoutInstance().getTrainingSession().getTrainer().getFullName()
+                : "Solo");
         return new WorkoutInstanceExerciseDto(
                 e.getId(),
                 e.getWorkoutInstance().getId(),
-                e.getWorkoutInstance().getClient().getId(),
-                e.getWorkoutInstance().getClient().getFullName(),
+                e.getWorkoutInstance().getClient() != null
+                        ? e.getWorkoutInstance().getClient().getId()
+                        : null,
+                ownerName,
                 e.getExercise().getId(),
                 e.getExercise().getName(),
                 e.getSequenceOrder(),

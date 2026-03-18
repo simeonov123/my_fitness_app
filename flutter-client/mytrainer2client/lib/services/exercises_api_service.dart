@@ -1,7 +1,6 @@
 // lib/services/exercises_api_service.dart
 
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
@@ -13,7 +12,7 @@ class ExercisesApiService {
   static final _base =
       const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
           ? const String.fromEnvironment('API_BASE')
-          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+          : apiBaseUrl;
 
   final AuthService _auth = AuthService();
 
@@ -87,6 +86,42 @@ class ExercisesApiService {
     );
     if (res.statusCode != 200) {
       throw Exception('Failed to create exercise: ${res.statusCode}');
+    }
+    return Exercise.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  Future<Exercise> update({
+    required int id,
+    required String name,
+    String? description,
+    required String defaultSetType,
+    required String defaultSetParams,
+    List<MuscleGroup> muscleGroups = const [],
+  }) async {
+    final uri = Uri.parse('$_base/trainer/exercises/$id');
+    final res = await http.put(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'id': id,
+        'name': name,
+        'description': description,
+        'isCustom': true,
+        'defaultSetType': defaultSetType,
+        'defaultSetParams': defaultSetParams,
+        'muscleGroups': muscleGroups
+            .map(
+              (group) => {
+                'id': group.id,
+                'name': group.name,
+                'isCustom': group.isCustom,
+              },
+            )
+            .toList(growable: false),
+      }),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('Failed to update exercise: ${res.statusCode}');
     }
     return Exercise.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }

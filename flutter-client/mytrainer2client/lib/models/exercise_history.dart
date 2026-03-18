@@ -1,7 +1,7 @@
 import 'workout_instance_exercise_set.dart';
 
 class ExerciseHistory {
-  final int clientId;
+  final int? clientId;
   final String? clientName;
   final int exerciseId;
   final String exerciseName;
@@ -23,7 +23,7 @@ class ExerciseHistory {
 
   factory ExerciseHistory.fromJson(Map<String, dynamic> json) {
     return ExerciseHistory(
-      clientId: (json['clientId'] as num).toInt(),
+      clientId: (json['clientId'] as num?)?.toInt(),
       clientName: json['clientName'] as String?,
       exerciseId: (json['exerciseId'] as num).toInt(),
       exerciseName: json['exerciseName'] as String? ?? '',

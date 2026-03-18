@@ -107,6 +107,29 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                 .toList();
     }
 
+    private String normalizedSessionType(String sessionType) {
+        return (sessionType == null || sessionType.isBlank())
+                ? "CLIENT"
+                : sessionType.trim().toUpperCase();
+    }
+
+    private boolean isSoloSessionType(String sessionType) {
+        return "SOLO".equals(normalizedSessionType(sessionType));
+    }
+
+    private void validateSessionParticipants(String sessionType, List<Client> clients) {
+        if (isSoloSessionType(sessionType)) {
+            if (!clients.isEmpty()) {
+                throw new IllegalArgumentException("Solo sessions cannot include clients");
+            }
+            return;
+        }
+
+        if (clients.isEmpty()) {
+            throw new IllegalArgumentException("Pick at least one client");
+        }
+    }
+
     /* ───────────────── list / get ──────────────────────────────────── */
 
     @Override @Transactional(readOnly = true)
@@ -134,10 +157,12 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         return p.map(TrainingSessionMapper::toDto);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override @Transactional
     public TrainingSessionDto get(String kc, Long id) {
         if (isTrainer(kc)) {
-            return TrainingSessionMapper.toDto(ownedOr404(kc, id));
+            TrainingSession session = ownedOr404(kc, id);
+            session = ensureSoloWorkoutInstanceInitialized(session);
+            return TrainingSessionMapper.toDto(session);
         }
         TrainingSession session = sessions.findWithClientsByIdAndClients_AccountUser(id, accountUserOr404(kc))
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
@@ -153,6 +178,8 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         User trainer = trainerOr404(kc);
 
         List<Client> clientRefs = ownedClientsOr404(trainer, d.clientIds());
+        String sessionType = normalizedSessionType(d.sessionType());
+        validateSessionParticipants(sessionType, clientRefs);
 
         WorkoutTemplate tpl = (d.workoutTemplateId() == null) ? null
                 : templates.findById(d.workoutTemplateId())
@@ -168,7 +195,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                 .dayIndexInCycle(d.dayIndexInCycle())
                 .sessionName(d.sessionName())
                 .sessionDescription(d.sessionDescription())
-                .sessionType(d.sessionType())
+                .sessionType(sessionType)
                 .trainerNotes(d.trainerNotes())
                 .status(d.status())
                 .isCompleted(Boolean.FALSE)
@@ -178,7 +205,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         session = sessions.save(session);
 
         /* 4) deep-clone template → instances (sets included) */
-        if (tpl != null && !clientRefs.isEmpty()) {
+        if (tpl != null) {
             injectDeepClone(session, tpl, clientRefs);
         }
 
@@ -194,6 +221,10 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     public TrainingSessionDto update(String kc, Long id, TrainingSessionDto d) {
 
         TrainingSession s = ownedOr404(kc, id);
+        User trainer = trainerOr404(kc);
+        String requestedSessionType = normalizedSessionType(d.sessionType());
+        boolean sessionTypeChanged = !normalizedSessionType(s.getSessionType()).equals(requestedSessionType);
+        boolean clientsChanged = false;
 
         /* client list */
         if (d.clientIds() != null) {
@@ -206,13 +237,17 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                     .toList();
 
             if (!currentClientIds.equals(requestedClientIds)) {
-                List<Client> newClients = ownedClientsOr404(trainerOr404(kc), d.clientIds());
+                List<Client> newClients = ownedClientsOr404(trainer, d.clientIds());
                 s.getClients().clear();
                 s.getClients().addAll(newClients);
+                clientsChanged = true;
             }
         }
 
+        validateSessionParticipants(requestedSessionType, s.getClients());
+
         /* template switch */
+        boolean templateChanged = false;
         if (d.workoutTemplateId() != null &&
                 (s.getWorkoutTemplate() == null ||
                         !s.getWorkoutTemplate().getId().equals(d.workoutTemplateId()))) {
@@ -225,8 +260,16 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
             /* rebuild instances */
             s.getWorkoutInstances().clear();
             injectDeepClone(s, tpl, new ArrayList<>(s.getClients()));
+            templateChanged = true;
         } else if (d.workoutTemplateId() == null && s.getWorkoutTemplate() != null) {
             s.setWorkoutTemplate(null);
+            s.getWorkoutInstances().clear();
+            templateChanged = true;
+        }
+
+        if (!templateChanged && s.getWorkoutTemplate() != null && (clientsChanged || sessionTypeChanged)) {
+            s.getWorkoutInstances().clear();
+            injectDeepClone(s, s.getWorkoutTemplate(), new ArrayList<>(s.getClients()));
         }
 
         /* scalars */
@@ -237,7 +280,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         s.setDayIndexInCycle(d.dayIndexInCycle());
         s.setSessionName(d.sessionName());
         s.setSessionDescription(d.sessionDescription());
-        s.setSessionType(d.sessionType());
+        s.setSessionType(requestedSessionType);
         s.setTrainerNotes(d.trainerNotes());
         s.setStatus(d.status());
         s.setIsCompleted(d.isCompleted());
@@ -267,6 +310,23 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         exTpls.forEach(e -> e.getExerciseHasSets()
                 .forEach(sh -> sh.getSetData().size())); // init LAZY
 
+        if (clientsForInstances.isEmpty()) {
+            if (!isSoloSessionType(session.getSessionType())) {
+                return;
+            }
+
+            WorkoutInstance wi = WorkoutInstance.builder()
+                    .trainingSession(session)
+                    .client(null)
+                    .workoutTemplate(tpl)
+                    .build();
+            wi = instanceRepo.save(wi);
+            session.getWorkoutInstances().add(wi);
+
+            cloneTemplateExercisesIntoInstance(wi, exTpls);
+            return;
+        }
+
         for (Client cli : clientsForInstances) {
 
             WorkoutInstance wi = WorkoutInstance.builder()
@@ -277,43 +337,58 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
             wi = instanceRepo.save(wi);
             session.getWorkoutInstances().add(wi);
 
-            for (WorkoutTemplateExercise te : exTpls) {
+            cloneTemplateExercisesIntoInstance(wi, exTpls);
+        }
+    }
 
-                WorkoutInstanceExercise ie = WorkoutInstanceExercise.builder()
-                        .workoutInstance(wi)
-                        .exercise(te.getExercise())
-                        .sequenceOrder(te.getSequenceOrder())
-                        .setType(te.getSetType())
-                        .setParams(te.getSetParams())
-                        .notes(te.getNotes())
+    private void cloneTemplateExercisesIntoInstance(WorkoutInstance wi, List<WorkoutTemplateExercise> exTpls) {
+        for (WorkoutTemplateExercise te : exTpls) {
+
+            WorkoutInstanceExercise ie = WorkoutInstanceExercise.builder()
+                    .workoutInstance(wi)
+                    .exercise(te.getExercise())
+                    .sequenceOrder(te.getSequenceOrder())
+                    .setType(te.getSetType())
+                    .setParams(te.getSetParams())
+                    .notes(te.getNotes())
+                    .build();
+            ie = instanceExRepo.save(ie);
+            wi.getWorkoutInstanceExercises().add(ie);
+
+            for (ExerciseHasSets ehs : te.getExerciseHasSets()) {
+
+                WorkoutInstanceExerciseHasSets ies = WorkoutInstanceExerciseHasSets.builder()
+                        .workoutInstanceExercise(ie)
+                        .setNumber(ehs.getSetNumber())
+                        .completed(ehs.getCompleted())
+                        .setContextType(ehs.getSetContextType())
+                        .notes(ehs.getNotes())
                         .build();
-                ie = instanceExRepo.save(ie);
-                wi.getWorkoutInstanceExercises().add(ie);
+                ies = instanceSetRepo.save(ies);
+                ie.getWorkoutInstanceExerciseHasSets().add(ies);
 
-                /* clone every set (+ per-set data) */
-                for (ExerciseHasSets ehs : te.getExerciseHasSets()) {
-
-                    WorkoutInstanceExerciseHasSets ies = WorkoutInstanceExerciseHasSets.builder()
-                            .workoutInstanceExercise(ie)
-                            .setNumber(ehs.getSetNumber())
-                            .completed(ehs.getCompleted())
-                            .setContextType(ehs.getSetContextType())
-                            .notes(ehs.getNotes())
+                for (SetData sd : ehs.getSetData()) {
+                    SetData copy = SetData.builder()
+                            .type(sd.getType())
+                            .value(sd.getValue())
                             .build();
-                    ies = instanceSetRepo.save(ies);
-                    ie.getWorkoutInstanceExerciseHasSets().add(ies);
-
-                    for (SetData sd : ehs.getSetData()) {
-                        SetData copy = SetData.builder()
-                                .type(sd.getType())
-                                .value(sd.getValue())
-                                .build();
-                        ies.addSetData(copy);
-                        setDataRepo.save(copy);
-                    }
+                    ies.addSetData(copy);
+                    setDataRepo.save(copy);
                 }
             }
         }
+    }
+
+    @Transactional
+    public TrainingSession ensureSoloWorkoutInstanceInitialized(TrainingSession session) {
+        if (!isSoloSessionType(session.getSessionType())
+                || session.getWorkoutTemplate() == null
+                || !session.getWorkoutInstances().isEmpty()) {
+            return session;
+        }
+
+        injectDeepClone(session, session.getWorkoutTemplate(), List.of());
+        return sessions.save(session);
     }
 
 

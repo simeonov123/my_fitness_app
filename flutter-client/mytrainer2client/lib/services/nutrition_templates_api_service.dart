@@ -1,7 +1,6 @@
 // lib/services/nutrition_templates_api_service.dart
 
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
@@ -13,7 +12,7 @@ class NutritionTemplatesApiService {
   static final _base =
       const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
           ? const String.fromEnvironment('API_BASE')
-          : (kIsWeb ? 'http://localhost:8080' : apiBaseUrl);
+          : apiBaseUrl;
 
   final AuthService _auth = AuthService();
 

@@ -8,7 +8,7 @@ import 'dart:html' as html;
 import 'package:openid_client/openid_client.dart';
 import 'package:openid_client/openid_client_browser.dart' as browser;
 
-import 'dev_endpoints.dart';
+import 'app_config.dart';
 
 /// Common interface shared by all platform-specific services.
 abstract class _AuthServiceBase {
@@ -42,9 +42,9 @@ class AuthService implements _AuthServiceBase {
   factory AuthService() => _instance;
 
   // ===== Keycloak config (DEV — adjust for prod) ============================
-  static final issuerUrl = keycloakRealmUrl;
+  static final issuerUrl = AppConfig.keycloakRealmUrl;
 
-  static const clientId = 'mytrainer2client';
+  static const clientId = AppConfig.oidcClientId;
   static String get redirect {
     final uri = Uri.parse(html.window.location.href);
     final normalized = uri.replace(fragment: '');
