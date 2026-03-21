@@ -32,6 +32,12 @@ public class WorkoutInstanceExerciseHasSets {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "stopwatch_started_at_ms")
+    private Long stopwatchStartedAtMs;
+
+    @Column(name = "rest_started_at_ms")
+    private Long restStartedAtMs;
+
     @Builder.Default
     @OneToMany(mappedBy = "instanceSet",
             cascade = CascadeType.ALL,

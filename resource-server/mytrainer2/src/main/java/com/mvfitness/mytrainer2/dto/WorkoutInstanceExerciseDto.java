@@ -13,6 +13,7 @@ public record WorkoutInstanceExerciseDto(
         Integer sequenceOrder,
         String setType,
         String setParams,
+        Integer restSeconds,
         String notes,
         List<ExerciseHasSetsDto> sets        // ← reuse existing sub-DTO
 ) { }

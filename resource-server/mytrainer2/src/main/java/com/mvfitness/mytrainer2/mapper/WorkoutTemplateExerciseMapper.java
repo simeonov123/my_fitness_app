@@ -25,6 +25,7 @@
                     e.getSequenceOrder(),
                     e.getSetType(),
                     e.getSetParams(),
+                    e.getRestSeconds(),
                     e.getNotes(),
                     sets
             );
@@ -47,6 +48,7 @@
             ent.setSequenceOrder(dto.sequenceOrder());
             ent.setSetType(dto.setType());
             ent.setSetParams(dto.setParams());
+            ent.setRestSeconds(dto.restSeconds());
             ent.setNotes(dto.notes());
 
             // sync template-level sets

@@ -11,6 +11,7 @@ public record WorkoutTemplateExerciseDto(
         Integer sequenceOrder,
         String setType,
         String setParams,
+        Integer restSeconds,
         String notes,
         List<ExerciseHasSetsDto> sets
 ) {}

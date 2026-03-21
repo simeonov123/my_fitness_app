@@ -45,6 +45,7 @@ public final class WorkoutInstanceExerciseMapper {
                 e.getSequenceOrder(),
                 e.getSetType(),
                 e.getSetParams(),
+                e.getRestSeconds(),
                 e.getNotes(),
                 // instance-specific helper keeps ordering / set-data
                 ExerciseHasSetsMapper.toDtoListFromInstance(
@@ -77,6 +78,7 @@ public final class WorkoutInstanceExerciseMapper {
                 .sequenceOrder(d.sequenceOrder())
                 .setType(d.setType())
                 .setParams(d.setParams())
+                .restSeconds(d.restSeconds())
                 .notes(d.notes())
                 .build();
 
@@ -91,6 +93,8 @@ public final class WorkoutInstanceExerciseMapper {
                                 .completed(Boolean.TRUE.equals(sDto.completed()))
                                 .setContextType(sDto.setContextType())
                                 .notes(sDto.notes())
+                                .stopwatchStartedAtMs(sDto.stopwatchStartedAtMs())
+                                .restStartedAtMs(sDto.restStartedAtMs())
                                 .build();
 
                 // copy per-set data
@@ -126,6 +130,7 @@ public final class WorkoutInstanceExerciseMapper {
         target.setSequenceOrder(src.sequenceOrder());
         target.setSetType(src.setType());
         target.setSetParams(src.setParams());
+        target.setRestSeconds(src.restSeconds());
         target.setNotes(src.notes());
         // sets are not patched here — full replaceAll is used for that path
     }

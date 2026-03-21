@@ -11,6 +11,10 @@ class WorkoutNotificationService {
   static const _channelName = 'Active workout';
   static const _channelDescription = 'Shows the active workout progress';
   static const _notificationId = 7001;
+  static const _restChannelId = 'rest_timer_channel';
+  static const _restChannelName = 'Rest timer';
+  static const _restChannelDescription = 'Alerts when a rest timer completes';
+  static const _restNotificationId = 7002;
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -37,6 +41,17 @@ class WorkoutNotificationService {
             importance: Importance.low,
           ),
         );
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _restChannelId,
+            _restChannelName,
+            description: _restChannelDescription,
+            importance: Importance.high,
+          ),
+        );
 
     await _plugin
         .resolvePlatformSpecificImplementation<
@@ -49,7 +64,7 @@ class WorkoutNotificationService {
         ?.requestPermissions(
           alert: true,
           badge: true,
-          sound: false,
+          sound: true,
         );
 
     _initialized = true;
@@ -84,6 +99,8 @@ class WorkoutNotificationService {
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
+        presentBanner: true,
+        presentList: true,
         presentBadge: false,
         presentSound: false,
         interruptionLevel: InterruptionLevel.passive,
@@ -101,5 +118,40 @@ class WorkoutNotificationService {
   Future<void> cancelActiveWorkout() async {
     if (kIsWeb || !_initialized) return;
     await _plugin.cancel(_notificationId);
+  }
+
+  Future<void> showRestTimerFinished({
+    required String title,
+    required String body,
+  }) async {
+    if (kIsWeb) return;
+    await initialize();
+
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _restChannelId,
+        _restChannelName,
+        channelDescription: _restChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        autoCancel: true,
+        playSound: true,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBanner: true,
+        presentList: true,
+        presentBadge: false,
+        presentSound: true,
+        sound: 'default',
+        interruptionLevel: InterruptionLevel.active,
+      ),
+    );
+
+    await _plugin.show(_restNotificationId, title, body, details);
+    Future.delayed(const Duration(seconds: 4), () async {
+      if (!_initialized) return;
+      await _plugin.cancel(_restNotificationId);
+    });
   }
 }

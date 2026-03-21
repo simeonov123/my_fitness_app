@@ -9,5 +9,7 @@ public record ExerciseHasSetsDto(
         Boolean completed,
         String setContextType,
         String notes,
+        Long stopwatchStartedAtMs,
+        Long restStartedAtMs,
         List<SetDataDto> data
 ) {}

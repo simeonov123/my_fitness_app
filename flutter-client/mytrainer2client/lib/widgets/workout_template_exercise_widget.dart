@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/workout_template_exercise.dart';
@@ -16,6 +18,8 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
   final int templateId;
   final WorkoutTemplateExercise wte;
   final VoidCallback onChanged;
+  final VoidCallback? onRestTimerChanged;
+  final void Function(int? restSeconds, String exerciseName)? onCompletedSet;
   final bool showCompletion;
   final bool canEditExerciseNotes;
   final bool canEditSetNotes;
@@ -27,6 +31,8 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
     required this.templateId,
     required this.wte,
     required this.onChanged,
+    this.onRestTimerChanged,
+    this.onCompletedSet,
     this.showCompletion = false,
     this.canEditExerciseNotes = true,
     this.canEditSetNotes = true,
@@ -44,12 +50,55 @@ class _WorkoutTemplateExerciseWidgetState
   late List<WorkoutTemplateExerciseSet> _localSets;
   late List<int> _setIds;
   int _nextId = 0;
+  Timer? _liveTicker;
 
   @override
   void initState() {
     super.initState();
     _localSets = widget.wte.sets.map((s) => s.copyWith()).toList();
     _setIds = List.generate(_localSets.length, (_) => _nextId++);
+    _ensureLiveTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant WorkoutTemplateExerciseWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncFromWidget();
+    _ensureLiveTicker();
+  }
+
+  void _syncFromWidget() {
+    final incoming = widget.wte.sets.map((s) => s.copyWith()).toList();
+    _localSets = incoming;
+    if (_setIds.length != _localSets.length) {
+      _setIds = List.generate(_localSets.length, (_) => _nextId++);
+    }
+  }
+
+  bool get _hasLiveState =>
+      _localSets.any((set) => set.stopwatchStartedAtMs != null || set.restStartedAtMs != null);
+
+  void _ensureLiveTicker() {
+    if (_hasLiveState) {
+      _liveTicker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      _liveTicker?.cancel();
+      _liveTicker = null;
+    }
+  }
+
+  void _notifyChanged() {
+    widget.wte.sets = List.from(_localSets);
+    _ensureLiveTicker();
+    widget.onChanged();
+  }
+
+  @override
+  void dispose() {
+    _liveTicker?.cancel();
+    super.dispose();
   }
 
   void _addSet() {
@@ -67,8 +116,7 @@ class _WorkoutTemplateExerciseWidgetState
       _localSets.add(newSet);
       _setIds.add(_nextId++);
     });
-    widget.wte.sets = List.from(_localSets);
-    widget.onChanged();
+    _notifyChanged();
   }
 
   void _removeSet(int idx) {
@@ -79,8 +127,7 @@ class _WorkoutTemplateExerciseWidgetState
         _localSets[i].setNumber = i + 1;
       }
     });
-    widget.wte.sets = List.from(_localSets);
-    widget.onChanged();
+    _notifyChanged();
   }
 
   Future<void> _pickSetContext(int index) async {
@@ -110,8 +157,7 @@ class _WorkoutTemplateExerciseWidgetState
     setState(() {
       _localSets[index].setContextType = selected;
     });
-    widget.wte.sets = List.from(_localSets);
-    widget.onChanged();
+    _notifyChanged();
   }
 
   Future<void> _editExerciseNote() async {
@@ -135,7 +181,142 @@ class _WorkoutTemplateExerciseWidgetState
     setState(() {
       _localSets[index].notes = next.trim().isEmpty ? null : next.trim();
     });
-    widget.wte.sets = List.from(_localSets);
+    _notifyChanged();
+  }
+
+  void _toggleStopwatchForSet(int index) {
+    final startedAtMs = _localSets[index].stopwatchStartedAtMs;
+    if (startedAtMs != null) {
+      final elapsedMs = DateTime.now().millisecondsSinceEpoch - startedAtMs;
+      final minutes = elapsedMs / Duration.millisecondsPerMinute;
+      final rounded = double.parse(minutes.toStringAsFixed(2));
+      setState(() {
+        _localSets[index].values['TIME'] = rounded;
+        _localSets[index].stopwatchStartedAtMs = null;
+      });
+      _notifyChanged();
+      return;
+    }
+
+    setState(() {
+      _localSets[index].stopwatchStartedAtMs =
+          DateTime.now().millisecondsSinceEpoch;
+    });
+    _notifyChanged();
+  }
+
+  String? _liveStopwatchLabel(WorkoutTemplateExerciseSet set) {
+    final startedAtMs = set.stopwatchStartedAtMs;
+    if (startedAtMs == null) return null;
+    final elapsed = Duration(
+      milliseconds: DateTime.now().millisecondsSinceEpoch - startedAtMs,
+    );
+    final mins = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final secs = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$mins:$secs';
+  }
+
+  int? _restSecondsRemaining(WorkoutTemplateExerciseSet set) {
+    final startedAtMs = set.restStartedAtMs;
+    final restSeconds = widget.wte.restSeconds;
+    if (startedAtMs == null || restSeconds == null || restSeconds <= 0) {
+      return null;
+    }
+    final elapsedSeconds =
+        ((DateTime.now().millisecondsSinceEpoch - startedAtMs) / 1000).floor();
+    final remaining = restSeconds - elapsedSeconds;
+    if (remaining <= 0) {
+      if (set.restStartedAtMs != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || set.restStartedAtMs == null) return;
+          setState(() {
+            set.restStartedAtMs = null;
+          });
+          _notifyChanged();
+        });
+      }
+      return 0;
+    }
+    return remaining;
+  }
+
+  Future<void> _editRestTimer() async {
+    final controller = TextEditingController(
+      text: widget.wte.restSeconds?.toString() ?? '',
+    );
+    const presets = <int>[30, 45, 60, 90, 120, 180];
+    final next = await showModalBottomSheet<int?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: AppDensity.space(14),
+          right: AppDensity.space(14),
+          top: AppDensity.space(14),
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + AppDensity.space(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${widget.wte.exercise.name} rest timer',
+              style: Theme.of(ctx).textTheme.titleMedium,
+            ),
+            SizedBox(height: AppDensity.space(10)),
+            Wrap(
+              spacing: AppDensity.space(8),
+              runSpacing: AppDensity.space(8),
+              children: [
+                for (final seconds in presets)
+                  ActionChip(
+                    label: Text('${seconds}s'),
+                    onPressed: () => Navigator.pop(ctx, seconds),
+                  ),
+              ],
+            ),
+            SizedBox(height: AppDensity.space(10)),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Custom seconds',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: AppDensity.space(10)),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 0),
+                  child: const Text('Clear'),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                SizedBox(width: AppDensity.space(8)),
+                FilledButton(
+                  onPressed: () => Navigator.pop(
+                    ctx,
+                    int.tryParse(controller.text.trim()),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    if (next == null || !mounted) return;
+    setState(() {
+      widget.wte.restSeconds = next <= 0 ? null : next;
+    });
+    widget.onRestTimerChanged?.call();
     widget.onChanged();
   }
 
@@ -277,11 +458,25 @@ class _WorkoutTemplateExerciseWidgetState
                   ),
                 ),
                 if (widget.headerActions.isNotEmpty ||
-                    widget.canEditExerciseNotes)
+                    widget.canEditExerciseNotes ||
+                    !widget.isReadOnly)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ...widget.headerActions,
+                      if (!widget.isReadOnly)
+                        IconButton(
+                          tooltip: widget.wte.restSeconds != null
+                              ? 'Rest ${widget.wte.restSeconds}s'
+                              : 'Set rest timer',
+                          onPressed: _editRestTimer,
+                          icon: Icon(
+                            Icons.timer_outlined,
+                            color: widget.wte.restSeconds != null
+                                ? const Color(0xFF2F80FF)
+                                : Colors.grey[600],
+                          ),
+                        ),
                       if (widget.canEditExerciseNotes)
                         IconButton(
                           tooltip: widget.wte.notes?.trim().isNotEmpty == true
@@ -317,6 +512,24 @@ class _WorkoutTemplateExerciseWidgetState
                   style: const TextStyle(
                     color: Color(0xFF3E4A67),
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+            if (widget.wte.restSeconds != null) ...[
+              Container(
+                margin: EdgeInsets.only(bottom: AppDensity.space(10)),
+                padding: AppDensity.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF7FF),
+                  borderRadius: AppDensity.circular(999),
+                  border: Border.all(color: const Color(0xFFDCE8FF)),
+                ),
+                child: Text(
+                  'Rest ${widget.wte.restSeconds}s',
+                  style: const TextStyle(
+                    color: Color(0xFF45608D),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -411,13 +624,29 @@ class _WorkoutTemplateExerciseWidgetState
                                     onChanged: widget.isReadOnly
                                         ? null
                                         : (value) {
+                                            final wasCompleted =
+                                                _localSets[i].completed;
                                             setState(() {
                                               _localSets[i].completed =
                                                   value ?? false;
+                                              _localSets[i].restStartedAtMs =
+                                                  (value ?? false) &&
+                                                          widget.wte.restSeconds !=
+                                                              null &&
+                                                          widget.wte.restSeconds! >
+                                                              0
+                                                      ? DateTime.now()
+                                                          .millisecondsSinceEpoch
+                                                      : null;
                                             });
-                                            widget.wte.sets =
-                                                List.from(_localSets);
-                                            widget.onChanged();
+                                            _notifyChanged();
+                                            if (!wasCompleted &&
+                                                (value ?? false)) {
+                                              widget.onCompletedSet?.call(
+                                                widget.wte.restSeconds,
+                                                widget.wte.exercise.name,
+                                              );
+                                            }
                                           },
                                   ),
                               ],
@@ -442,6 +671,26 @@ class _WorkoutTemplateExerciseWidgetState
                                   ),
                                 ),
                               ),
+                            if (_restSecondsRemaining(_localSets[i]) != null)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEAF2FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFDCE8FF),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Rest ${_restSecondsRemaining(_localSets[i])}s',
+                                  style: const TextStyle(
+                                    color: Color(0xFF2F80FF),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
                             Row(
                               children: [
                                 InkWell(
@@ -460,19 +709,26 @@ class _WorkoutTemplateExerciseWidgetState
                                     child: Padding(
                                       padding: const EdgeInsets.only(right: 8),
                                       child: _SetValueField(
-                                        value: _localSets[i]
-                                            .values[key]
-                                            ?.toStringAsFixed(0),
+                                        value: _formatFieldValue(
+                                          key,
+                                          _localSets[i].values[key],
+                                        ),
+                                        paramCode: key,
+                                        stopwatchLabel: key == 'TIME'
+                                            ? _liveStopwatchLabel(_localSets[i])
+                                            : null,
                                         labelText: _label(key, loc),
                                         readOnly: widget.isReadOnly,
+                                        onStopwatchTap: key == 'TIME' &&
+                                                !widget.isReadOnly
+                                            ? () => _toggleStopwatchForSet(i)
+                                            : null,
                                         onChanged: widget.isReadOnly
                                             ? null
                                             : (s) {
                                                 _localSets[i].values[key] =
                                                     double.tryParse(s) ?? 0.0;
-                                                widget.wte.sets =
-                                                    List.from(_localSets);
-                                                widget.onChanged();
+                                                _notifyChanged();
                                               },
                                       ),
                                     ),
@@ -526,6 +782,18 @@ class _WorkoutTemplateExerciseWidgetState
     }
   }
 
+  String? _formatFieldValue(String code, double? value) {
+    if (value == null) return null;
+    final allowDecimals = code == 'TIME' || code == 'KG' || code == 'KM';
+    if (!allowDecimals) {
+      return value.toStringAsFixed(0);
+    }
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  }
+
   String _contextMenuLabel(String type) {
     switch (type) {
       case 'WARMUP':
@@ -571,14 +839,20 @@ class _WorkoutTemplateExerciseWidgetState
 class _SetValueField extends StatefulWidget {
   const _SetValueField({
     required this.value,
+    required this.paramCode,
+    required this.stopwatchLabel,
     required this.labelText,
     required this.readOnly,
+    required this.onStopwatchTap,
     required this.onChanged,
   });
 
   final String? value;
+  final String paramCode;
+  final String? stopwatchLabel;
   final String labelText;
   final bool readOnly;
+  final VoidCallback? onStopwatchTap;
   final ValueChanged<String>? onChanged;
 
   @override
@@ -601,7 +875,9 @@ class _SetValueFieldState extends State<_SetValueField> {
   void didUpdateWidget(covariant _SetValueField oldWidget) {
     super.didUpdateWidget(oldWidget);
     final nextText = widget.value ?? '';
-    if (_controller.text != nextText && !_focusNode.hasFocus) {
+    if (_controller.text != nextText &&
+        !_focusNode.hasFocus &&
+        widget.stopwatchLabel == null) {
       _controller.text = nextText;
     }
   }
@@ -624,6 +900,8 @@ class _SetValueFieldState extends State<_SetValueField> {
     super.dispose();
   }
 
+  bool get _showStopwatch => widget.paramCode == 'TIME';
+
   @override
   Widget build(BuildContext context) {
     return TextFormField(
@@ -631,8 +909,19 @@ class _SetValueFieldState extends State<_SetValueField> {
       focusNode: _focusNode,
       decoration: InputDecoration(
         labelText: widget.labelText,
+        helperText: _showStopwatch ? widget.stopwatchLabel : null,
         filled: true,
         fillColor: const Color(0xFFF7FAFF),
+        suffixIcon: _showStopwatch
+            ? IconButton(
+                onPressed: widget.readOnly ? null : widget.onStopwatchTap,
+                icon: Icon(
+                  widget.stopwatchLabel != null
+                      ? Icons.stop_circle_outlined
+                      : Icons.timer_outlined,
+                ),
+              )
+            : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
@@ -655,7 +944,9 @@ class _SetValueFieldState extends State<_SetValueField> {
       ),
       readOnly: widget.readOnly,
       keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+      ],
       onTap: () {
         if (_controller.text.isNotEmpty) {
           _controller.selection = TextSelection(

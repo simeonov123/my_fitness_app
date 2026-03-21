@@ -788,4 +788,6 @@
              relativeToChangelogFile="true"/>
     <include file="2026-03-13-allow-solo-workout-instances.xml"
              relativeToChangelogFile="true"/>
+    <include file="2026-03-14-add-rest-seconds-to-workout-exercises.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>

@@ -58,6 +58,7 @@ public final class WorkoutTemplateMapper {
                         .sequenceOrder(exDto.sequenceOrder())
                         .setType(exDto.setType())
                         .setParams(exDto.setParams())
+                        .restSeconds(exDto.restSeconds())
                         .notes(exDto.notes())
                         .build();
                 t.getWorkoutTemplateExercises().add(wte);

@@ -5,6 +5,8 @@ class WorkoutInstanceExerciseSet {
   bool completed;
   String? setContextType;
   String? notes;
+  int? stopwatchStartedAtMs;
+  int? restStartedAtMs;
   Map<String, double> values;
 
   WorkoutInstanceExerciseSet({
@@ -14,6 +16,8 @@ class WorkoutInstanceExerciseSet {
     this.completed = false,
     this.setContextType,
     this.notes,
+    this.stopwatchStartedAtMs,
+    this.restStartedAtMs,
     Map<String, double>? values,
   }) : values = values ?? {};
 
@@ -29,6 +33,8 @@ class WorkoutInstanceExerciseSet {
         completed: j['completed'] as bool? ?? false,
         setContextType: j['setContextType'] as String?,
         notes: j['notes'] as String?,
+        stopwatchStartedAtMs: (j['stopwatchStartedAtMs'] as num?)?.toInt(),
+        restStartedAtMs: (j['restStartedAtMs'] as num?)?.toInt(),
         values: {
           for (final m in (j['data'] as List<dynamic>? ?? []))
             (m['type'] as String): (m['value'] as num).toDouble()
@@ -42,6 +48,8 @@ class WorkoutInstanceExerciseSet {
         'completed': completed,
         'setContextType': setContextType,
         'notes': notes,
+        'stopwatchStartedAtMs': stopwatchStartedAtMs,
+        'restStartedAtMs': restStartedAtMs,
         'data': values.entries
             .map((e) => {'type': e.key, 'value': e.value})
             .toList(),

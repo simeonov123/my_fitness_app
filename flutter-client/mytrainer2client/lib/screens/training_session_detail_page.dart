@@ -46,15 +46,22 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   TrainingSession? _session;
   final List<InstanceClientGroup> _groups = [];
   Timer? _ticker;
+  Timer? _autoSaveDebounce;
+  Timer? _restCountdownTicker;
+  Timer? _restNotificationDismissTimer;
   StreamSubscription? _realtimeSub;
 
   bool _dirtyMeta = false;
   bool _dirtyEx = false;
   bool _busyAction = false;
+  bool _autoSaving = false;
+  bool _autoSaveQueued = false;
 
   DateTime? _start, _end;
   final _nameCtl = TextEditingController();
   ActiveWorkoutSnapshot? _activeSnapshot;
+  int? _activeRestSecondsRemaining;
+  String? _activeRestExerciseName;
 
   /* ───────── lifecycle ───────── */
 
@@ -77,6 +84,9 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _autoSaveDebounce?.cancel();
+    _restCountdownTicker?.cancel();
+    _restNotificationDismissTimer?.cancel();
     _realtimeSub?.cancel();
     unawaited(_realtime.disconnect());
     _nameCtl.dispose();
@@ -133,6 +143,50 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
 
   Duration get _plannedDuration => _end!.difference(_start!);
 
+  void _markMetaDirty() {
+    _dirtyMeta = true;
+    _scheduleAutoSave();
+  }
+
+  void _markExercisesDirty() {
+    _dirtyEx = true;
+    _scheduleAutoSave();
+  }
+
+  void _scheduleAutoSave({Duration delay = const Duration(milliseconds: 700)}) {
+    _autoSaveDebounce?.cancel();
+    _autoSaveDebounce = Timer(delay, () {
+      unawaited(_runAutoSave());
+    });
+  }
+
+  Future<void> _runAutoSave() async {
+    if (!mounted || (!_dirtyMeta && !_dirtyEx) || _busyAction) return;
+    if (_autoSaving) {
+      _autoSaveQueued = true;
+      return;
+    }
+
+    _autoSaving = true;
+    if (mounted) setState(() {});
+    try {
+      await _saveAllInternal(showFeedback: false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Auto-save failed: $e')),
+      );
+    } finally {
+      _autoSaving = false;
+      if (_autoSaveQueued) {
+        _autoSaveQueued = false;
+        _scheduleAutoSave(delay: Duration.zero);
+      } else if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
   Duration? get _actualDuration {
     if (_isActiveForCurrentSession && _activeSnapshot != null) {
       return _elapsed;
@@ -156,6 +210,62 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   int get _participantCount => _isSoloSession
       ? 1
       : (_session?.clientIds.length ?? _groups.length);
+
+  void _startRestTimer({
+    required String exerciseName,
+    required int restSeconds,
+  }) {
+    if (restSeconds <= 0) return;
+    _restCountdownTicker?.cancel();
+    _restNotificationDismissTimer?.cancel();
+    setState(() {
+      _activeRestExerciseName = exerciseName;
+      _activeRestSecondsRemaining = restSeconds;
+    });
+    _restCountdownTicker = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _activeRestSecondsRemaining == null) {
+        timer.cancel();
+        return;
+      }
+      if (_activeRestSecondsRemaining! <= 1) {
+        timer.cancel();
+        unawaited(_handleRestTimerCompleted());
+        return;
+      }
+      setState(() {
+        _activeRestSecondsRemaining = _activeRestSecondsRemaining! - 1;
+      });
+    });
+  }
+
+  Future<void> _handleRestTimerCompleted() async {
+    final exerciseName = _activeRestExerciseName ?? 'Rest timer';
+    if (mounted) {
+      setState(() {
+        _activeRestSecondsRemaining = 0;
+      });
+    }
+    await _notifications.showRestTimerFinished(
+      title: 'Rest complete',
+      body: 'Your time is up for $exerciseName',
+    );
+    _restNotificationDismissTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      setState(() {
+        _activeRestSecondsRemaining = null;
+        _activeRestExerciseName = null;
+      });
+    });
+  }
+
+  void _dismissRestTimer() {
+    _restCountdownTicker?.cancel();
+    _restNotificationDismissTimer?.cancel();
+    setState(() {
+      _activeRestSecondsRemaining = null;
+      _activeRestExerciseName = null;
+    });
+  }
 
   Future<void> _openExerciseHistory(InstanceItem item) async {
     if (item.instanceId <= 0 || !mounted) return;
@@ -597,8 +707,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
       );
       if (existingIndex == -1) {
         group.items.add(candidate);
-      } else if (group.items[existingIndex].wte.sets.isEmpty &&
-          candidate.wte.sets.isNotEmpty) {
+      } else {
         group.items[existingIndex] = candidate;
       }
     }
@@ -631,8 +740,18 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
         actions: [
           if (!isClient)
             IconButton(icon: const Icon(Icons.edit), onPressed: _reorder),
-          if ((_dirtyMeta || _dirtyEx) && !clientReadOnly)
-            IconButton(icon: const Icon(Icons.save), onPressed: _saveAll),
+          if (!clientReadOnly)
+            Padding(
+              padding: EdgeInsets.only(right: AppDensity.space(10)),
+              child: Icon(
+                _autoSaving
+                    ? Icons.sync_rounded
+                    : (_dirtyMeta || _dirtyEx)
+                        ? Icons.cloud_upload_rounded
+                        : Icons.cloud_done_rounded,
+                color: const Color(0xFF2F80FF),
+              ),
+            ),
         ],
       ),
       floatingActionButton: (isClient || clientReadOnly)
@@ -640,6 +759,71 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
           : FloatingActionButton(
               onPressed: _addExercises,
               child: const Icon(Icons.add),
+            ),
+      bottomNavigationBar: _activeRestSecondsRemaining == null
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppDensity.space(14),
+                  0,
+                  AppDensity.space(14),
+                  AppDensity.space(10),
+                ),
+                child: Container(
+                  padding: AppDensity.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1F2740),
+                    borderRadius: AppDensity.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x22000000),
+                        blurRadius: 18,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, color: Colors.white),
+                      SizedBox(width: AppDensity.space(10)),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _activeRestExerciseName == null
+                                  ? 'Rest timer'
+                                  : 'Rest for $_activeRestExerciseName',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: AppDensity.space(2)),
+                            Text(
+                              _formatDuration(
+                                Duration(seconds: _activeRestSecondsRemaining!),
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _dismissRestTimer,
+                        icon: const Icon(Icons.close_rounded),
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
       body: Container(
         decoration: const BoxDecoration(
@@ -657,7 +841,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
             0,
             AppDensity.space(10),
             0,
-            AppDensity.space(18),
+            AppDensity.space(_activeRestSecondsRemaining == null ? 96 : 132),
           ),
           children: [
             _metaCard(isClient: isClient),
@@ -675,7 +859,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                 clientReadOnly: clientReadOnly,
               ),
             ),
-            SizedBox(height: AppDensity.space(28)),
+            SizedBox(height: AppDensity.space(44)),
           ],
         ),
       ),
@@ -957,8 +1141,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                 ),
               ),
               readOnly: isClient,
-              onChanged:
-                  isClient ? null : (_) => setState(() => _dirtyMeta = true),
+              onChanged: isClient ? null : (_) => setState(_markMetaDirty),
             ),
             SizedBox(height: AppDensity.space(12)),
             Row(
@@ -972,7 +1155,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                     enabled: !isClient,
                     onChanged: (d) => setState(() {
                       _start = d;
-                      _dirtyMeta = true;
+                      _markMetaDirty();
                     }),
                   ),
                 ),
@@ -986,7 +1169,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                     enabled: !isClient,
                     onChanged: (d) => setState(() {
                       _end = d;
-                      _dirtyMeta = true;
+                      _markMetaDirty();
                     }),
                   ),
                 ),
@@ -1118,7 +1301,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
           );
         }
       }
-      _dirtyEx = true;
+      _markExercisesDirty();
     });
   }
 
@@ -1154,23 +1337,12 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
             group.items[i].wte.sequenceOrder = i + 1;
           }
         }
-        _dirtyEx = true;
+        _markExercisesDirty();
       });
     }
   }
 
   /* ───────── save ───────── */
-
-  Future<void> _saveAll() async {
-    try {
-      await _saveAllInternal(showFeedback: true);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e')),
-      );
-    }
-  }
 
   Future<void> _saveAllInternal({required bool showFeedback}) async {
     final api = context.read<TrainingSessionsProvider>().api;
@@ -1421,7 +1593,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
             ...group.items.map(
               (it) => WorkoutTemplateExerciseWidget(
                 key: ValueKey(
-                  'inst-${group.workoutInstanceId}-${it.instanceId}-${it.wte.sequenceOrder}',
+                  'inst-${group.workoutInstanceId}-${it.wte.exercise.id}-${it.wte.sequenceOrder}',
                 ),
                 templateId: _session!.id,
                 wte: it.wte,
@@ -1440,8 +1612,19 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                   ),
                 ],
                 onChanged: () {
-                  setState(() => _dirtyEx = true);
+                  setState(_markExercisesDirty);
                   _syncActiveWorkoutNotification();
+                },
+                onRestTimerChanged: () {
+                  setState(_markExercisesDirty);
+                },
+                onCompletedSet: (restSeconds, exerciseName) {
+                  if (restSeconds != null && restSeconds > 0) {
+                    _startRestTimer(
+                      exerciseName: exerciseName,
+                      restSeconds: restSeconds,
+                    );
+                  }
                 },
               ),
             ),
@@ -1485,6 +1668,7 @@ extension _ExTemplate on Exercise {
         sequenceOrder: seq,
         setType: defaultSetType,
         setParams: defaultSetParams,
+        restSeconds: null,
         notes: '',
         sets: const [],
       );
@@ -1506,6 +1690,7 @@ extension _ToInstance on WorkoutTemplateExercise {
         sequenceOrder: sequenceOrder,
         setType: setType,
         setParams: setParams,
+        restSeconds: restSeconds,
         notes: notes,
         sets: sets
             .map(
@@ -1516,8 +1701,10 @@ extension _ToInstance on WorkoutTemplateExercise {
                 completed: s.completed,
                 setContextType: s.setContextType,
                 notes: s.notes,
-                values: Map.of(s.values),
-              ),
+                  values: Map.of(s.values),
+                  stopwatchStartedAtMs: s.stopwatchStartedAtMs,
+                  restStartedAtMs: s.restStartedAtMs,
+                ),
             )
             .toList(),
       );

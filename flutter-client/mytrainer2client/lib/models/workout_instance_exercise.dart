@@ -10,6 +10,7 @@ class WorkoutInstanceExercise {
   int sequenceOrder;
   String? setType;
   String? setParams;
+  int? restSeconds;
   String? notes;
   List<WorkoutInstanceExerciseSet> sets;
 
@@ -22,6 +23,7 @@ class WorkoutInstanceExercise {
     required this.sequenceOrder,
     this.setType,
     this.setParams,
+    this.restSeconds,
     this.notes,
     List<WorkoutInstanceExerciseSet>? sets,
   }) : sets = sets ?? [];
@@ -45,6 +47,7 @@ class WorkoutInstanceExercise {
       sequenceOrder: (j['sequenceOrder'] as num).toInt(),
       setType: j['setType'] as String?,
       setParams: j['setParams'] as String?,
+      restSeconds: (j['restSeconds'] as num?)?.toInt(),
       notes: j['notes'] as String?,
       sets: (j['sets'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>()
@@ -65,6 +68,7 @@ class WorkoutInstanceExercise {
         'sequenceOrder': sequenceOrder,
         'setType': setType,
         'setParams': setParams,
+        'restSeconds': restSeconds,
         'notes': notes,
         'sets': sets.map((s) => s.toJson()).toList(),
       };

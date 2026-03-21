@@ -11,6 +11,7 @@ extension InstanceAdapter on WorkoutInstanceExercise {
         sequenceOrder: sequenceOrder,
         setType: setType,
         setParams: setParams,
+        restSeconds: restSeconds,
         notes: notes,
         sets: sets
             .map((s) => WorkoutTemplateExerciseSet(
@@ -20,6 +21,8 @@ extension InstanceAdapter on WorkoutInstanceExercise {
                   completed: s.completed,
                   setContextType: s.setContextType,
                   notes: s.notes,
+                  stopwatchStartedAtMs: s.stopwatchStartedAtMs,
+                  restStartedAtMs: s.restStartedAtMs,
                   values: Map.from(s.values),
                 ))
             .toList(),

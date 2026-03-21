@@ -350,6 +350,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                     .sequenceOrder(te.getSequenceOrder())
                     .setType(te.getSetType())
                     .setParams(te.getSetParams())
+                    .restSeconds(te.getRestSeconds())
                     .notes(te.getNotes())
                     .build();
             ie = instanceExRepo.save(ie);

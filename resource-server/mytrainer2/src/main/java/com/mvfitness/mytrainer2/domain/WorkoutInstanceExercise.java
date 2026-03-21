@@ -37,6 +37,8 @@ public class WorkoutInstanceExercise extends BaseTimestampedEntity {
     @Column(columnDefinition = "TEXT")
     private String setParams;
 
+    private Integer restSeconds;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
