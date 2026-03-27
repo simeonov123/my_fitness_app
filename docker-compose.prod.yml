@@ -3,6 +3,9 @@ services:
   mysql:
     image: mysql:8
     container_name: my_fitness_mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-myfitness}
@@ -38,21 +41,19 @@ services:
       KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME:-keycloak_user}
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloakpass}
 
-      # ── FOR LOCAL TESTING ON EMULATOR ────────────────────────────────────────────
-      # KC_HOSTNAME_PORT: 8081
-
-      # -- keep KC_HOSTNAME_STRICT *false* so KC accepts both hosts
-      KC_HOSTNAME_STRICT: "false"
-
-      # -- local dev over HTTP (no TLS reverse proxy)
-      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_HOSTNAME:-mvfitness.auth.vinkel.org}
+      KC_HOSTNAME_STRICT: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
       KC_HTTP_RELATIVE_PATH: "/"
       
     # Mount your SPI listener into the providers folder
     volumes:
       - ./db:/opt/keycloak/data/import
     command: >
-      start-dev --http-port=${KEYCLOAK_HTTP_PORT:-8081}
+      start
+      --http-port=${KEYCLOAK_HTTP_PORT:-8081}
+      --import-realm
     ports:
       - "${KEYCLOAK_HOST_PORT:-8081}:${KEYCLOAK_HTTP_PORT:-8081}"
     restart: unless-stopped
@@ -64,16 +65,16 @@ services:
       dockerfile: Dockerfile
     container_name: my_fitness_resource
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/myfitness}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/myfitness?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-fitness_user}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-userpass}
       KEYCLOAK_AUTH_URL: ${KEYCLOAK_INTERNAL_REALM_URL:-http://keycloak:8081/realms/myrealm}
-      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:-https://auth.example.com/realms/myrealm}
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:-https://mvfitness.auth.vinkel.org/realms/myrealm}
       KEYCLOAK_JWK_SET_URI: ${KEYCLOAK_JWK_SET_URI:-http://keycloak:8081/realms/myrealm/protocol/openid-connect/certs}
-      KEYCLOAK_ALLOWED_ISSUERS: ${KEYCLOAK_ALLOWED_ISSUERS:-https://auth.example.com/realms/myrealm}
+      KEYCLOAK_ALLOWED_ISSUERS: ${KEYCLOAK_ALLOWED_ISSUERS:-https://mvfitness.auth.vinkel.org/realms/myrealm}
       APP_CLIENT_INVITE_BASE_URL: ${APP_CLIENT_INVITE_BASE_URL:-mytrainer://invite/client}
-      APP_CLIENT_WEB_INVITE_BASE_URL: ${APP_CLIENT_WEB_INVITE_BASE_URL:-https://app.example.com/onboard/client}
-      # SPRING_LIQUIBASE_CLEAR_CHECKSUMS: "true"
+      APP_CLIENT_WEB_INVITE_BASE_URL: ${APP_CLIENT_WEB_INVITE_BASE_URL:-https://mvfitness.vinkel.org/onboard/client}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
     depends_on:
       mysql:
         condition: service_healthy
@@ -81,17 +82,23 @@ services:
         condition: service_started
     ports:
       - "${RESOURCE_SERVER_HOST_PORT:-8080}:8080"
-      - "${RESOURCE_SERVER_DEBUG_PORT:-5005}:5005"
     restart: unless-stopped
     command: >
-      java
-        -agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
-        -jar app.jar
+      java -jar app.jar
 
   flutter-client:
     build:
       context: ./flutter-client
       dockerfile: Dockerfile
+      args:
+        APP_TITLE: ${APP_TITLE:-MVFitness}
+        API_BASE_URL: ${PUBLIC_API_BASE_URL:-https://mvfitness.vinkel.org/api}
+        KEYCLOAK_REALM_URL: ${PUBLIC_KEYCLOAK_REALM_URL:-https://mvfitness.auth.vinkel.org/realms/myrealm}
+        KEYCLOAK_LOGOUT_URL: ${PUBLIC_KEYCLOAK_LOGOUT_URL:-https://mvfitness.auth.vinkel.org/realms/myrealm/protocol/openid-connect/logout}
+        OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-mytrainer2client}
+        MOBILE_REDIRECT_URI: ${MOBILE_REDIRECT_URI:-com.mvfitness.mytrainer2client://oauthredirect}
+        MOBILE_POST_LOGOUT_REDIRECT_URI: ${MOBILE_POST_LOGOUT_REDIRECT_URI:-com.mvfitness.mytrainer2client://logoutredirect}
+        ALLOW_INSECURE_AUTH: "false"
     container_name: my_fitness_flutter
     depends_on:
       - resource-server

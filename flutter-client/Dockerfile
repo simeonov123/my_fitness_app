@@ -13,8 +13,26 @@ COPY mytrainer2client/ ./
 # fetch deps & generate locals
 RUN flutter pub get
 RUN flutter gen-l10n
+
+ARG APP_TITLE=MVFitness
+ARG API_BASE_URL=https://mvfitness.vinkel.org/api
+ARG KEYCLOAK_REALM_URL=https://mvfitness.auth.vinkel.org/realms/myrealm
+ARG KEYCLOAK_LOGOUT_URL=https://mvfitness.auth.vinkel.org/realms/myrealm/protocol/openid-connect/logout
+ARG OIDC_CLIENT_ID=mytrainer2client
+ARG MOBILE_REDIRECT_URI=com.mvfitness.mytrainer2client://oauthredirect
+ARG MOBILE_POST_LOGOUT_REDIRECT_URI=com.mvfitness.mytrainer2client://logoutredirect
+ARG ALLOW_INSECURE_AUTH=false
+
 # build web
-RUN flutter build web --release
+RUN flutter build web --release \
+  --dart-define=APP_TITLE=${APP_TITLE} \
+  --dart-define=API_BASE_URL=${API_BASE_URL} \
+  --dart-define=KEYCLOAK_REALM_URL=${KEYCLOAK_REALM_URL} \
+  --dart-define=KEYCLOAK_LOGOUT_URL=${KEYCLOAK_LOGOUT_URL} \
+  --dart-define=OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
+  --dart-define=MOBILE_REDIRECT_URI=${MOBILE_REDIRECT_URI} \
+  --dart-define=MOBILE_POST_LOGOUT_REDIRECT_URI=${MOBILE_POST_LOGOUT_REDIRECT_URI} \
+  --dart-define=ALLOW_INSECURE_AUTH=${ALLOW_INSECURE_AUTH}
 
 # Stage 2: serve
 FROM nginx:alpine
