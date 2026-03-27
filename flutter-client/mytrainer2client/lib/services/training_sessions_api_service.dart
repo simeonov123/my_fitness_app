@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/page_response.dart';
@@ -13,11 +12,7 @@ import 'dev_endpoints.dart';
 class TrainingSessionsApiService {
   final AuthService _auth = AuthService();
 
-  static final _base = kIsWeb
-      ? 'http://localhost:8080'
-      : (const String.fromEnvironment('API_BASE', defaultValue: '').isNotEmpty
-          ? const String.fromEnvironment('API_BASE')
-          : apiBaseUrl);
+  static final _base = apiBaseUrl;
 
   /* ───────── helpers ───────── */
   Future<Map<String, String>> _hdr([String? tok]) async {

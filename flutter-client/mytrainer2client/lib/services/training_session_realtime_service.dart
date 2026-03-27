@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/training_session_realtime_event.dart';
@@ -28,7 +27,7 @@ class TrainingSessionRealtimeService {
       throw Exception('Not authenticated – please log in again.');
     }
 
-    final base = kIsWeb ? 'ws://localhost:8080' : _wsBaseUrl;
+    final base = _wsBaseUrl;
     final uri = Uri.parse(
       '$base/ws/training-sessions/$sessionId?token=${Uri.encodeQueryComponent(resolvedToken)}',
     );
