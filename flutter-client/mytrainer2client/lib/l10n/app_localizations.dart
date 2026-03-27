@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @description.
   ///
   /// In en, this message translates to:
-  /// **'Manage clients, workouts, nutrition plans, and feedback—all in one freemium platform powered by achievements and badges.'**
+  /// **'Manage clients, workouts, nutrition plans, and feedback all in one freemium platform powered by achievements and badges.'**
   String get description;
 
   /// No description provided for @signInButton.
@@ -137,13 +137,13 @@ abstract class AppLocalizations {
   /// No description provided for @authenticatingLabel.
   ///
   /// In en, this message translates to:
-  /// **'Contacting secure login…'**
+  /// **'Contacting secure login...'**
   String get authenticatingLabel;
 
   /// No description provided for @authFailedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Oops – something went wrong.\nPlease try again.'**
+  /// **'Oops - something went wrong.\nPlease try again.'**
   String get authFailedLabel;
 
   /// No description provided for @tryAgainButton.
@@ -176,7 +176,13 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get delete;
 
-  /// Label for a specific set number, e.g. “Set 1”
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// Label for a specific set number, for example Set 1
   ///
   /// In en, this message translates to:
   /// **'Set {number}'**
@@ -278,11 +284,174 @@ abstract class AppLocalizations {
   /// **'You have unsaved changes. What would you like to do?'**
   String get unsaved_changes_body;
 
-  /// No description provided for @discard.
+  /// No description provided for @navHome.
   ///
   /// In en, this message translates to:
-  /// **'Discard'**
-  String get discard;
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout'**
+  String get navWorkout;
+
+  /// No description provided for @navSocial.
+  ///
+  /// In en, this message translates to:
+  /// **'Social'**
+  String get navSocial;
+
+  /// No description provided for @navPrograms.
+  ///
+  /// In en, this message translates to:
+  /// **'Programs'**
+  String get navPrograms;
+
+  /// No description provided for @navClients.
+  ///
+  /// In en, this message translates to:
+  /// **'Clients'**
+  String get navClients;
+
+  /// No description provided for @navNutrition.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition'**
+  String get navNutrition;
+
+  /// No description provided for @comingSoonMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{section} is coming soon'**
+  String comingSoonMessage(Object section);
+
+  /// No description provided for @calendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendarTitle;
+
+  /// No description provided for @copyAccessTokenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy access token'**
+  String get copyAccessTokenTooltip;
+
+  /// No description provided for @accessTokenCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Access token copied'**
+  String get accessTokenCopied;
+
+  /// No description provided for @profileTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile and settings'**
+  String get profileTooltip;
+
+  /// No description provided for @todayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayLabel;
+
+  /// No description provided for @tomorrowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get tomorrowLabel;
+
+  /// No description provided for @yesterdayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterdayLabel;
+
+  /// No description provided for @timelineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day to review sessions. Press and hold a day to create one immediately.'**
+  String get timelineHint;
+
+  /// No description provided for @newSessionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get newSessionLabel;
+
+  /// No description provided for @failedToCreateSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create session: {error}'**
+  String failedToCreateSession(Object error);
+
+  /// No description provided for @dailySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{dayLabel} you have {sessionsLabel} with a total of {clientsLabel}.'**
+  String dailySummary(
+      Object dayLabel, Object sessionsLabel, Object clientsLabel);
+
+  /// No description provided for @sessionCountOne.
+  ///
+  /// In en, this message translates to:
+  /// **'1 session'**
+  String get sessionCountOne;
+
+  /// No description provided for @sessionCountMany.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sessions'**
+  String sessionCountMany(Object count);
+
+  /// No description provided for @clientCountOne.
+  ///
+  /// In en, this message translates to:
+  /// **'1 client'**
+  String get clientCountOne;
+
+  /// No description provided for @clientCountMany.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} clients'**
+  String clientCountMany(Object count);
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @languageSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageSectionTitle;
+
+  /// No description provided for @languageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Use system language'**
+  String get languageSystem;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageBulgarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulgarian'**
+  String get languageBulgarian;
+
+  /// No description provided for @logoutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get logoutLabel;
 }
 
 class _AppLocalizationsDelegate

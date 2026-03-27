@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/training_session.dart';
 import '../providers/auth_provider.dart';
 import '../providers/navigation_provider.dart';
@@ -68,7 +70,11 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create session: $e')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.failedToCreateSession(e.toString()),
+          ),
+        ),
       );
       return;
     }
@@ -86,6 +92,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
@@ -93,6 +100,7 @@ class _HomePageState extends State<HomePage> {
     final totalClients =
         dayList.expand((session) => session.clientIds).toSet().length;
     final summaryLabel = _dailySummary(
+      loc: loc,
       day: _selectedDay,
       sessionCount: dayList.length,
       clientCount: totalClients,
@@ -100,7 +108,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: colors.surfaceContainerLowest,
-      appBar: _appBar(auth),
+      appBar: _appBar(context, auth, loc),
       body: RefreshIndicator(
         onRefresh: () async {
           await _refreshForMonth();
@@ -116,9 +124,10 @@ class _HomePageState extends State<HomePage> {
           ),
           children: [
             _CalendarHero(
-              monthLabel: _monthLabel(_focusedDay),
+              loc: loc,
+              monthLabel: _monthLabel(_focusedDay, loc),
               dayLabel: _selectedDay.day.toString(),
-              weekdayLabel: _weekdayLabel(_selectedDay),
+              weekdayLabel: _weekdayLabel(_selectedDay, loc),
               yearLabel: _selectedDay.year.toString(),
               summaryLabel: summaryLabel,
               onToday: () async {
@@ -190,14 +199,14 @@ class _HomePageState extends State<HomePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _timelineLabel(_selectedDay),
+                              _timelineLabel(_selectedDay, loc),
                               style: text.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                             SizedBox(height: AppDensity.space(3)),
                             Text(
-                              'Tap a day to review sessions. Press and hold a day to create one immediately.',
+                              loc.timelineHint,
                               style: text.bodyMedium?.copyWith(
                                 color: colors.onSurfaceVariant,
                               ),
@@ -209,7 +218,7 @@ class _HomePageState extends State<HomePage> {
                       FilledButton.tonalIcon(
                         onPressed: () => _openCreateSessionDialog(),
                         icon: const Icon(Icons.add_rounded),
-                        label: const Text('New'),
+                        label: Text(loc.newSessionLabel),
                       ),
                     ],
                   ),
@@ -239,25 +248,31 @@ class _HomePageState extends State<HomePage> {
 
   /* ───────── App-bar ───────── */
 
-  AppBar _appBar(AuthProvider auth) => AppBar(
-        title: const Text('Calendar'),
+  AppBar _appBar(BuildContext context, AuthProvider auth, AppLocalizations loc) =>
+      AppBar(
+        title: Text(loc.calendarTitle),
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
         actions: [
           if (kDebugMode)
             IconButton(
               icon: const Icon(Icons.vpn_key),
-              tooltip: 'Copy access token',
+              tooltip: loc.copyAccessTokenTooltip,
               onPressed: () async {
                 final token = await auth.getValidToken();
                 if (token == null) return;
                 await Clipboard.setData(ClipboardData(text: token));
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Access token copied')),
+                  SnackBar(content: Text(loc.accessTokenCopied)),
                 );
               },
             ),
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: loc.profileTooltip,
+            onPressed: () => Navigator.of(context).pushNamed('/profile'),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -272,48 +287,28 @@ class _HomePageState extends State<HomePage> {
       );
 }
 
-String _monthLabel(DateTime day) {
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  return months[day.month - 1];
+String _monthLabel(DateTime day, AppLocalizations loc) {
+  return DateFormat.MMMM(loc.localeName).format(day);
 }
 
-String _weekdayLabel(DateTime day) {
-  const weekdays = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
-  return weekdays[day.weekday - 1];
+String _weekdayLabel(DateTime day, AppLocalizations loc) {
+  return DateFormat.EEEE(loc.localeName).format(day);
 }
 
-String _timelineLabel(DateTime day) {
+String _timelineLabel(DateTime day, AppLocalizations loc) {
   final today = DateUtils.dateOnly(DateTime.now());
   final selected = DateUtils.dateOnly(day);
-  if (selected == today) return 'Today';
-  if (selected == today.add(const Duration(days: 1))) return 'Tomorrow';
-  if (selected == today.subtract(const Duration(days: 1))) return 'Yesterday';
-  return '${_weekdayLabel(day)}, ${_monthLabel(day)} ${day.day}';
+  if (selected == today) return loc.todayLabel;
+  if (selected == today.add(const Duration(days: 1))) return loc.tomorrowLabel;
+  if (selected == today.subtract(const Duration(days: 1))) {
+    return loc.yesterdayLabel;
+  }
+  return '${_weekdayLabel(day, loc)}, ${_monthLabel(day, loc)} ${day.day}';
 }
 
 class _CalendarHero extends StatelessWidget {
   const _CalendarHero({
+    required this.loc,
     required this.monthLabel,
     required this.dayLabel,
     required this.weekdayLabel,
@@ -322,6 +317,7 @@ class _CalendarHero extends StatelessWidget {
     required this.onToday,
   });
 
+  final AppLocalizations loc;
   final String monthLabel;
   final String dayLabel;
   final String weekdayLabel;
@@ -400,8 +396,8 @@ class _CalendarHero extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
                 ),
-                child: const Text(
-                  'Today',
+                child: Text(
+                  loc.todayLabel,
                   style: TextStyle(fontSize: 12),
                 ),
               ),
@@ -426,7 +422,9 @@ class _CalendarHero extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      weekdayLabel.substring(0, 3).toUpperCase(),
+                      weekdayLabel
+                          .substring(0, weekdayLabel.length >= 3 ? 3 : weekdayLabel.length)
+                          .toUpperCase(),
                       style: text.labelSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: colors.onSurfaceVariant,
@@ -444,13 +442,16 @@ class _CalendarHero extends StatelessWidget {
 }
 
 String _dailySummary({
+  required AppLocalizations loc,
   required DateTime day,
   required int sessionCount,
   required int clientCount,
 }) {
-  final dayLabel = _timelineLabel(day).toLowerCase();
-  final sessionsLabel =
-      sessionCount == 1 ? '1 session' : '$sessionCount sessions';
-  final clientsLabel = clientCount == 1 ? '1 client' : '$clientCount clients';
-  return '$dayLabel you have $sessionsLabel with a total of $clientsLabel.';
+  final dayLabel = _timelineLabel(day, loc).toLowerCase();
+  final sessionsLabel = sessionCount == 1
+      ? loc.sessionCountOne
+      : loc.sessionCountMany(sessionCount);
+  final clientsLabel =
+      clientCount == 1 ? loc.clientCountOne : loc.clientCountMany(clientCount);
+  return loc.dailySummary(dayLabel, sessionsLabel, clientsLabel);
 }

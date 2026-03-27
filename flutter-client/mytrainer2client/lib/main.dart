@@ -54,7 +54,9 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ApiProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(
+          create: (_) => LocaleProvider()..loadSavedPreference(),
+        ),
         ChangeNotifierProvider(create: (_) => ClientFoldersProvider()),
         ChangeNotifierProvider(create: (_) => ClientsProvider()),
         ChangeNotifierProvider(create: (_) => NutritionTemplatesProvider()),
@@ -107,10 +109,16 @@ class MyApp extends StatelessWidget {
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             localeResolutionCallback: (deviceLocale, supportedLocales) {
-              if (deviceLocale == null) return supportedLocales.first;
-              return supportedLocales.contains(deviceLocale)
-                  ? deviceLocale
-                  : const Locale('en');
+              if (localeProv.locale != null) {
+                return localeProv.locale;
+              }
+              if (deviceLocale == null) return const Locale('en');
+              for (final locale in supportedLocales) {
+                if (locale.languageCode == deviceLocale.languageCode) {
+                  return locale;
+                }
+              }
+              return const Locale('en');
             },
 
             initialRoute:

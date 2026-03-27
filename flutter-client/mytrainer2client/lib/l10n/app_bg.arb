@@ -1,42 +1,95 @@
 {
   "@@locale": "bg",
-  "brandTitle": "MVФитнес",
-  "tagline": "Свържете се, тренирайте и покорете целите си",
-  "description": "Управлявайте клиенти, тренировки, хранителни планове и обратна връзка—всичко в една фриймиум платформа с постижения и значки.",
+  "brandTitle": "MVFitness",
+  "tagline": "Свържи се, тренирай и постигни целите си",
+  "description": "Управлявай клиенти, тренировки, хранителни планове и обратна връзка на едно място в платформа с постижения и значки.",
   "signInButton": "Вход / Регистрация",
-  "learnMoreButton": "Научете повече",
+  "learnMoreButton": "Научи повече",
   "localeToggleLabel": "BG",
-  "authenticatingLabel": "Зарежда страница със защитена форма за вписване в приложението…",
-  "authFailedLabel": "Опаля – нещо се прецака.\nМоля опитайте отново.",
-  "tryAgainButton": "Опитайте отново",
+  "authenticatingLabel": "Свързване със защитения вход...",
+  "authFailedLabel": "Възникна грешка.\nМоля, опитай отново.",
+  "tryAgainButton": "Опитай отново",
   "reorder_exercises": "Пренареди упражненията",
-  "cancel": "Откажи",
+  "cancel": "Отказ",
   "save": "Запази",
-  "delete": "Изтриване",
+  "delete": "Изтрий",
+  "discard": "Отхвърли",
   "set_number": "Серия {number}",
   "@set_number": {
-    "description": "Label for a specific set number, e.g. “Серия 1”",
+    "description": "Етикет за конкретна серия, например Серия 1",
     "placeholders": {
       "number": {}
     }
   },
   "add_set": "Добави серия",
   "kg": "кг",
-  "reps": "повт",
+  "reps": "повт.",
   "time": "време",
   "km": "км",
-  "weight_reps": "Тежест + Повт",
-  "bodyweight_reps": "Собствено тегло + Повт",
-  "weighted_bodyweight": "Утежнено собствено тегло",
-  "assisted_bodyweight": "Асистирано",
+  "weight_reps": "Тежест + Повторения",
+  "bodyweight_reps": "Собствено тегло + Повторения",
+  "weighted_bodyweight": "Собствено тегло с тежест",
+  "assisted_bodyweight": "Асистирано собствено тегло",
   "duration": "Продължителност",
   "duration_weight": "Време + Тежест",
   "distance_duration": "Разстояние + Време",
   "weight_distance": "Тежест + Разстояние",
   "unknown": "Непознат тип",
   "unsaved_changes_title": "Незаписани промени",
-  "unsaved_changes_body": "Имате незаписани промени. Какво искате да направите?",
-  "save": "Запази",
-  "discard": "Отмени",
-  "cancel": "Отказ"
+  "unsaved_changes_body": "Имаш незаписани промени. Какво искаш да направиш?",
+  "navHome": "Начало",
+  "navWorkout": "Тренировки",
+  "navSocial": "Социално",
+  "navPrograms": "Програми",
+  "navClients": "Клиенти",
+  "navNutrition": "Хранене",
+  "comingSoonMessage": "{section} предстои скоро",
+  "@comingSoonMessage": {
+    "placeholders": {
+      "section": {}
+    }
+  },
+  "calendarTitle": "Календар",
+  "copyAccessTokenTooltip": "Копирай токена за достъп",
+  "accessTokenCopied": "Токенът за достъп е копиран",
+  "profileTooltip": "Профил и настройки",
+  "todayLabel": "Днес",
+  "tomorrowLabel": "Утре",
+  "yesterdayLabel": "Вчера",
+  "timelineHint": "Докосни ден, за да прегледаш сесиите. Задръж върху ден, за да създадеш нова веднага.",
+  "newSessionLabel": "Нова",
+  "failedToCreateSession": "Неуспешно създаване на сесия: {error}",
+  "@failedToCreateSession": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "dailySummary": "{dayLabel} имаш {sessionsLabel} с общо {clientsLabel}.",
+  "@dailySummary": {
+    "placeholders": {
+      "dayLabel": {},
+      "sessionsLabel": {},
+      "clientsLabel": {}
+    }
+  },
+  "sessionCountOne": "1 сесия",
+  "sessionCountMany": "{count} сесии",
+  "@sessionCountMany": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "clientCountOne": "1 клиент",
+  "clientCountMany": "{count} клиента",
+  "@clientCountMany": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "profileTitle": "Профил",
+  "languageSectionTitle": "Език",
+  "languageSystem": "Използвай езика на устройството",
+  "languageEnglish": "Английски",
+  "languageBulgarian": "Български",
+  "logoutLabel": "Изход"
 }

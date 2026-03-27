@@ -6,20 +6,25 @@
           http://www.liquibase.org/xml/ns/dbchangelog
           http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet id="2026-03-14-add-rest-seconds-to-workout-exercises" author="codex">
-        <validCheckSum>9:d63963c2bee13dad8ae9c30c561e5655</validCheckSum>
-        <addColumn tableName="workout_template_exercises">
-            <column name="rest_seconds" type="INT"/>
-        </addColumn>
-
-        <addColumn tableName="workout_instance_exercises">
-            <column name="rest_seconds" type="INT"/>
-        </addColumn>
-
+    <changeSet id="2026-03-23-add-instance-set-timer-columns" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="workout_instance_exercise_has_sets"
+                              columnName="stopwatch_started_at_ms"/>
+            </not>
+        </preConditions>
         <addColumn tableName="workout_instance_exercise_has_sets">
             <column name="stopwatch_started_at_ms" type="BIGINT"/>
         </addColumn>
+    </changeSet>
 
+    <changeSet id="2026-03-23-add-instance-set-rest-started-column" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="workout_instance_exercise_has_sets"
+                              columnName="rest_started_at_ms"/>
+            </not>
+        </preConditions>
         <addColumn tableName="workout_instance_exercise_has_sets">
             <column name="rest_started_at_ms" type="BIGINT"/>
         </addColumn>

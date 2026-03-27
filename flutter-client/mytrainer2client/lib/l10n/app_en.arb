@@ -2,20 +2,21 @@
   "@@locale": "en",
   "brandTitle": "MVFitness",
   "tagline": "Connect, Coach, and Conquer Your Goals",
-  "description": "Manage clients, workouts, nutrition plans, and feedback—all in one freemium platform powered by achievements and badges.",
+  "description": "Manage clients, workouts, nutrition plans, and feedback all in one freemium platform powered by achievements and badges.",
   "signInButton": "Sign In / Sign Up",
   "learnMoreButton": "Learn More",
   "localeToggleLabel": "EN",
-  "authenticatingLabel": "Contacting secure login…",
-  "authFailedLabel": "Oops – something went wrong.\nPlease try again.",
+  "authenticatingLabel": "Contacting secure login...",
+  "authFailedLabel": "Oops - something went wrong.\nPlease try again.",
   "tryAgainButton": "Try again",
   "reorder_exercises": "Reorder Exercises",
   "cancel": "Cancel",
   "save": "Save",
   "delete": "Delete",
+  "discard": "Discard",
   "set_number": "Set {number}",
   "@set_number": {
-    "description": "Label for a specific set number, e.g. “Set 1”",
+    "description": "Label for a specific set number, for example Set 1",
     "placeholders": {
       "number": {}
     }
@@ -36,7 +37,59 @@
   "unknown": "Unknown type",
   "unsaved_changes_title": "Unsaved changes",
   "unsaved_changes_body": "You have unsaved changes. What would you like to do?",
-  "save": "Save",
-  "discard": "Discard",
-  "cancel": "Cancel"
+  "navHome": "Home",
+  "navWorkout": "Workout",
+  "navSocial": "Social",
+  "navPrograms": "Programs",
+  "navClients": "Clients",
+  "navNutrition": "Nutrition",
+  "comingSoonMessage": "{section} is coming soon",
+  "@comingSoonMessage": {
+    "placeholders": {
+      "section": {}
+    }
+  },
+  "calendarTitle": "Calendar",
+  "copyAccessTokenTooltip": "Copy access token",
+  "accessTokenCopied": "Access token copied",
+  "profileTooltip": "Profile and settings",
+  "todayLabel": "Today",
+  "tomorrowLabel": "Tomorrow",
+  "yesterdayLabel": "Yesterday",
+  "timelineHint": "Tap a day to review sessions. Press and hold a day to create one immediately.",
+  "newSessionLabel": "New",
+  "failedToCreateSession": "Failed to create session: {error}",
+  "@failedToCreateSession": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "dailySummary": "{dayLabel} you have {sessionsLabel} with a total of {clientsLabel}.",
+  "@dailySummary": {
+    "placeholders": {
+      "dayLabel": {},
+      "sessionsLabel": {},
+      "clientsLabel": {}
+    }
+  },
+  "sessionCountOne": "1 session",
+  "sessionCountMany": "{count} sessions",
+  "@sessionCountMany": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "clientCountOne": "1 client",
+  "clientCountMany": "{count} clients",
+  "@clientCountMany": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "profileTitle": "Profile",
+  "languageSectionTitle": "Language",
+  "languageSystem": "Use system language",
+  "languageEnglish": "English",
+  "languageBulgarian": "Bulgarian",
+  "logoutLabel": "Log out"
 }

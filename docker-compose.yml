@@ -3,6 +3,9 @@ services:
   mysql:
     image: mysql:8
     container_name: my_fitness_mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-myfitness}
@@ -64,7 +67,7 @@ services:
       dockerfile: Dockerfile
     container_name: my_fitness_resource
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/myfitness}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/myfitness?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-fitness_user}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-userpass}
       KEYCLOAK_AUTH_URL: ${KEYCLOAK_INTERNAL_REALM_URL:-http://keycloak:8081/realms/myrealm}

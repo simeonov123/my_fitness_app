@@ -201,8 +201,7 @@ class _LoginState extends State<LoginPage> {
                 top: 16,
                 right: 16,
                 child: TextButton(
-                  onPressed: () =>
-                      context.read<LocaleProvider>().toggleLocale(),
+                  onPressed: () => context.read<LocaleProvider>().toggleLocale(),
                   child: Text(
                     loc.localeToggleLabel,
                     style: const TextStyle(color: Colors.white),

@@ -9,34 +9,32 @@ class AppLocalizationsBg extends AppLocalizations {
   AppLocalizationsBg([String locale = 'bg']) : super(locale);
 
   @override
-  String get brandTitle => 'MVФитнес';
+  String get brandTitle => 'MVFitness';
 
   @override
-  String get tagline => 'Свържете се, тренирайте и покорете целите си';
+  String get tagline => 'Свържи се, тренирай и постигни целите си';
 
   @override
   String get description =>
-      'Управлявайте клиенти, тренировки, хранителни планове и обратна връзка—всичко в една фриймиум платформа с постижения и значки.';
+      'Управлявай клиенти, тренировки, хранителни планове и обратна връзка на едно място в платформа с постижения и значки.';
 
   @override
   String get signInButton => 'Вход / Регистрация';
 
   @override
-  String get learnMoreButton => 'Научете повече';
+  String get learnMoreButton => 'Научи повече';
 
   @override
   String get localeToggleLabel => 'BG';
 
   @override
-  String get authenticatingLabel =>
-      'Зарежда страница със защитена форма за вписване в приложението…';
+  String get authenticatingLabel => 'Свързване със защитения вход...';
 
   @override
-  String get authFailedLabel =>
-      'Опаля – нещо се прецака.\nМоля опитайте отново.';
+  String get authFailedLabel => 'Възникна грешка.\nМоля, опитай отново.';
 
   @override
-  String get tryAgainButton => 'Опитайте отново';
+  String get tryAgainButton => 'Опитай отново';
 
   @override
   String get reorder_exercises => 'Пренареди упражненията';
@@ -48,7 +46,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get save => 'Запази';
 
   @override
-  String get delete => 'Изтриване';
+  String get delete => 'Изтрий';
+
+  @override
+  String get discard => 'Отхвърли';
 
   @override
   String set_number(Object number) {
@@ -62,7 +63,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get kg => 'кг';
 
   @override
-  String get reps => 'повт';
+  String get reps => 'повт.';
 
   @override
   String get time => 'време';
@@ -71,16 +72,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get km => 'км';
 
   @override
-  String get weight_reps => 'Тежест + Повт';
+  String get weight_reps => 'Тежест + Повторения';
 
   @override
-  String get bodyweight_reps => 'Собствено тегло + Повт';
+  String get bodyweight_reps => 'Собствено тегло + Повторения';
 
   @override
-  String get weighted_bodyweight => 'Утежнено собствено тегло';
+  String get weighted_bodyweight => 'Собствено тегло с тежест';
 
   @override
-  String get assisted_bodyweight => 'Асистирано';
+  String get assisted_bodyweight => 'Асистирано собствено тегло';
 
   @override
   String get duration => 'Продължителност';
@@ -102,8 +103,101 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get unsaved_changes_body =>
-      'Имате незаписани промени. Какво искате да направите?';
+      'Имаш незаписани промени. Какво искаш да направиш?';
 
   @override
-  String get discard => 'Отмени';
+  String get navHome => 'Начало';
+
+  @override
+  String get navWorkout => 'Тренировки';
+
+  @override
+  String get navSocial => 'Социално';
+
+  @override
+  String get navPrograms => 'Програми';
+
+  @override
+  String get navClients => 'Клиенти';
+
+  @override
+  String get navNutrition => 'Хранене';
+
+  @override
+  String comingSoonMessage(Object section) {
+    return '$section предстои скоро';
+  }
+
+  @override
+  String get calendarTitle => 'Календар';
+
+  @override
+  String get copyAccessTokenTooltip => 'Копирай токена за достъп';
+
+  @override
+  String get accessTokenCopied => 'Токенът за достъп е копиран';
+
+  @override
+  String get profileTooltip => 'Профил и настройки';
+
+  @override
+  String get todayLabel => 'Днес';
+
+  @override
+  String get tomorrowLabel => 'Утре';
+
+  @override
+  String get yesterdayLabel => 'Вчера';
+
+  @override
+  String get timelineHint =>
+      'Докосни ден, за да прегледаш сесиите. Задръж върху ден, за да създадеш нова веднага.';
+
+  @override
+  String get newSessionLabel => 'Нова';
+
+  @override
+  String failedToCreateSession(Object error) {
+    return 'Неуспешно създаване на сесия: $error';
+  }
+
+  @override
+  String dailySummary(
+      Object dayLabel, Object sessionsLabel, Object clientsLabel) {
+    return '$dayLabel имаш $sessionsLabel с общо $clientsLabel.';
+  }
+
+  @override
+  String get sessionCountOne => '1 сесия';
+
+  @override
+  String sessionCountMany(Object count) {
+    return '$count сесии';
+  }
+
+  @override
+  String get clientCountOne => '1 клиент';
+
+  @override
+  String clientCountMany(Object count) {
+    return '$count клиента';
+  }
+
+  @override
+  String get profileTitle => 'Профил';
+
+  @override
+  String get languageSectionTitle => 'Език';
+
+  @override
+  String get languageSystem => 'Използвай езика на устройството';
+
+  @override
+  String get languageEnglish => 'Английски';
+
+  @override
+  String get languageBulgarian => 'Български';
+
+  @override
+  String get logoutLabel => 'Изход';
 }

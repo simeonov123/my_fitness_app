@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2026-03-23-convert-database-to-utf8mb4" author="codex">
+        <sql>ALTER DATABASE myfitness CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+
+    <changeSet id="2026-03-23-convert-users-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="users"/></preConditions>
+        <sql>ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-clients-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="clients"/></preConditions>
+        <sql>ALTER TABLE clients CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-trainer-clients-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="trainer_clients"/></preConditions>
+        <sql>ALTER TABLE trainer_clients CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-program-templates-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="program_templates"/></preConditions>
+        <sql>ALTER TABLE program_templates CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-mesocycle-templates-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="mesocycle_templates"/></preConditions>
+        <sql>ALTER TABLE mesocycle_templates CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-microcycle-templates-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="microcycle_templates"/></preConditions>
+        <sql>ALTER TABLE microcycle_templates CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-workout-templates-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="workout_templates"/></preConditions>
+        <sql>ALTER TABLE workout_templates CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-microcycle-template-workouts-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="microcycle_template_workouts"/></preConditions>
+        <sql>ALTER TABLE microcycle_template_workouts CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-programs-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="programs"/></preConditions>
+        <sql>ALTER TABLE programs CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-mesocycles-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="mesocycles"/></preConditions>
+        <sql>ALTER TABLE mesocycles CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-microcycles-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="microcycles"/></preConditions>
+        <sql>ALTER TABLE microcycles CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-workout-template-exercises-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="workout_template_exercises"/></preConditions>
+        <sql>ALTER TABLE workout_template_exercises CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-workout-instance-exercises-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="workout_instance_exercises"/></preConditions>
+        <sql>ALTER TABLE workout_instance_exercises CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-workout-instance-exercise-has-sets-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="workout_instance_exercise_has_sets"/></preConditions>
+        <sql>ALTER TABLE workout_instance_exercise_has_sets CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-training-sessions-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="training_sessions"/></preConditions>
+        <sql>ALTER TABLE training_sessions CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-exercises-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="exercises"/></preConditions>
+        <sql>ALTER TABLE exercises CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-workout-folders-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="workout_folders"/></preConditions>
+        <sql>ALTER TABLE workout_folders CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-client-folders-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="client_folders"/></preConditions>
+        <sql>ALTER TABLE client_folders CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-muscle-groups-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="muscle_groups"/></preConditions>
+        <sql>ALTER TABLE muscle_groups CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-nutrition-templates-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="nutrition_templates"/></preConditions>
+        <sql>ALTER TABLE nutrition_templates CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+    <changeSet id="2026-03-23-convert-client-invites-to-utf8mb4" author="codex">
+        <preConditions onFail="MARK_RAN"><tableExists tableName="client_invites"/></preConditions>
+        <sql>ALTER TABLE client_invites CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</sql>
+    </changeSet>
+</databaseChangeLog>

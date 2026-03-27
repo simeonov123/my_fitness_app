@@ -11,6 +11,7 @@ import 'package:mytrainer2client/screens/social_page.dart';
 import 'package:mytrainer2client/screens/programs_page.dart';
 import 'package:mytrainer2client/screens/clients_page.dart';
 import 'package:mytrainer2client/screens/nutrition_page.dart';
+import 'package:mytrainer2client/screens/profile_page.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/': (_) => const SplashPage(),
@@ -22,6 +23,7 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/programs': (_) => const ProgramsPage(),
   '/clients': (_) => const ClientsPage(),
   '/nutrition': (_) => const NutritionPage(),
+  '/profile': (_) => const ProfilePage(),
   '/session': (context) {
     final int id = ModalRoute.of(context)!.settings.arguments as int;
     return TrainingSessionDetailPage(sessionId: id);

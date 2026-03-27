@@ -790,4 +790,8 @@
              relativeToChangelogFile="true"/>
     <include file="2026-03-14-add-rest-seconds-to-workout-exercises.xml"
              relativeToChangelogFile="true"/>
+    <include file="2026-03-23-add-instance-set-timer-columns.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2026-03-23-convert-text-columns-to-utf8mb4.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>
