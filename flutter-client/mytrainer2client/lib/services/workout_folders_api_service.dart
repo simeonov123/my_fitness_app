@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'authenticated_http.dart' as http;
 
 import '../models/workout_folder.dart';
-import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 class WorkoutFoldersUnavailableException implements Exception {
@@ -21,18 +20,11 @@ class WorkoutFoldersApiService {
           ? const String.fromEnvironment('API_BASE')
           : apiBaseUrl;
 
-  final AuthService _auth = AuthService();
-
-  Future<Map<String, String>> _headers() async {
-    final token = await _auth.getValidAccessToken();
-    if (token == null) {
-      throw Exception('Not authenticated – please log in again.');
-    }
-    return {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
+  Future<Map<String, String>> _headers() {
+    return http.authorizedHeaders(
+      includeJsonAccept: true,
+      includeJsonContentType: true,
+    );
   }
 
   Future<List<WorkoutFolder>> list() async {

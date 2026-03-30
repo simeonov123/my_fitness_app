@@ -1,8 +1,8 @@
 // lib/services/api_service.dart
 
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import 'auth_service.dart';
+
+import 'authenticated_http.dart' as http;
 import 'app_config.dart';
 
 /// A thin wrapper around HTTP GET that automatically handles:
@@ -14,9 +14,6 @@ class ApiService {
   /// Base URL for your Spring Boot backend.
   static final _baseUrl = AppConfig.apiBaseUrl;
 
-  /// Underlying auth service (singleton) for token management.
-  final AuthService _auth = AuthService();
-
   /// Fetches a secure endpoint at [path], returning the response body.
   ///
   /// 1. Calls [_auth.getValidAccessToken], which loads from storage or
@@ -26,14 +23,11 @@ class ApiService {
   ///       `Authorization: Bearer <token>`.
   /// 4. Returns `res.body` on HTTP 200, else `null`.
   Future<String?> fetchSecure(String path) async {
-    final token = await _auth.getValidAccessToken();
-    if (token == null) return null;
-
     final uri = Uri.parse('$_baseUrl$path');
     try {
       final res = await http.get(
         uri,
-        headers: {'Authorization': 'Bearer $token'},
+        headers: await http.authorizedHeaders(),
       );
       return res.statusCode == 200 ? res.body : null;
     } catch (e) {

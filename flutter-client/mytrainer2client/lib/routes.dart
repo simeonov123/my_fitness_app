@@ -12,11 +12,13 @@ import 'package:mytrainer2client/screens/programs_page.dart';
 import 'package:mytrainer2client/screens/clients_page.dart';
 import 'package:mytrainer2client/screens/nutrition_page.dart';
 import 'package:mytrainer2client/screens/profile_page.dart';
+import 'package:mytrainer2client/screens/session_expired_page.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/': (_) => const SplashPage(),
   '/login': (_) => const LoginPage(),
   '/pending-approval': (_) => const PendingApprovalPage(),
+  '/session-expired': (_) => const SessionExpiredPage(),
   '/home': (_) => const HomePage(),
   '/workout': (_) => const WorkoutsPage(),
   '/social': (_) => const SocialPage(),

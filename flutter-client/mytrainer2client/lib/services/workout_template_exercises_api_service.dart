@@ -1,9 +1,8 @@
 // lib/services/workout_template_exercises_api_service.dart
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
-import '../services/auth_service.dart';
+import 'authenticated_http.dart' as http;
 import '../models/workout_template_exercise.dart';
 import 'dev_endpoints.dart';
 
@@ -13,18 +12,8 @@ class WorkoutTemplateExercisesApiService {
           ? const String.fromEnvironment('API_BASE')
           : apiBaseUrl;
 
-  final AuthService _auth = AuthService();
-
-  /// Build headers with a valid (and auto-refreshed) Bearer token.
-  Future<Map<String, String>> _headers() async {
-    final token = await _auth.getValidAccessToken();
-    if (token == null) {
-      throw Exception('Not authenticated – please log in again.');
-    }
-    return {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
+  Future<Map<String, String>> _headers() {
+    return http.authorizedHeaders(includeJsonContentType: true);
   }
 
   /// List all exercises for a given workout template.

@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'authenticated_http.dart' as http;
 
 import '../models/client_invite.dart';
-import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 class ClientInvitesApiService {
@@ -12,17 +11,8 @@ class ClientInvitesApiService {
           ? const String.fromEnvironment('API_BASE')
           : apiBaseUrl;
 
-  final AuthService _auth = AuthService();
-
-  Future<Map<String, String>> _headers() async {
-    final token = await _auth.getValidAccessToken();
-    if (token == null) {
-      throw Exception('Not authenticated – please log in again.');
-    }
-    return {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
+  Future<Map<String, String>> _headers() {
+    return http.authorizedHeaders(includeJsonContentType: true);
   }
 
   Future<List<ClientInvite>> list(int clientId) async {

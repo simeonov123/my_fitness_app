@@ -34,8 +34,7 @@ import 'screens/client_detail_page.dart';
 import 'screens/client_onboarding_page.dart';
 import 'theme/app_density.dart';
 import 'theme/app_theme.dart';
-
-final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+import 'app_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

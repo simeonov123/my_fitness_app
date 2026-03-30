@@ -5,6 +5,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/training_session_realtime_event.dart';
 import 'auth_service.dart';
+import 'auth_session_manager.dart';
+import 'authenticated_http.dart';
 import 'dev_endpoints.dart';
 
 class TrainingSessionRealtimeService {
@@ -24,7 +26,9 @@ class TrainingSessionRealtimeService {
 
     final resolvedToken = token ?? await _auth.getValidAccessToken();
     if (resolvedToken == null) {
-      throw Exception('Not authenticated – please log in again.');
+      await _auth.expireSession();
+      await AuthSessionManager.instance.markSessionExpired();
+      throw const SessionExpiredException();
     }
 
     final base = _wsBaseUrl;

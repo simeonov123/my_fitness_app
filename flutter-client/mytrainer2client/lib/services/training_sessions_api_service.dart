@@ -1,29 +1,26 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'authenticated_http.dart' as http;
 
 import '../models/page_response.dart';
 import '../models/exercise_history.dart';
 import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
-import 'auth_service.dart';
 import 'dev_endpoints.dart';
 
 class TrainingSessionsApiService {
-  final AuthService _auth = AuthService();
-
   static final _base = apiBaseUrl;
 
   /* ───────── helpers ───────── */
-  Future<Map<String, String>> _hdr([String? tok]) async {
-    final token = tok ?? await _auth.getValidAccessToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('No valid access token available');
+  Future<Map<String, String>> _hdr([String? token]) {
+    if (token != null && token.isNotEmpty) {
+      return Future.value({
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      });
     }
-    return {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
+
+    return http.authorizedHeaders(includeJsonContentType: true);
   }
 
   Never _fail(String prefix, http.Response res) {

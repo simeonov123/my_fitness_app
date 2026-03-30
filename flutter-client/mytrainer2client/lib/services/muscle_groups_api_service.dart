@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'authenticated_http.dart' as http;
 
 import '../models/muscle_group.dart';
-import '../services/auth_service.dart';
 import 'dev_endpoints.dart';
 
 class MuscleGroupsApiService {
@@ -12,19 +11,11 @@ class MuscleGroupsApiService {
           ? const String.fromEnvironment('API_BASE')
           : apiBaseUrl;
 
-  final AuthService _auth = AuthService();
   static const _primaryPath = '/trainer/muscle-groups';
   static const _fallbackPath = '/trainer/exercises/muscle-groups';
 
-  Future<Map<String, String>> _headers() async {
-    final token = await _auth.getValidAccessToken();
-    if (token == null) {
-      throw Exception('Not authenticated – please log in again.');
-    }
-    return {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
+  Future<Map<String, String>> _headers() {
+    return http.authorizedHeaders(includeJsonContentType: true);
   }
 
   Uri _uri(String path) => Uri.parse('$_base$path');

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import '../services/auth_service.dart';
 import '../services/active_workout_service.dart';
+import '../services/auth_session_manager.dart';
 import '../services/pending_client_invite_service.dart';
 
 /// A [ChangeNotifier] that wraps our singleton [AuthService].
@@ -61,6 +62,9 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> refreshSession() async {
     final ok = await _auth.refreshSession();
     await _auth.reloadFromStorage();
+    if (ok) {
+      AuthSessionManager.instance.clearExpiredState();
+    }
     notifyListeners();
     return ok;
   }
@@ -73,7 +77,10 @@ class AuthProvider extends ChangeNotifier {
   /// Returns `true` on success, `false` on error or user cancellation.
   Future<bool> loginOrSignup({bool interactive = true}) async {
     final ok = await _auth.loginOrSignup(interactive: interactive);
-    if (ok) notifyListeners();
+    if (ok) {
+      AuthSessionManager.instance.clearExpiredState();
+      notifyListeners();
+    }
     return ok;
   }
 
@@ -82,7 +89,10 @@ class AuthProvider extends ChangeNotifier {
   /// Delegates to [loginOrSignup] with `interactive: true`.
   Future<bool> register(String u, String e, String p, String c) async {
     final ok = await _auth.register(u, e, p, c);
-    if (ok) notifyListeners();
+    if (ok) {
+      AuthSessionManager.instance.clearExpiredState();
+      notifyListeners();
+    }
     return ok;
   }
 
@@ -97,6 +107,7 @@ class AuthProvider extends ChangeNotifier {
     if (clearPendingInvite) {
       await PendingClientInviteService().clear();
     }
+    AuthSessionManager.instance.clearExpiredState();
     await _auth.logout(postLogoutRedirectPath: postLogoutRedirectPath);
     notifyListeners();
   }

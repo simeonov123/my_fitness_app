@@ -37,8 +37,8 @@ class _LoginState extends State<LoginPage> {
       final auth = context.read<AuthProvider>();
       final pendingInvite = await PendingClientInviteService().readToken() ??
           Uri.base.queryParameters['token'];
-      final ok = await auth.loginOrSignup(interactive: false);
-      if (ok && auth.isAuthenticated) {
+      await auth.loginOrSignup(interactive: false);
+      if (auth.isAuthenticated) {
         if (!mounted) return;
         Navigator.pushReplacementNamed(
           context,

@@ -34,6 +34,9 @@ class AuthService {
   /// No-op.
   Future<void> logout({String? postLogoutRedirectPath}) async {}
 
+  /// No-op.
+  Future<void> expireSession() async {}
+
   /// Always `null`.
   Future<String?> getValidAccessToken() async => null;
 }

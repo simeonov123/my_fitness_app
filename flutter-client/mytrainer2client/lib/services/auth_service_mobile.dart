@@ -33,6 +33,7 @@ class AuthService {
   String? _idToken;
   String? _lastAuthError;
   String? get lastAuthError => _lastAuthError;
+  Future<bool>? _refreshInFlight;
 
   /// Reads any previously‐saved tokens from secure storage.
   Future<void> loadFromStorage() async {
@@ -103,6 +104,21 @@ class AuthService {
   /// Returns `true` on success (and updates in‐memory + stored tokens),
   /// or `false` if the refresh failed or no refresh token present.
   Future<bool> refresh() async {
+    final inFlight = _refreshInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _performRefresh();
+    _refreshInFlight = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_refreshInFlight, future)) {
+        _refreshInFlight = null;
+      }
+    }
+  }
+
+  Future<bool> _performRefresh() async {
     if (_refreshToken == null) return false;
 
     final req = TokenRequest(
@@ -163,6 +179,11 @@ class AuthService {
     }
 
     return _accessToken;
+  }
+
+  Future<void> expireSession() async {
+    _accessToken = null;
+    await _storage.delete(key: 'access_token');
   }
 
   /// Logs out locally (clearing tokens) and at Keycloak (end‐session endpoint).

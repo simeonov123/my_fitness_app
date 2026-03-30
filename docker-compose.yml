@@ -95,6 +95,15 @@ services:
     build:
       context: ./flutter-client
       dockerfile: Dockerfile
+      args:
+        APP_TITLE: ${APP_TITLE:-MVFitness}
+        API_BASE_URL: ${API_BASE_URL:-http://localhost:8080}
+        KEYCLOAK_REALM_URL: ${KEYCLOAK_REALM_URL:-http://localhost:8081/realms/myrealm}
+        KEYCLOAK_LOGOUT_URL: ${KEYCLOAK_LOGOUT_URL:-http://localhost:8081/realms/myrealm/protocol/openid-connect/logout}
+        OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-mytrainer2client}
+        MOBILE_REDIRECT_URI: ${MOBILE_REDIRECT_URI:-com.mvfitness.mytrainer2client://oauthredirect}
+        MOBILE_POST_LOGOUT_REDIRECT_URI: ${MOBILE_POST_LOGOUT_REDIRECT_URI:-com.mvfitness.mytrainer2client://logoutredirect}
+        ALLOW_INSECURE_AUTH: ${ALLOW_INSECURE_AUTH:-true}
     container_name: my_fitness_flutter
     depends_on:
       - resource-server

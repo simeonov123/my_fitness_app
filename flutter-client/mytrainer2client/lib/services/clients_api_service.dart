@@ -1,9 +1,8 @@
 // lib/services/clients_api_service.dart
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
-import '../services/auth_service.dart';
+import 'authenticated_http.dart' as http;
 import '../models/client.dart';
 import 'dev_endpoints.dart';
 
@@ -14,18 +13,8 @@ class ClientsApiService {
           ? const String.fromEnvironment('API_BASE')
           : apiBaseUrl;
 
-  final AuthService _auth = AuthService();
-
-  /// Build headers with a valid (and auto-refreshed) Bearer token.
-  Future<Map<String, String>> _headers() async {
-    final token = await _auth.getValidAccessToken();
-    if (token == null) {
-      throw Exception('Not authenticated – please log in again.');
-    }
-    return {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
+  Future<Map<String, String>> _headers() {
+    return http.authorizedHeaders(includeJsonContentType: true);
   }
 
   /// Decode JSON body safely.
