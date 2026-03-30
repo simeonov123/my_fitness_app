@@ -122,24 +122,50 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   }
 
   Future<void> _restoreActiveWorkout() async {
+    final isTrainer = context.read<AuthProvider>().isTrainer;
     final snapshot = await _activeWorkout.load(widget.sessionId);
-    _ticker?.cancel();
-    _activeSnapshot = snapshot;
+    _activeSnapshot = isTrainer ? snapshot : null;
+    _syncSessionTicker();
 
     if (_isActiveForCurrentSession) {
       await _syncActiveWorkoutNotification();
-      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+    }
+  }
+
+  void _syncSessionTicker() {
+    final shouldTick = _isSessionRunning || _isActiveForCurrentSession;
+    if (shouldTick) {
+      _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});
       });
+    } else {
+      _ticker?.cancel();
+      _ticker = null;
     }
   }
 
   bool get _isActiveForCurrentSession =>
       _activeSnapshot?.sessionId == widget.sessionId;
 
-  Duration get _elapsed => _isActiveForCurrentSession && _activeSnapshot != null
-      ? DateTime.now().difference(_activeSnapshot!.startedAt)
-      : Duration.zero;
+  bool get _isSessionRunning =>
+      (_session?.status ?? '').toUpperCase() == 'IN_PROGRESS' &&
+      _session?.actualStartTime != null &&
+      _session?.actualEndTime == null;
+
+  Duration get _elapsed {
+    if (context.read<AuthProvider>().isTrainer &&
+        _isActiveForCurrentSession &&
+        _activeSnapshot != null) {
+      return DateTime.now().difference(_activeSnapshot!.startedAt);
+    }
+
+    final actualStart = _session?.actualStartTime;
+    if (_isSessionRunning && actualStart != null) {
+      return DateTime.now().difference(actualStart);
+    }
+
+    return Duration.zero;
+  }
 
   Duration get _plannedDuration => _end!.difference(_start!);
 
@@ -188,7 +214,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   }
 
   Duration? get _actualDuration {
-    if (_isActiveForCurrentSession && _activeSnapshot != null) {
+    if (_elapsed > Duration.zero) {
       return _elapsed;
     }
     final actualStart = _session?.actualStartTime;
@@ -657,19 +683,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
     _nameCtl.text = updated.sessionName ?? '';
     _dirtyMeta = false;
 
-    final shouldTick =
-        (_session?.status ?? '').toUpperCase() == 'IN_PROGRESS' &&
-            _session?.actualStartTime != null &&
-            _session?.actualEndTime == null;
-
-    if (shouldTick) {
-      _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() {});
-      });
-    } else {
-      _ticker?.cancel();
-      _ticker = null;
-    }
+    _syncSessionTicker();
 
     if (mounted) {
       setState(() {});
@@ -1322,17 +1336,20 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
       ),
     );
     if (updated != null) {
-      final orderedExerciseIds =
-          updated.map((item) => item.wte.exercise.id).toList();
       setState(() {
         for (final group in _groups) {
-          group.items.sort((a, b) {
-            final ai = orderedExerciseIds.indexOf(a.wte.exercise.id);
-            final bi = orderedExerciseIds.indexOf(b.wte.exercise.id);
-            final aIndex = ai == -1 ? 1 << 20 : ai;
-            final bIndex = bi == -1 ? 1 << 20 : bi;
-            return aIndex.compareTo(bIndex);
-          });
+          final reordered = <InstanceItem>[];
+          for (final updatedItem in updated) {
+            final match = group.items
+                .where((item) => item.wte.exercise.id == updatedItem.wte.exercise.id)
+                .firstOrNull;
+            if (match != null) {
+              reordered.add(match);
+            }
+          }
+          group.items
+            ..clear()
+            ..addAll(reordered);
           for (var i = 0; i < group.items.length; i++) {
             group.items[i].wte.sequenceOrder = i + 1;
           }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/workout_template_exercise.dart';
@@ -63,7 +64,9 @@ class _WorkoutTemplateExerciseWidgetState
   @override
   void didUpdateWidget(covariant WorkoutTemplateExerciseWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _syncFromWidget();
+    if (!identical(oldWidget.wte, widget.wte)) {
+      _syncFromWidget();
+    }
     _ensureLiveTicker();
   }
 
@@ -726,8 +729,13 @@ class _WorkoutTemplateExerciseWidgetState
                                         onChanged: widget.isReadOnly
                                             ? null
                                             : (s) {
+                                                final normalized =
+                                                    _normalizeDecimalInput(s);
                                                 _localSets[i].values[key] =
-                                                    double.tryParse(s) ?? 0.0;
+                                                    double.tryParse(
+                                                          normalized,
+                                                        ) ??
+                                                        0.0;
                                                 _notifyChanged();
                                               },
                                       ),
@@ -792,6 +800,24 @@ class _WorkoutTemplateExerciseWidgetState
       return value.toStringAsFixed(0);
     }
     return value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  }
+
+  String _normalizeDecimalInput(String value) {
+    final sanitized = value.replaceAll(',', '.');
+    final firstDot = sanitized.indexOf('.');
+    if (firstDot == -1) {
+      return sanitized;
+    }
+
+    final whole = sanitized.substring(0, firstDot);
+    final decimals = sanitized
+        .substring(firstDot + 1)
+        .replaceAll('.', '')
+        .characters
+        .take(2)
+        .toList()
+        .join();
+    return decimals.isEmpty ? whole : '$whole.$decimals';
   }
 
   String _contextMenuLabel(String type) {
@@ -901,6 +927,10 @@ class _SetValueFieldState extends State<_SetValueField> {
   }
 
   bool get _showStopwatch => widget.paramCode == 'TIME';
+  bool get _allowDecimals =>
+      widget.paramCode == 'TIME' ||
+      widget.paramCode == 'KG' ||
+      widget.paramCode == 'KM';
 
   @override
   Widget build(BuildContext context) {
@@ -943,10 +973,9 @@ class _SetValueFieldState extends State<_SetValueField> {
         ),
       ),
       readOnly: widget.readOnly,
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
-      ],
+      keyboardType: kIsWeb
+          ? TextInputType.visiblePassword
+          : TextInputType.numberWithOptions(decimal: _allowDecimals),
       onTap: () {
         if (_controller.text.isNotEmpty) {
           _controller.selection = TextSelection(
