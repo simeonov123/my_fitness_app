@@ -54,7 +54,7 @@ class AuthService implements _AuthServiceBase {
     final uri = Uri.parse(html.window.location.href);
     final normalized = uri.replace(
       queryParameters: null,
-      fragment: '',
+      fragment: null,
     );
     return normalized.toString();
   }
