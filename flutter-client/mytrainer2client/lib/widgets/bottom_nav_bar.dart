@@ -7,7 +7,7 @@ import '../providers/navigation_provider.dart';
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
 
-  static const _comingSoonRoutes = {'/programs', '/nutrition'};
+  static const _comingSoonRoutes = {'/nutrition'};
 
   static const _trainerItems = [
     _NavTarget(0, '/home', Icons.home, _homeLabel),
@@ -21,6 +21,7 @@ class BottomNavBar extends StatelessWidget {
   static const _clientItems = [
     _NavTarget(0, '/home', Icons.home, _homeLabel),
     _NavTarget(1, '/social', Icons.forum, _socialLabel),
+    _NavTarget(2, '/programs', Icons.list_alt, _programsLabel),
   ];
 
   static String _homeLabel(AppLocalizations loc) => loc.navHome;

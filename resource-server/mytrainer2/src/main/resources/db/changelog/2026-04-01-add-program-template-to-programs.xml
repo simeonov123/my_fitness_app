@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2026-04-01-add-program-template-to-programs" author="codex">
+        <addColumn tableName="programs">
+            <column name="program_template_id" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+                baseTableName="programs"
+                baseColumnNames="program_template_id"
+                constraintName="fk_programs_program_template"
+                referencedTableName="program_templates"
+                referencedColumnNames="id"
+                onDelete="SET NULL"/>
+
+        <createIndex tableName="programs" indexName="idx_programs_program_template">
+            <column name="program_template_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

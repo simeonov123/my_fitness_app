@@ -23,6 +23,10 @@ public class Program extends BaseTimestampedEntity {
     @JoinColumn(name = "trainer_id", nullable = false)
     private User trainer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "program_template_id")
+    private ProgramTemplate programTemplate;
+
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
@@ -38,4 +42,7 @@ public class Program extends BaseTimestampedEntity {
 
     @OneToMany(mappedBy = "program", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ClientProgramNutritionPlanAssociation> programNutritionPlanAssociations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "program", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ClientProgramAssignment> assignments = new ArrayList<>();
 }

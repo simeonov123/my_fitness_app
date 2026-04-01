@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2026-04-01-add-mesocycle-template-length-weeks" author="codex">
+        <addColumn tableName="mesocycle_templates">
+            <column name="length_in_weeks" type="INT" defaultValueNumeric="1"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

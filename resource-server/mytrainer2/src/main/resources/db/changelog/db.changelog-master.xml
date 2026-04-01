@@ -794,4 +794,10 @@
              relativeToChangelogFile="true"/>
     <include file="2026-03-23-convert-text-columns-to-utf8mb4.xml"
              relativeToChangelogFile="true"/>
+    <include file="2026-03-31-add-client-program-assignments.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2026-04-01-add-mesocycle-template-length-weeks.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2026-04-01-add-program-template-to-programs.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>

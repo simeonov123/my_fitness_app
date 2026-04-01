@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2026-03-31-add-client-program-assignments" author="codex">
+        <createTable tableName="client_program_assignments">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_client_program_assignments"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="program_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assigned_by_trainer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)"/>
+            <column name="assigned_at" type="DATETIME"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="client_program_assignments"
+                                 baseColumnNames="client_id"
+                                 referencedTableName="clients"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_client_program_assignments_client"/>
+
+        <addForeignKeyConstraint baseTableName="client_program_assignments"
+                                 baseColumnNames="program_id"
+                                 referencedTableName="programs"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_client_program_assignments_program"/>
+
+        <addForeignKeyConstraint baseTableName="client_program_assignments"
+                                 baseColumnNames="assigned_by_trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_client_program_assignments_trainer"/>
+    </changeSet>
+</databaseChangeLog>

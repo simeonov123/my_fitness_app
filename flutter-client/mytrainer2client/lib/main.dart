@@ -21,6 +21,7 @@ import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/api_provider.dart';
 import 'providers/navigation_provider.dart';
+import 'providers/programs_provider.dart';
 import 'providers/clients_provider.dart';
 import 'services/auth_service.dart';
 import 'services/app_config.dart';
@@ -70,6 +71,7 @@ Future<void> main() async {
             create: (_) => WorkoutInstanceExercisesProvider()),
         ChangeNotifierProvider(create: (_) => ExerciseHistoryProvider()),
         ChangeNotifierProvider(create: (_) => SocialFeedProvider()),
+        ChangeNotifierProvider(create: (_) => ProgramsProvider()),
       ],
       child: const MyApp(),
     ),

@@ -33,6 +33,9 @@ public class MesocycleTemplate extends BaseTimestampedEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "length_in_weeks")
+    private Integer lengthInWeeks;
+
     @Column(name = "sequence_order")
     private Integer sequenceOrder;
 
