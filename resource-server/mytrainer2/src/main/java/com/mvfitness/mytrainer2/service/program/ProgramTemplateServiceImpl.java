@@ -135,6 +135,27 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
                 })
                 .toList();
 
+        List<ProgramAssignedClientDto> assignedClients = List.of();
+        List<Program> relatedPrograms = programs.findByProgramTemplate(template);
+        if (!relatedPrograms.isEmpty()) {
+            Map<Long, ProgramAssignedClientDto> byClientId = new LinkedHashMap<>();
+            for (ClientProgramAssignment assignment : assignments.findByProgramIn(relatedPrograms)) {
+                Client client = assignment.getClient();
+                if (client == null) {
+                    continue;
+                }
+                byClientId.putIfAbsent(
+                        client.getId(),
+                        new ProgramAssignedClientDto(
+                                client.getId(),
+                                client.getFullName(),
+                                client.getEmail()
+                        )
+                );
+            }
+            assignedClients = new ArrayList<>(byClientId.values());
+        }
+
         int totalDurationDays = mesocycleDtos.stream()
                 .mapToInt(meso -> {
                     if (meso.microcycle() == null || meso.lengthInWeeks() == null) {
@@ -151,6 +172,7 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
                 template.getDescription(),
                 totalDurationDays,
                 mesocycleDtos,
+                assignedClients,
                 template.getCreatedAt(),
                 template.getUpdatedAt()
         );
@@ -293,7 +315,11 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
     public void deleteTemplate(String kcUserId, Long id) {
         ProgramTemplate template = ownedTemplateOr404(kcUserId, id);
         List<Program> toDelete = programs.findByProgramTemplate(template);
+        if (toDelete.isEmpty() && template.getTrainer() != null) {
+            toDelete = programs.findByTrainerAndName(template.getTrainer(), template.getName());
+        }
         if (!toDelete.isEmpty()) {
+            assignments.deleteByProgramIn(toDelete);
             programs.deleteAll(toDelete);
         }
         programTemplates.delete(template);
@@ -314,6 +340,9 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
         }
 
         for (Client client : selectedClients) {
+            if (assignments.existsByClientAndProgram_ProgramTemplate(client, template)) {
+                throw new IllegalArgumentException("Program already assigned to client");
+            }
             LocalDate startDate = dto.startDate();
             LocalDate cursorDate = startDate;
             int globalDayIndex = 1;

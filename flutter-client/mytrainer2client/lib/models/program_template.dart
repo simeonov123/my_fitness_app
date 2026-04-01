@@ -128,6 +128,7 @@ class ProgramTemplateModel {
   final String? description;
   final int totalDurationDays;
   final List<ProgramMesocycle> mesocycles;
+  final List<ProgramAssignedClient> assignedClients;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -138,6 +139,7 @@ class ProgramTemplateModel {
     this.description,
     required this.totalDurationDays,
     required this.mesocycles,
+    required this.assignedClients,
     this.createdAt,
     this.updatedAt,
   });
@@ -152,6 +154,10 @@ class ProgramTemplateModel {
       mesocycles: (json['mesocycles'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()
           .map(ProgramMesocycle.fromJson)
+          .toList(),
+      assignedClients: (json['assignedClients'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(ProgramAssignedClient.fromJson)
           .toList(),
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -169,6 +175,33 @@ class ProgramTemplateModel {
         'description': description,
         'totalDurationDays': totalDurationDays,
         'mesocycles': mesocycles.map((e) => e.toJson()).toList(),
+        'assignedClients': assignedClients.map((e) => e.toJson()).toList(),
+      };
+}
+
+class ProgramAssignedClient {
+  final int clientId;
+  final String? fullName;
+  final String? email;
+
+  const ProgramAssignedClient({
+    required this.clientId,
+    this.fullName,
+    this.email,
+  });
+
+  factory ProgramAssignedClient.fromJson(Map<String, dynamic> json) {
+    return ProgramAssignedClient(
+      clientId: (json['clientId'] as num?)?.toInt() ?? 0,
+      fullName: json['fullName'] as String?,
+      email: json['email'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'clientId': clientId,
+        'fullName': fullName,
+        'email': email,
       };
 }
 

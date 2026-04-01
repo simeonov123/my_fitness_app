@@ -35,9 +35,11 @@ class _ProgramsPageState extends State<ProgramsPage> {
   Future<void> _openProgramDialog([ProgramTemplateModel? existing]) async {
     await context.read<WorkoutTemplatesProvider>().load();
     if (!mounted) return;
-    final saved = await showDialog<ProgramTemplateModel>(
-      context: context,
-      builder: (_) => _ProgramEditorDialog(program: existing),
+    final saved = await Navigator.of(context).push<ProgramTemplateModel>(
+      MaterialPageRoute(
+        builder: (_) => _ProgramEditorScreen(program: existing),
+        fullscreenDialog: true,
+      ),
     );
     if (saved == null || !mounted) return;
     await context.read<ProgramsProvider>().save(saved);
@@ -86,25 +88,70 @@ class _ProgramsPageState extends State<ProgramsPage> {
     final provider = context.watch<ProgramsProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: Text(auth.isTrainer ? 'Programs' : 'My Program')),
-      body: provider.loading
-          ? const Center(child: CircularProgressIndicator())
-          : auth.isTrainer
-              ? _TrainerProgramsView(
-                  programs: provider.templates,
-                  onCreate: () => _openProgramDialog(),
-                  onEdit: _openProgramDialog,
-                  onAssign: _openAssignDialog,
-                  onDelete: _deleteProgram,
-                )
-              : _ClientProgramsView(programs: provider.clientPrograms),
-      floatingActionButton: auth.isTrainer
-          ? FloatingActionButton.extended(
-              onPressed: () => _openProgramDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text('New Program'),
-            )
-          : null,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF7F8FF),
+              Color(0xFFFFFFFF),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            auth.isTrainer ? 'Programs' : 'My Program',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            auth.isTrainer
+                                ? 'Design macrocycles and assign them to clients.'
+                                : 'Track your macrocycle progression.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (auth.isTrainer)
+                      FilledButton.icon(
+                        onPressed: () => _openProgramDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('New Program'),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: provider.loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : auth.isTrainer
+                        ? _TrainerProgramsView(
+                            programs: provider.templates,
+                            onCreate: () => _openProgramDialog(),
+                            onEdit: _openProgramDialog,
+                            onAssign: _openAssignDialog,
+                            onDelete: _deleteProgram,
+                          )
+                        : _ClientProgramsView(programs: provider.clientPrograms),
+              ),
+            ],
+          ),
+        ),
+      ),
       bottomNavigationBar: const BottomNavBar(),
     );
   }
@@ -127,21 +174,38 @@ class _TrainerProgramsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    int totalWeeks(ProgramTemplateModel program) {
+      return program.mesocycles.fold<int>(
+        0,
+        (sum, meso) => sum + meso.lengthInWeeks,
+      );
+    }
+
     if (programs.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.schema_outlined, size: 64),
-            const SizedBox(height: 16),
-            const Text(
-                'Build programs from repeating workout and rest patterns.'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: onCreate,
-              child: const Text('Create Program'),
-            ),
-          ],
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.schema_outlined, size: 64),
+              const SizedBox(height: 16),
+              const Text(
+                'Build programs from repeating workout and rest patterns.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: onCreate,
+                child: const Text('Create Program'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -152,57 +216,48 @@ class _TrainerProgramsView extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final program = programs[index];
+        final weeks = totalWeeks(program);
         return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            program.name,
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              Chip(
-                                avatar: const Icon(Icons.layers_outlined),
-                                label:
-                                    Text('${program.mesocycles.length} cycles'),
-                              ),
-                              Chip(
-                                avatar:
-                                    const Icon(Icons.calendar_today_outlined),
-                                label: Text('${program.totalDurationDays} days'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => onEdit(program),
-                      icon: const Icon(Icons.edit_outlined),
-                    ),
-                    IconButton(
-                      onPressed: () => onDelete(program),
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Divider(height: 24),
-                ...program.mesocycles.map(
-                  (meso) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            title: Text(
+              program.name,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            subtitle: Text(
+              '$weeks weeks • ${program.mesocycles.length} mesocycles • ${program.totalDurationDays} days',
+            ),
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') {
+                  onEdit(program);
+                } else if (value == 'assign') {
+                  onAssign(program);
+                } else if (value == 'delete') {
+                  onDelete(program);
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'edit', child: Text('Edit')),
+                PopupMenuItem(value: 'assign', child: Text('Assign')),
+                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              ],
+            ),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            children: [
+              ...program.mesocycles.map(
+                (meso) {
+                  final restCount =
+                      meso.microcycle.days.where((day) => day.restDay).length;
+                  final workoutCount =
+                      meso.microcycle.lengthInDays - restCount;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
@@ -219,39 +274,45 @@ class _TrainerProgramsView extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${meso.lengthInWeeks} week(s) • ${meso.microcycle.lengthInDays}-day microcycle',
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: meso.microcycle.days
-                                .map(
-                                  (day) => Chip(
-                                    label: Text(
-                                      day.restDay
-                                          ? 'Day ${day.dayIndex}: Rest'
-                                          : 'Day ${day.dayIndex}: ${day.workoutTemplateName ?? 'Workout'}',
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                            '${meso.lengthInWeeks} week(s) • ${meso.microcycle.lengthInDays}-day cycle • $workoutCount workouts / $restCount rest',
                           ),
                         ],
                       ),
                     ),
-                  ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              if (program.assignedClients.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: program.assignedClients
+                      .map(
+                        (client) => Chip(
+                          avatar: const Icon(Icons.person_outline),
+                          label: Text(
+                            client.fullName ?? 'Client ${client.clientId}',
+                          ),
+                        ),
+                      )
+                      .toList(),
+                )
+              else
+                Text(
+                  'Not assigned yet',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => onAssign(program),
-                    icon: const Icon(Icons.person_add_alt_1),
-                    label: const Text('Assign'),
-                  ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => onAssign(program),
+                  icon: const Icon(Icons.person_add_alt_1),
+                  label: const Text('Assign'),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -285,6 +346,11 @@ class _ClientProgramsView extends StatelessWidget {
             ? 0.0
             : (program.completedDays / program.totalDays).clamp(0.0, 1.0);
         return Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: ExpansionTile(
             tilePadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -329,16 +395,16 @@ class _ClientProgramsView extends StatelessWidget {
   }
 }
 
-class _ProgramEditorDialog extends StatefulWidget {
+class _ProgramEditorScreen extends StatefulWidget {
   final ProgramTemplateModel? program;
 
-  const _ProgramEditorDialog({this.program});
+  const _ProgramEditorScreen({this.program});
 
   @override
-  State<_ProgramEditorDialog> createState() => _ProgramEditorDialogState();
+  State<_ProgramEditorScreen> createState() => _ProgramEditorScreenState();
 }
 
-class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
+class _ProgramEditorScreenState extends State<_ProgramEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   static const List<int> _macrocycleWeekOptions = [
     1,
@@ -382,7 +448,6 @@ class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
     if (_mesocycles.isEmpty) {
       _mesocycles = [_MesocycleDraft.empty(1)];
     }
-    _normalizeMesocycleWeeks();
   }
 
   @override
@@ -398,27 +463,12 @@ class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
 
   void _addMesocycle() {
     setState(() {
-      final remainingWeeks = _remainingWeeks;
-      if (remainingWeeks > 0) {
-        _mesocycles.add(
-          _MesocycleDraft.empty(
-            _mesocycles.length + 1,
-            initialWeeks: remainingWeeks,
-          ),
-        );
-      } else {
-        final donorIndex =
-            _mesocycles.lastIndexWhere((mesocycle) => mesocycle.weeks > 1);
-        if (donorIndex == -1) return;
-        _mesocycles[donorIndex].weeks -= 1;
-        _mesocycles.add(
-          _MesocycleDraft.empty(
-            _mesocycles.length + 1,
-            initialWeeks: 1,
-          ),
-        );
-      }
-      _normalizeMesocycleWeeks();
+      _mesocycles.add(
+        _MesocycleDraft.empty(
+          _mesocycles.length + 1,
+          initialWeeks: 1,
+        ),
+      );
     });
   }
 
@@ -429,7 +479,6 @@ class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
       if (_mesocycles.isEmpty) {
         _mesocycles = [_MesocycleDraft.empty(1)];
       }
-      _normalizeMesocycleWeeks();
     });
   }
 
@@ -439,22 +488,19 @@ class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
   int get _remainingWeeks => _macrocycleWeeks - _allocatedWeeks;
 
   bool get _canAddMesocycle =>
-      _remainingWeeks > 0 ||
-      _mesocycles.any((mesocycle) => mesocycle.weeks > 1);
+      _remainingWeeks > 0 || _mesocycles.isNotEmpty;
 
   void _setMacrocycleWeeks(int? weeks) {
     if (weeks == null) return;
     setState(() {
       _macrocycleWeeks = weeks;
-      _normalizeMesocycleWeeks();
     });
   }
 
   void _updateMesocycleWeeks(int index, int? weeks) {
     if (weeks == null) return;
     setState(() {
-      _mesocycles[index].weeks = weeks;
-      _normalizeMesocycleWeeks(preferredIndex: index);
+      _mesocycles[index].weeks = weeks < 1 ? 1 : weeks;
     });
   }
 
@@ -465,35 +511,15 @@ class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
     });
   }
 
-  void _normalizeMesocycleWeeks({int? preferredIndex}) {
-    if (_mesocycles.isEmpty) return;
-
-    var totalWeeks = _allocatedWeeks;
-    if (totalWeeks == 0) {
-      _mesocycles.first.weeks = _macrocycleWeeks;
-      return;
+  String _allocationStatusText() {
+    final delta = _macrocycleWeeks - _allocatedWeeks;
+    if (delta == 0) {
+      return 'Allocation matches macrocycle length.';
     }
-
-    if (totalWeeks > _macrocycleWeeks) {
-      final indexes = <int>[
-        if (preferredIndex != null) preferredIndex,
-        ...List.generate(_mesocycles.length, (index) => index)
-            .where((index) => index != preferredIndex),
-      ];
-      for (final index in indexes.reversed) {
-        if (totalWeeks <= _macrocycleWeeks) break;
-        final draft = _mesocycles[index];
-        final reducible = draft.weeks - 1;
-        if (reducible <= 0) continue;
-        final overage = totalWeeks - _macrocycleWeeks;
-        final reduction = reducible < overage ? reducible : overage;
-        draft.weeks = draft.weeks - reduction;
-        totalWeeks -= reduction;
-      }
-    } else if (totalWeeks < _macrocycleWeeks) {
-      final targetIndex = preferredIndex ?? (_mesocycles.length - 1);
-      _mesocycles[targetIndex].weeks += _macrocycleWeeks - totalWeeks;
+    if (delta > 0) {
+      return '$delta week(s) unallocated.';
     }
+    return '${delta.abs()} week(s) over the macrocycle.';
   }
 
   ProgramTemplateModel _buildProgram() {
@@ -554,6 +580,7 @@ class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
           : _descriptionCtrl.text.trim(),
       totalDurationDays: totalDurationDays,
       mesocycles: mesocycles,
+      assignedClients: widget.program?.assignedClients ?? const [],
       createdAt: widget.program?.createdAt,
       updatedAt: widget.program?.updatedAt,
     );
@@ -571,126 +598,209 @@ class _ProgramEditorDialogState extends State<_ProgramEditorDialog> {
       0,
       (sum, meso) => sum + (meso.weeks * meso.microcycleLength),
     );
+    final allocationProgress = _macrocycleWeeks == 0
+        ? 0.0
+        : (_allocatedWeeks / _macrocycleWeeks).clamp(0.0, 1.0);
 
-    return Dialog(
-      child: SizedBox(
-        width: 860,
-        height: 760,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF7F8FF),
+              Color(0xFFFFFFFF),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.program == null ? 'Create Program' : 'Edit Program',
-                style: Theme.of(context).textTheme.headlineSmall,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.program == null
+                            ? 'Create Program'
+                            : 'Edit Program',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    FilledButton(
+                      onPressed: _submit,
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              Text('Macrocycle: $_macrocycleWeeks weeks • $totalDays days'),
-              const SizedBox(height: 16),
               Expanded(
                 child: Form(
                   key: _formKey,
                   child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                     children: [
-                      TextFormField(
-                        controller: _nameCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Program Name'),
-                        validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                                ? 'Required'
-                                : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _goalCtrl,
-                        decoration: const InputDecoration(labelText: 'Goal'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _descriptionCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Description'),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<int>(
-                        value: _macrocycleWeeks,
-                        decoration: const InputDecoration(
-                          labelText: 'Macrocycle Duration',
-                          helperText:
-                              'Pick the full program length, then divide it into mesocycles.',
+                Text(
+                  'Macrocycle: $_macrocycleWeeks weeks • $totalDays days',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Program Details',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        items: _macrocycleWeekOptions
-                            .map(
-                              (weeks) => DropdownMenuItem<int>(
-                                value: weeks,
-                                child: Text('$weeks week${weeks == 1 ? '' : 's'}'),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: _setMacrocycleWeeks,
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _nameCtrl,
+                          decoration:
+                              const InputDecoration(labelText: 'Program Name'),
+                          validator: (value) => (value == null ||
+                                  value.trim().isEmpty)
+                              ? 'Required'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _goalCtrl,
+                          decoration: const InputDecoration(labelText: 'Goal'),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _descriptionCtrl,
+                          decoration:
+                              const InputDecoration(labelText: 'Description'),
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Macrocycle',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: _macrocycleWeeks,
+                          decoration: const InputDecoration(
+                            labelText: 'Macrocycle Duration',
+                            helperText:
+                                'Pick the full program length, then divide it into mesocycles.',
+                          ),
+                          items: _macrocycleWeekOptions
+                              .map(
+                                (weeks) => DropdownMenuItem<int>(
+                                  value: weeks,
+                                  child:
+                                      Text('$weeks week${weeks == 1 ? '' : 's'}'),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _setMacrocycleWeeks,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Allocation',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '$_allocatedWeeks/$_macrocycleWeeks weeks allocated',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(value: allocationProgress),
+                        const SizedBox(height: 8),
+                        Text(
+                          _allocationStatusText(),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      'Mesocycles',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: _canAddMesocycle ? _addMesocycle : null,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Mesocycle'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ..._mesocycles.asMap().entries.map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _MesocycleEditor(
+                          draft: entry.value,
+                          workouts: workouts,
+                          index: entry.key,
+                          availableWeeks: _macrocycleWeeks,
+                          microcycleLengthOptions: _microcycleLengthOptions,
+                          onWeeksChanged: (value) =>
+                              _updateMesocycleWeeks(entry.key, value),
+                          onMicrocycleLengthChanged: (value) =>
+                              _updateMicrocycleLength(entry.key, value),
+                          canRemove: _mesocycles.length > 1,
+                          onRemove: () => _removeMesocycle(entry.key),
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Text(
-                            'Mesocycles',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '$_allocatedWeeks/$_macrocycleWeeks weeks allocated',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const Spacer(),
-                          TextButton.icon(
-                            onPressed: _canAddMesocycle ? _addMesocycle : null,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Mesocycle'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ..._mesocycles.asMap().entries.map(
-                            (entry) => Padding(
-                              padding: const EdgeInsets.only(bottom: 14),
-                              child: _MesocycleEditor(
-                                draft: entry.value,
-                                workouts: workouts,
-                                index: entry.key,
-                                availableWeeks:
-                                    entry.value.weeks + _remainingWeeks,
-                                microcycleLengthOptions:
-                                    _microcycleLengthOptions,
-                                onWeeksChanged: (value) =>
-                                    _updateMesocycleWeeks(entry.key, value),
-                                onMicrocycleLengthChanged: (value) =>
-                                    _updateMicrocycleLength(entry.key, value),
-                                canRemove: _mesocycles.length > 1,
-                                onRemove: () => _removeMesocycle(entry.key),
-                              ),
-                            ),
-                          ),
+                    ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _submit,
-                    child: const Text('Save'),
-                  ),
-                ],
               ),
             ],
           ),
@@ -743,106 +853,107 @@ class _MesocycleEditorState extends State<_MesocycleEditor> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Mesocycle ${widget.index + 1}',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-                if (widget.canRemove)
-                  IconButton(
-                    onPressed: widget.onRemove,
-                    icon: const Icon(Icons.delete_outline),
-                  ),
-              ],
-            ),
-            TextFormField(
-              controller: widget.draft.nameCtrl,
-              decoration: const InputDecoration(labelText: 'Mesocycle Name'),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: widget.draft.weeks,
-                    decoration: const InputDecoration(labelText: 'Weeks'),
-                    items: List.generate(widget.availableWeeks, (index) => index + 1)
-                        .map(
-                          (weeks) => DropdownMenuItem<int>(
-                            value: weeks,
-                            child:
-                                Text('$weeks week${weeks == 1 ? '' : 's'}'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: widget.onWeeksChanged,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: widget.draft.microcycleLength,
-                    decoration:
-                        const InputDecoration(labelText: 'Microcycle Length'),
-                    items: widget.microcycleLengthOptions
-                        .map(
-                          (length) => DropdownMenuItem<int>(
-                            value: length,
-                            child:
-                                Text('$length day${length == 1 ? '' : 's'}'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      widget.onMicrocycleLengthChanged(value);
-                      _syncDays();
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: widget.draft.goalCtrl,
-              decoration: const InputDecoration(labelText: 'Mesocycle Goal'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: widget.draft.descriptionCtrl,
-              decoration:
-                  const InputDecoration(labelText: 'Mesocycle Description'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: widget.draft.microcycleNameCtrl,
-              decoration: const InputDecoration(labelText: 'Microcycle Name'),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Repeating Pattern',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            ...widget.draft.days.asMap().entries.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _PatternDayEditor(
-                      dayNumber: entry.key + 1,
-                      draft: entry.value,
-                      workouts: widget.workouts,
-                    ),
-                  ),
-                ),
-          ],
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: Text(
+          widget.draft.nameCtrl.text.trim().isEmpty
+              ? 'Mesocycle ${widget.index + 1}'
+              : widget.draft.nameCtrl.text.trim(),
+          style: Theme.of(context).textTheme.titleMedium,
         ),
+        subtitle: Text(
+          '${widget.draft.weeks} week(s) • ${widget.draft.microcycleLength}-day cycle',
+        ),
+        trailing: widget.canRemove
+            ? IconButton(
+                onPressed: widget.onRemove,
+                icon: const Icon(Icons.delete_outline),
+              )
+            : null,
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [
+          TextFormField(
+            controller: widget.draft.nameCtrl,
+            decoration: const InputDecoration(labelText: 'Mesocycle Name'),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  value: widget.draft.weeks,
+                  decoration: const InputDecoration(labelText: 'Weeks'),
+                  items: List.generate(widget.availableWeeks, (index) => index + 1)
+                      .map(
+                        (weeks) => DropdownMenuItem<int>(
+                          value: weeks,
+                          child: Text('$weeks week${weeks == 1 ? '' : 's'}'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: widget.onWeeksChanged,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  value: widget.draft.microcycleLength,
+                  decoration:
+                      const InputDecoration(labelText: 'Microcycle Length'),
+                  items: widget.microcycleLengthOptions
+                      .map(
+                        (length) => DropdownMenuItem<int>(
+                          value: length,
+                          child: Text('$length day${length == 1 ? '' : 's'}'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    widget.onMicrocycleLengthChanged(value);
+                    _syncDays();
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: widget.draft.goalCtrl,
+            decoration: const InputDecoration(labelText: 'Mesocycle Goal'),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: widget.draft.descriptionCtrl,
+            decoration:
+                const InputDecoration(labelText: 'Mesocycle Description'),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: widget.draft.microcycleNameCtrl,
+            decoration: const InputDecoration(labelText: 'Microcycle Name'),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Repeating Pattern',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          ...widget.draft.days.asMap().entries.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _PatternDayEditor(
+                    dayNumber: entry.key + 1,
+                    draft: entry.value,
+                    workouts: widget.workouts,
+                  ),
+                ),
+              ),
+        ],
       ),
     );
   }
@@ -1046,6 +1157,9 @@ class _ProgramAssignDialogState extends State<_ProgramAssignDialog> {
   @override
   Widget build(BuildContext context) {
     final clients = context.watch<ClientsProvider>().items;
+    final assignedClientIds = widget.program.assignedClients
+        .map((client) => client.clientId)
+        .toSet();
     return AlertDialog(
       title: Text('Assign "${widget.program.name}"'),
       content: SizedBox(
@@ -1074,17 +1188,22 @@ class _ProgramAssignDialogState extends State<_ProgramAssignDialog> {
                       (client) => CheckboxListTile(
                         value: _selectedClientIds.contains(client.id),
                         title: Text(client.fullName),
-                        subtitle:
-                            client.email == null ? null : Text(client.email!),
-                        onChanged: (checked) {
-                          setState(() {
-                            if (checked == true) {
-                              _selectedClientIds.add(client.id);
-                            } else {
-                              _selectedClientIds.remove(client.id);
-                            }
-                          });
-                        },
+                        subtitle: assignedClientIds.contains(client.id)
+                            ? const Text('Already assigned')
+                            : (client.email == null
+                                ? null
+                                : Text(client.email!)),
+                        onChanged: assignedClientIds.contains(client.id)
+                            ? null
+                            : (checked) {
+                                setState(() {
+                                  if (checked == true) {
+                                    _selectedClientIds.add(client.id);
+                                  } else {
+                                    _selectedClientIds.remove(client.id);
+                                  }
+                                });
+                              },
                       ),
                     )
                     .toList(),

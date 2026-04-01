@@ -10,6 +10,7 @@ public record ProgramTemplateDto(
         String description,
         Integer totalDurationDays,
         List<ProgramMesocycleDto> mesocycles,
+        List<ProgramAssignedClientDto> assignedClients,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) { }
