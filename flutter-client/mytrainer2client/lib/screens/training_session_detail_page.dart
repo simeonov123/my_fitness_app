@@ -73,8 +73,11 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
     // framework complaining about notifyListeners() during build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (context.read<AuthProvider>().isTrainer) {
+      final auth = context.read<AuthProvider>();
+      if (auth.isTrainer) {
         context.read<ExercisesProvider>().loadAvailable();
+      } else {
+        context.read<ExercisesProvider>().loadCommon();
       }
     });
 
@@ -122,9 +125,8 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
   }
 
   Future<void> _restoreActiveWorkout() async {
-    final isTrainer = context.read<AuthProvider>().isTrainer;
     final snapshot = await _activeWorkout.load(widget.sessionId);
-    _activeSnapshot = isTrainer ? snapshot : null;
+    _activeSnapshot = snapshot;
     _syncSessionTicker();
 
     if (_isActiveForCurrentSession) {
@@ -752,7 +754,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
         elevation: 0,
         title: Text(_session!.sessionName ?? 'Session ${_session!.id}'),
         actions: [
-          if (!isClient)
+          if (!clientReadOnly)
             IconButton(icon: const Icon(Icons.edit), onPressed: _reorder),
           if (!clientReadOnly)
             Padding(
@@ -768,7 +770,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
             ),
         ],
       ),
-      floatingActionButton: (isClient || clientReadOnly)
+      floatingActionButton: clientReadOnly
           ? null
           : FloatingActionButton(
               onPressed: _addExercises,
@@ -858,7 +860,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
             AppDensity.space(_activeRestSecondsRemaining == null ? 96 : 132),
           ),
           children: [
-            _metaCard(isClient: isClient),
+            _metaCard(isClient: isClient, clientReadOnly: clientReadOnly),
             SizedBox(height: AppDensity.space(10)),
             _activityCard(isClient: isClient),
             SizedBox(height: AppDensity.space(10)),
@@ -926,33 +928,31 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                 ),
               ],
             ),
-            if (!isClient) ...[
-              SizedBox(height: AppDensity.space(10)),
-              Wrap(
-                spacing: AppDensity.space(10),
-                runSpacing: AppDensity.space(10),
-                children: [
-                  if (!_isActiveForCurrentSession)
-                    ElevatedButton.icon(
-                      onPressed: _busyAction ? null : _startWorkout,
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text('Start'),
-                    ),
-                  if (_isActiveForCurrentSession) ...[
-                    OutlinedButton.icon(
-                      onPressed: _busyAction ? null : _discardWorkout,
-                      icon: const Icon(Icons.close),
-                      label: const Text('Discard'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _busyAction ? null : _completeWorkout,
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Complete'),
-                    ),
-                  ],
+            SizedBox(height: AppDensity.space(10)),
+            Wrap(
+              spacing: AppDensity.space(10),
+              runSpacing: AppDensity.space(10),
+              children: [
+                if (!_isActiveForCurrentSession)
+                  ElevatedButton.icon(
+                    onPressed: _busyAction ? null : _startWorkout,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Start'),
+                  ),
+                if (_isActiveForCurrentSession) ...[
+                  OutlinedButton.icon(
+                    onPressed: _busyAction ? null : _discardWorkout,
+                    icon: const Icon(Icons.close),
+                    label: const Text('Discard'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _busyAction ? null : _completeWorkout,
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Complete'),
+                  ),
                 ],
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),
@@ -1084,7 +1084,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
 
   /* ───────── meta card & date buttons ───────── */
 
-  Widget _metaCard({required bool isClient}) {
+  Widget _metaCard({required bool isClient, required bool clientReadOnly}) {
     final f = DateFormat('yyyy-MM-dd   HH:mm');
     return Container(
       margin: EdgeInsets.symmetric(horizontal: AppDensity.space(14)),
@@ -1154,8 +1154,8 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                   ),
                 ),
               ),
-              readOnly: isClient,
-              onChanged: isClient ? null : (_) => setState(_markMetaDirty),
+              readOnly: clientReadOnly,
+              onChanged: clientReadOnly ? null : (_) => setState(_markMetaDirty),
             ),
             SizedBox(height: AppDensity.space(12)),
             Row(
@@ -1166,7 +1166,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                     value: _start!,
                     fmt: f,
                     icon: Icons.play_circle_outline,
-                    enabled: !isClient,
+                    enabled: !clientReadOnly,
                     onChanged: (d) => setState(() {
                       _start = d;
                       _markMetaDirty();
@@ -1180,7 +1180,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                     value: _end!,
                     fmt: f,
                     icon: Icons.flag_outlined,
-                    enabled: !isClient,
+                    enabled: !clientReadOnly,
                     onChanged: (d) => setState(() {
                       _end = d;
                       _markMetaDirty();
@@ -1615,8 +1615,8 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                 templateId: _session!.id,
                 wte: it.wte,
                 showCompletion: true,
-                canEditExerciseNotes: !isClient,
-                canEditSetNotes: !isClient,
+                canEditExerciseNotes: !clientReadOnly,
+                canEditSetNotes: !clientReadOnly,
                 isReadOnly: clientReadOnly,
                 headerActions: [
                   IconButton(

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'authenticated_http.dart' as http;
 
 import '../models/program_template.dart';
+import '../models/training_session.dart';
 import 'dev_endpoints.dart';
 
 class ProgramsApiService {
@@ -73,6 +74,7 @@ class ProgramsApiService {
     required int templateId,
     required List<int> clientIds,
     required DateTime startDate,
+    bool assignToTrainer = false,
   }) async {
     final day =
         '${startDate.year.toString().padLeft(4, '0')}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
@@ -83,6 +85,7 @@ class ProgramsApiService {
       body: jsonEncode({
         'clientIds': clientIds,
         'startDate': day,
+        'assignToTrainer': assignToTrainer,
       }),
     );
     if (res.statusCode != 200 && res.statusCode != 204) {
@@ -100,5 +103,47 @@ class ProgramsApiService {
         .cast<Map<String, dynamic>>()
         .map(ClientProgram.fromJson)
         .toList();
+  }
+
+  Future<List<ClientProgram>> listTrainerAssignedPrograms() async {
+    final uri = Uri.parse('$_base/trainer/programs/assigned');
+    final res = await http.get(uri, headers: await _headers());
+    if (res.statusCode != 200) {
+      _fail('GET trainer assigned programs failed', res);
+    }
+    return (jsonDecode(res.body) as List<dynamic>)
+        .cast<Map<String, dynamic>>()
+        .map(ClientProgram.fromJson)
+        .toList();
+  }
+
+  Future<TrainingSession> startClientProgramDay({
+    required int assignmentId,
+    required int dayIndex,
+  }) async {
+    final uri = Uri.parse(
+        '$_base/client/programs/$assignmentId/days/$dayIndex/start');
+    final res = await http.post(uri, headers: await _headers());
+    if (res.statusCode != 200) {
+      _fail('POST start program day failed', res);
+    }
+    return TrainingSession.fromJson(
+      jsonDecode(res.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<TrainingSession> startTrainerProgramDay({
+    required int assignmentId,
+    required int dayIndex,
+  }) async {
+    final uri = Uri.parse(
+        '$_base/trainer/programs/assigned/$assignmentId/days/$dayIndex/start');
+    final res = await http.post(uri, headers: await _headers());
+    if (res.statusCode != 200) {
+      _fail('POST start trainer program day failed', res);
+    }
+    return TrainingSession.fromJson(
+      jsonDecode(res.body) as Map<String, dynamic>,
+    );
   }
 }

@@ -16,6 +16,7 @@ class TrainingSession {
   final String? status;
   final bool? isCompleted;
   final List<int> clientIds;
+  final List<String> clientNames;
   final int? workoutTemplateId;
 
   /* helpers for timeline / calendar */
@@ -42,6 +43,7 @@ class TrainingSession {
     this.status,
     this.isCompleted,
     required this.clientIds,
+    this.clientNames = const [],
     this.workoutTemplateId,
   });
 
@@ -66,6 +68,9 @@ class TrainingSession {
             .cast<num>()
             .map((e) => e.toInt())
             .toList(),
+        clientNames: (j['clientNames'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList(),
         workoutTemplateId: (j['workoutTemplateId'] as num?)?.toInt(),
       );
 
@@ -83,6 +88,7 @@ class TrainingSession {
         'status': status,
         'isCompleted': isCompleted,
         'clientIds': clientIds,
+        'clientNames': clientNames,
         'workoutTemplateId': workoutTemplateId,
       };
 

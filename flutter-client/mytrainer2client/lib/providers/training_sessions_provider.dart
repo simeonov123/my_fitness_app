@@ -16,6 +16,17 @@ class TrainingSessionsProvider extends ChangeNotifier {
   final List<TrainingSession> _dayList = [];
   List<TrainingSession> get dayList => List.unmodifiable(_dayList);
 
+  bool _trainerSoloOnly = false;
+
+  void setTimelinePreferences({
+    bool? trainerSoloOnly,
+  }) {
+    if (trainerSoloOnly != null) {
+      _trainerSoloOnly = trainerSoloOnly;
+    }
+    syncTimeline();
+  }
+
   /* ───── search list (legacy) ───── */
   bool loading = false;
   String search = '';
@@ -56,15 +67,41 @@ class TrainingSessionsProvider extends ChangeNotifier {
       ..addAll(list);
     notifyListeners();
 
-    SessionStore().setAll(_dayList.map(_dtoToSession).toList());
+    syncTimeline();
   }
 
-  Session _dtoToSession(TrainingSession dto) => Session(
-        id: dto.id,
-        start: dto.start,
-        end: dto.end,
-        clients: [dto.sessionName ?? 'Session #${dto.id}'],
-      );
+  void syncTimeline() {
+    final visible = _trainerSoloOnly
+        ? _dayList.where(_isSoloSession).toList()
+        : List<TrainingSession>.from(_dayList);
+    SessionStore().setAll(visible.map(_dtoToSession).toList());
+  }
+
+  bool _isSoloSession(TrainingSession dto) {
+    return (dto.sessionType ?? '').toUpperCase() == 'SOLO';
+  }
+
+  Session _dtoToSession(TrainingSession dto) {
+    final baseTitle = dto.sessionName ?? 'Session #${dto.id}';
+    final title = _formatTitle(dto, baseTitle);
+    return Session(
+      id: dto.id,
+      start: dto.start,
+      end: dto.end,
+      clients: [title],
+    );
+  }
+
+  String _formatTitle(TrainingSession dto, String baseTitle) {
+    if (dto.clientNames.isEmpty) {
+      return baseTitle;
+    }
+    final primary = dto.clientNames.first;
+    final suffix = dto.clientNames.length > 1
+        ? ' +${dto.clientNames.length - 1}'
+        : '';
+    return '$primary$suffix · $baseTitle';
+  }
 
   /* ───────── paged search list ───────── */
 

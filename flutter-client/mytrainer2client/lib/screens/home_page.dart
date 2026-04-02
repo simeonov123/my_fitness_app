@@ -25,6 +25,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
+  bool _trainerSoloOnly = false;
 
   /* ───────── backend sync helpers ───────── */
 
@@ -48,6 +49,7 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<NavigationProvider>().setIndex(0);
+      _applyTimelinePreferences(context.read<AuthProvider>());
     });
     _refreshForMonth().then((_) => _refreshForDay());
   }
@@ -97,12 +99,15 @@ class _HomePageState extends State<HomePage> {
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final dayList = context.watch<TrainingSessionsProvider>().dayList;
+    final visibleDayList = auth.isTrainer && _trainerSoloOnly
+        ? dayList.where(_isSoloSession).toList()
+        : dayList;
     final totalClients =
-        dayList.expand((session) => session.clientIds).toSet().length;
+        visibleDayList.expand((session) => session.clientIds).toSet().length;
     final summaryLabel = _dailySummary(
       loc: loc,
       day: _selectedDay,
-      sessionCount: dayList.length,
+      sessionCount: visibleDayList.length,
       clientCount: totalClients,
     );
 
@@ -222,6 +227,29 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
+                  if (auth.isTrainer) ...[
+                    SizedBox(height: AppDensity.space(10)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Only my workouts',
+                            style: text.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Switch(
+                          value: _trainerSoloOnly,
+                          onChanged: (value) {
+                            setState(() => _trainerSoloOnly = value);
+                            _applyTimelinePreferences(auth);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                   SizedBox(height: AppDensity.space(14)),
                   SizedBox(
                     height: AppDensity.space(560),
@@ -285,6 +313,18 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       );
+
+  void _applyTimelinePreferences(AuthProvider auth) {
+    final provider = context.read<TrainingSessionsProvider>();
+    provider.setTimelinePreferences(
+      trainerSoloOnly: auth.isTrainer ? _trainerSoloOnly : false,
+    );
+  }
+
+  bool _isSoloSession(TrainingSession session) {
+    return (session.sessionType ?? '').toUpperCase() == 'SOLO';
+  }
+
 }
 
 String _monthLabel(DateTime day, AppLocalizations loc) {

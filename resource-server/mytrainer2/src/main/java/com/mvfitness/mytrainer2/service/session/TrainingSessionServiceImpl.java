@@ -219,6 +219,25 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
 
     @Override
     public TrainingSessionDto update(String kc, Long id, TrainingSessionDto d) {
+        if (!isTrainer(kc)) {
+            TrainingSession s = sessions.findWithClientsByIdAndClients_AccountUser(id, accountUserOr404(kc))
+                    .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+            if (d.actualStartTime() != null) {
+                s.setActualStartTime(d.actualStartTime());
+            }
+            if (d.actualEndTime() != null) {
+                s.setActualEndTime(d.actualEndTime());
+            }
+            if (d.status() != null) {
+                s.setStatus(d.status());
+            }
+            if (d.isCompleted() != null) {
+                s.setIsCompleted(d.isCompleted());
+            }
+            TrainingSessionDto saved = TrainingSessionMapper.toDto(sessions.save(s));
+            realtime.publishSessionUpdated(saved);
+            return saved;
+        }
 
         TrainingSession s = ownedOr404(kc, id);
         User trainer = trainerOr404(kc);

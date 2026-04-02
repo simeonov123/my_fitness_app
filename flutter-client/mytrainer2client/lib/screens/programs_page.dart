@@ -57,6 +57,7 @@ class _ProgramsPageState extends State<ProgramsPage> {
           templateId: program.id,
           clientIds: result.clientIds,
           startDate: result.startDate,
+          assignToTrainer: result.assignToTrainer,
         );
   }
 
@@ -141,6 +142,7 @@ class _ProgramsPageState extends State<ProgramsPage> {
                     : auth.isTrainer
                         ? _TrainerProgramsView(
                             programs: provider.templates,
+                            assignedPrograms: provider.trainerAssignedPrograms,
                             onCreate: () => _openProgramDialog(),
                             onEdit: _openProgramDialog,
                             onAssign: _openAssignDialog,
@@ -159,6 +161,7 @@ class _ProgramsPageState extends State<ProgramsPage> {
 
 class _TrainerProgramsView extends StatelessWidget {
   final List<ProgramTemplateModel> programs;
+  final List<ClientProgram> assignedPrograms;
   final VoidCallback onCreate;
   final Future<void> Function(ProgramTemplateModel program) onEdit;
   final Future<void> Function(ProgramTemplateModel program) onAssign;
@@ -166,6 +169,7 @@ class _TrainerProgramsView extends StatelessWidget {
 
   const _TrainerProgramsView({
     required this.programs,
+    required this.assignedPrograms,
     required this.onCreate,
     required this.onEdit,
     required this.onAssign,
@@ -181,7 +185,7 @@ class _TrainerProgramsView extends StatelessWidget {
       );
     }
 
-    if (programs.isEmpty) {
+    if (programs.isEmpty && assignedPrograms.isEmpty) {
       return Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -210,112 +214,222 @@ class _TrainerProgramsView extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: programs.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final program = programs[index];
-        final weeks = totalWeeks(program);
-        return Card(
-          elevation: 0,
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            title: Text(
-              program.name,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            subtitle: Text(
-              '$weeks weeks • ${program.mesocycles.length} mesocycles • ${program.totalDurationDays} days',
-            ),
-            trailing: PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  onEdit(program);
-                } else if (value == 'assign') {
-                  onAssign(program);
-                } else if (value == 'delete') {
-                  onDelete(program);
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                PopupMenuItem(value: 'assign', child: Text('Assign')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
-              ],
-            ),
-            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    Future<void> startDay(ClientProgram program, ClientProgramDay day) async {
+      if (day.restDay || day.trainingSessionId != null) {
+        return;
+      }
+      final sessionId =
+          await context.read<ProgramsProvider>().startTrainerProgramDay(
+                assignmentId: program.assignmentId,
+                dayIndex: day.dayIndex,
+              );
+      if (!context.mounted) return;
+      Navigator.pushNamed(
+        context,
+        '/session',
+        arguments: sessionId,
+      );
+    }
+
+    Widget buildAssignedCard(ClientProgram program) {
+      final progress = program.totalDays == 0
+          ? 0.0
+          : (program.completedDays / program.totalDays).clamp(0.0, 1.0);
+      return Card(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Text(program.name),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ...program.mesocycles.map(
-                (meso) {
-                  final restCount =
-                      meso.microcycle.days.where((day) => day.restDay).length;
-                  final workoutCount =
-                      meso.microcycle.lengthInDays - restCount;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            meso.name,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${meso.lengthInWeeks} week(s) • ${meso.microcycle.lengthInDays}-day cycle • $workoutCount workouts / $restCount rest',
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+              const SizedBox(height: 4),
+              Text('${program.completedDays}/${program.totalDays} completed'),
               const SizedBox(height: 8),
-              if (program.assignedClients.isNotEmpty)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: program.assignedClients
-                      .map(
-                        (client) => Chip(
-                          avatar: const Icon(Icons.person_outline),
-                          label: Text(
-                            client.fullName ?? 'Client ${client.clientId}',
-                          ),
-                        ),
-                      )
-                      .toList(),
-                )
-              else
-                Text(
-                  'Not assigned yet',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonalIcon(
-                  onPressed: () => onAssign(program),
-                  icon: const Icon(Icons.person_add_alt_1),
-                  label: const Text('Assign'),
-                ),
-              ),
+              LinearProgressIndicator(value: progress),
             ],
           ),
-        );
-      },
+          children: program.days
+              .map(
+                (day) => ListTile(
+                  title: Text(day.label),
+                  subtitle: Text(day.restDay
+                      ? 'Rest day'
+                      : (day.workoutName ?? 'Workout')),
+                  trailing: day.restDay
+                      ? const Icon(Icons.hotel)
+                      : (day.trainingSessionId == null
+                          ? FilledButton.tonal(
+                              onPressed: () => startDay(program, day),
+                              child: const Text('Start'),
+                            )
+                          : Icon(day.completed
+                              ? Icons.check_circle
+                              : Icons.chevron_right)),
+                  onTap: day.trainingSessionId == null
+                      ? null
+                      : () => Navigator.pushNamed(
+                            context,
+                            '/session',
+                            arguments: day.trainingSessionId,
+                          ),
+                ),
+              )
+              .toList(),
+        ),
+      );
+    }
+
+    Widget buildTemplateCard(ProgramTemplateModel program) {
+      final weeks = totalWeeks(program);
+      return Card(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Text(
+            program.name,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          subtitle: Text(
+            '$weeks weeks • ${program.mesocycles.length} mesocycles • ${program.totalDurationDays} days',
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit') {
+                onEdit(program);
+              } else if (value == 'assign') {
+                onAssign(program);
+              } else if (value == 'delete') {
+                onDelete(program);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'assign', child: Text('Assign')),
+              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            ],
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+            ...program.mesocycles.map(
+              (meso) {
+                final restCount =
+                    meso.microcycle.days.where((day) => day.restDay).length;
+                final workoutCount = meso.microcycle.lengthInDays - restCount;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          meso.name,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${meso.lengthInWeeks} week(s) • ${meso.microcycle.lengthInDays}-day cycle • $workoutCount workouts / $restCount rest',
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            if (program.assignedClients.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: program.assignedClients
+                    .map(
+                      (client) => Chip(
+                        avatar: const Icon(Icons.person_outline),
+                        label: Text(
+                          client.fullName ?? 'Client ${client.clientId}',
+                        ),
+                      ),
+                    )
+                    .toList(),
+              )
+            else
+              Text(
+                'Not assigned yet',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonalIcon(
+                onPressed: () => onAssign(program),
+                icon: const Icon(Icons.person_add_alt_1),
+                label: const Text('Assign'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final items = <Widget>[];
+    if (assignedPrograms.isNotEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+          child: Text(
+            'My Assigned Programs',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+      );
+      items.addAll(assignedPrograms.map(buildAssignedCard));
+      items.add(const SizedBox(height: 16));
+    }
+
+    if (programs.isNotEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+          child: Text(
+            'Templates',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+      );
+      items.addAll(programs.map(buildTemplateCard));
+    }
+
+    if (programs.isEmpty && assignedPrograms.isNotEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Text(
+            'No templates yet. Create a program to assign to clients.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) => items[index],
     );
   }
 }
@@ -345,6 +459,22 @@ class _ClientProgramsView extends StatelessWidget {
         final progress = program.totalDays == 0
             ? 0.0
             : (program.completedDays / program.totalDays).clamp(0.0, 1.0);
+        Future<void> startDay(ClientProgramDay day) async {
+          if (day.restDay || day.trainingSessionId != null) {
+            return;
+          }
+          final sessionId =
+              await context.read<ProgramsProvider>().startClientProgramDay(
+                    assignmentId: program.assignmentId,
+                    dayIndex: day.dayIndex,
+                  );
+          if (!context.mounted) return;
+          Navigator.pushNamed(
+            context,
+            '/session',
+            arguments: sessionId,
+          );
+        }
         return Card(
           elevation: 0,
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -360,7 +490,7 @@ class _ClientProgramsView extends StatelessWidget {
               children: [
                 const SizedBox(height: 4),
                 Text(
-                  '${program.completedDays}/${program.totalDays} completed • ${_fmtDate(program.startDate)} - ${_fmtDate(program.endDate)}',
+                  '${program.completedDays}/${program.totalDays} completed',
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(value: progress),
@@ -375,9 +505,14 @@ class _ClientProgramsView extends StatelessWidget {
                         : (day.workoutName ?? 'Workout')),
                     trailing: day.restDay
                         ? const Icon(Icons.hotel)
-                        : Icon(day.completed
-                            ? Icons.check_circle
-                            : Icons.chevron_right),
+                        : (day.trainingSessionId == null
+                            ? FilledButton.tonal(
+                                onPressed: () => startDay(day),
+                                child: const Text('Start'),
+                              )
+                            : Icon(day.completed
+                                ? Icons.check_circle
+                                : Icons.chevron_right)),
                     onTap: day.trainingSessionId == null
                         ? null
                         : () => Navigator.pushNamed(
@@ -1141,6 +1276,7 @@ class _ProgramAssignDialog extends StatefulWidget {
 class _ProgramAssignDialogState extends State<_ProgramAssignDialog> {
   final Set<int> _selectedClientIds = <int>{};
   DateTime _startDate = DateTime.now();
+  bool _assignToTrainer = false;
 
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(
@@ -1178,7 +1314,22 @@ class _ProgramAssignDialogState extends State<_ProgramAssignDialog> {
               ],
             ),
             const SizedBox(height: 12),
-            const Text('Select clients'),
+            SwitchListTile(
+              value: _assignToTrainer,
+              onChanged: (value) {
+                setState(() {
+                  _assignToTrainer = value;
+                  if (_assignToTrainer) {
+                    _selectedClientIds.clear();
+                  }
+                });
+              },
+              title: const Text('Assign to me'),
+              subtitle: const Text('Create a solo version for yourself.'),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 8),
+            Text(_assignToTrainer ? 'Clients' : 'Select clients'),
             const SizedBox(height: 8),
             SizedBox(
               height: 320,
@@ -1193,7 +1344,8 @@ class _ProgramAssignDialogState extends State<_ProgramAssignDialog> {
                             : (client.email == null
                                 ? null
                                 : Text(client.email!)),
-                        onChanged: assignedClientIds.contains(client.id)
+                        onChanged: _assignToTrainer ||
+                                assignedClientIds.contains(client.id)
                             ? null
                             : (checked) {
                                 setState(() {
@@ -1218,15 +1370,16 @@ class _ProgramAssignDialogState extends State<_ProgramAssignDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _selectedClientIds.isEmpty
-              ? null
-              : () => Navigator.pop(
+          onPressed: _assignToTrainer || _selectedClientIds.isNotEmpty
+              ? () => Navigator.pop(
                     context,
                     _AssignmentDraft(
                       clientIds: _selectedClientIds.toList()..sort(),
                       startDate: _startDate,
+                      assignToTrainer: _assignToTrainer,
                     ),
-                  ),
+                  )
+              : null,
           child: const Text('Assign'),
         ),
       ],
@@ -1237,10 +1390,12 @@ class _ProgramAssignDialogState extends State<_ProgramAssignDialog> {
 class _AssignmentDraft {
   final List<int> clientIds;
   final DateTime startDate;
+  final bool assignToTrainer;
 
   const _AssignmentDraft({
     required this.clientIds,
     required this.startDate,
+    required this.assignToTrainer,
   });
 }
 

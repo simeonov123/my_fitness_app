@@ -28,6 +28,10 @@ public final class TrainingSessionMapper {
                         .stream()
                         .map(c -> c.getId())
                         .collect(Collectors.toList()),
+                t.getClients()
+                        .stream()
+                        .map(c -> c.getFullName() == null ? "Client" : c.getFullName())
+                        .collect(Collectors.toList()),
                 (t.getWorkoutTemplate() != null)
                         ? t.getWorkoutTemplate().getId()
                         : null

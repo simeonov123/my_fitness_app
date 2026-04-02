@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2026-04-02-update-program-assignments-for-solo" author="codex">
+        <addColumn tableName="client_program_assignments">
+            <column name="trainer_id" type="BIGINT"/>
+            <column name="assigned_to_trainer" type="BOOLEAN" defaultValueBoolean="false"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="client_program_assignments"
+                                 baseColumnNames="trainer_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_program_assignments_trainer"/>
+    </changeSet>
+
+    <changeSet id="2026-04-02-program-assignments-client-nullable" author="codex">
+        <dropNotNullConstraint tableName="client_program_assignments"
+                               columnName="client_id"
+                               columnDataType="BIGINT"/>
+    </changeSet>
+</databaseChangeLog>

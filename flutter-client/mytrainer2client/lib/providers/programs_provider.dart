@@ -9,12 +9,18 @@ class ProgramsProvider extends ChangeNotifier {
   bool loading = false;
   List<ProgramTemplateModel> templates = [];
   List<ClientProgram> clientPrograms = [];
+  List<ClientProgram> trainerAssignedPrograms = [];
 
   Future<void> loadTrainerPrograms() async {
     loading = true;
     notifyListeners();
     try {
-      templates = await _api.listTemplates();
+      final results = await Future.wait([
+        _api.listTemplates(),
+        _api.listTrainerAssignedPrograms(),
+      ]);
+      templates = results[0] as List<ProgramTemplateModel>;
+      trainerAssignedPrograms = results[1] as List<ClientProgram>;
     } finally {
       loading = false;
       notifyListeners();
@@ -58,12 +64,96 @@ class ProgramsProvider extends ChangeNotifier {
     required int templateId,
     required List<int> clientIds,
     required DateTime startDate,
+    bool assignToTrainer = false,
   }) async {
     await _api.assignTemplate(
       templateId: templateId,
       clientIds: clientIds,
       startDate: startDate,
+      assignToTrainer: assignToTrainer,
     );
+    await loadTrainerPrograms();
+  }
+
+  Future<int> startClientProgramDay({
+    required int assignmentId,
+    required int dayIndex,
+  }) async {
+    final session = await _api.startClientProgramDay(
+      assignmentId: assignmentId,
+      dayIndex: dayIndex,
+    );
+    _applyStartedDay(
+      programs: clientPrograms,
+      assignmentId: assignmentId,
+      dayIndex: dayIndex,
+      trainingSessionId: session.id,
+    );
+    return session.id;
+  }
+
+  Future<int> startTrainerProgramDay({
+    required int assignmentId,
+    required int dayIndex,
+  }) async {
+    final session = await _api.startTrainerProgramDay(
+      assignmentId: assignmentId,
+      dayIndex: dayIndex,
+    );
+    _applyStartedDay(
+      programs: trainerAssignedPrograms,
+      assignmentId: assignmentId,
+      dayIndex: dayIndex,
+      trainingSessionId: session.id,
+    );
+    return session.id;
+  }
+
+  void _applyStartedDay({
+    required List<ClientProgram> programs,
+    required int assignmentId,
+    required int dayIndex,
+    required int trainingSessionId,
+  }) {
+    final programIndex =
+        programs.indexWhere((program) => program.assignmentId == assignmentId);
+    if (programIndex == -1) {
+      return;
+    }
+    final program = programs[programIndex];
+    final updatedDays = program.days
+        .map((day) => day.dayIndex == dayIndex
+            ? ClientProgramDay(
+                dayIndex: day.dayIndex,
+                label: day.label,
+                restDay: day.restDay,
+                trainingSessionId: trainingSessionId,
+                workoutTemplateId: day.workoutTemplateId,
+                workoutName: day.workoutName,
+                completed: day.completed,
+              )
+            : day)
+        .toList();
+    final updatedPrograms = [...programs];
+    updatedPrograms[programIndex] = ClientProgram(
+      assignmentId: program.assignmentId,
+      programId: program.programId,
+      name: program.name,
+      goal: program.goal,
+      description: program.description,
+      startDate: program.startDate,
+      endDate: program.endDate,
+      totalDays: program.totalDays,
+      completedDays: program.completedDays,
+      status: program.status,
+      assignedAt: program.assignedAt,
+      days: updatedDays,
+    );
+    if (programs == clientPrograms) {
+      clientPrograms = updatedPrograms;
+    } else {
+      trainerAssignedPrograms = updatedPrograms;
+    }
     notifyListeners();
   }
 }

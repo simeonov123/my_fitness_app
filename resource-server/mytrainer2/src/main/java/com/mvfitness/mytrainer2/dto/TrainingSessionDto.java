@@ -21,5 +21,6 @@ public record TrainingSessionDto(
         String             status,
         Boolean            isCompleted,
         List<Long>         clientIds,
+        List<String>       clientNames,
         Long               workoutTemplateId
 ) { }

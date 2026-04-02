@@ -4,6 +4,7 @@ import com.mvfitness.mytrainer2.domain.Client;
 import com.mvfitness.mytrainer2.domain.ClientProgramAssignment;
 import com.mvfitness.mytrainer2.domain.Program;
 import com.mvfitness.mytrainer2.domain.ProgramTemplate;
+import com.mvfitness.mytrainer2.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,9 +12,13 @@ import java.util.List;
 public interface ClientProgramAssignmentRepository extends JpaRepository<ClientProgramAssignment, Long> {
     List<ClientProgramAssignment> findByClientOrderByAssignedAtDesc(Client client);
 
+    List<ClientProgramAssignment> findByTrainerAssigneeOrderByAssignedAtDesc(User trainer);
+
     List<ClientProgramAssignment> findByProgramIn(List<Program> programs);
 
     boolean existsByClientAndProgram_ProgramTemplate(Client client, ProgramTemplate programTemplate);
+
+    boolean existsByTrainerAssigneeAndProgram_ProgramTemplate(User trainer, ProgramTemplate programTemplate);
 
     void deleteByProgramIn(List<Program> programs);
 }

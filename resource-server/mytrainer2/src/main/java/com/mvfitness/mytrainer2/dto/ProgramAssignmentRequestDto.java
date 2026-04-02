@@ -5,5 +5,6 @@ import java.util.List;
 
 public record ProgramAssignmentRequestDto(
         List<Long> clientIds,
-        LocalDate startDate
+        LocalDate startDate,
+        Boolean assignToTrainer
 ) { }

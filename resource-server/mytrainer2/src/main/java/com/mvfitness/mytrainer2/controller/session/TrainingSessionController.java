@@ -64,7 +64,7 @@ public class TrainingSessionController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TRAINER')")
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     public TrainingSessionDto update(JwtAuthenticationToken auth,
                                      @PathVariable Long id,
                                      @RequestBody TrainingSessionDto dto) {

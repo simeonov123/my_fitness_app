@@ -45,4 +45,7 @@ public class Program extends BaseTimestampedEntity {
 
     @OneToMany(mappedBy = "program", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ClientProgramAssignment> assignments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "program", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProgramDay> programDays = new ArrayList<>();
 }

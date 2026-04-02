@@ -2,6 +2,7 @@ package com.mvfitness.mytrainer2.service.program;
 
 import com.mvfitness.mytrainer2.domain.*;
 import com.mvfitness.mytrainer2.dto.*;
+import com.mvfitness.mytrainer2.mapper.TrainingSessionMapper;
 import com.mvfitness.mytrainer2.repository.*;
 import com.mvfitness.mytrainer2.service.session.TrainingSessionService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
     private final ProgramRepository programs;
     private final MesocycleRepository mesocycles;
     private final MicrocycleRepository microcycles;
+    private final ProgramDayRepository programDays;
     private final ClientProgramAssignmentRepository assignments;
     private final TrainingSessionRepository trainingSessions;
     private final TrainingSessionService trainingSessionService;
@@ -332,19 +334,89 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
         if (dto.startDate() == null) {
             throw new IllegalArgumentException("Start date is required");
         }
+        LocalDate startDate = dto.startDate();
 
-        List<Client> selectedClients = ownedClientsOr404(trainer, dto.clientIds());
+        boolean assignToTrainer = Boolean.TRUE.equals(dto.assignToTrainer());
+        if (assignToTrainer && dto.clientIds() != null && !dto.clientIds().isEmpty()) {
+            throw new IllegalArgumentException("Solo program cannot include clients");
+        }
+
+        List<Client> selectedClients = assignToTrainer
+                ? List.of()
+                : ownedClientsOr404(trainer, dto.clientIds());
         List<MesocycleTemplate> mesocycleTemplatesOrdered = mesocycleTemplates.findByProgramTemplateOrderBySequenceOrderAsc(template);
         if (mesocycleTemplatesOrdered.isEmpty()) {
             throw new IllegalArgumentException("Program template is incomplete");
+        }
+
+        if (assignToTrainer) {
+            if (assignments.existsByTrainerAssigneeAndProgram_ProgramTemplate(trainer, template)) {
+                throw new IllegalArgumentException("Program already assigned to trainer");
+            }
+            Program program = programs.save(Program.builder()
+                    .trainer(trainer)
+                    .programTemplate(template)
+                    .name(template.getName())
+                    .goal(template.getGoal())
+                    .description(template.getDescription())
+                    .build());
+
+            int mesocycleOrder = 1;
+            int globalDayIndex = 1;
+            for (MesocycleTemplate mesocycleTemplate : mesocycleTemplatesOrdered) {
+                MicrocycleTemplate microcycleTemplate = microcycleTemplates
+                        .findFirstByMesocycleTemplateOrderBySequenceOrderAsc(mesocycleTemplate)
+                        .orElseThrow(() -> new IllegalArgumentException("Program template is incomplete"));
+                List<MicrocycleTemplateWorkouts> days = templateWorkouts
+                        .findByMicrocycleTemplateOrderByDayIndexAsc(microcycleTemplate);
+
+                Mesocycle mesocycle = mesocycles.save(Mesocycle.builder()
+                        .program(program)
+                        .name(mesocycleTemplate.getName())
+                        .goal(mesocycleTemplate.getGoal())
+                        .description(mesocycleTemplate.getDescription())
+                        .sequenceOrder(mesocycleOrder)
+                        .build());
+
+                Microcycle microcycle = microcycles.save(Microcycle.builder()
+                        .mesocycle(mesocycle)
+                        .name(microcycleTemplate.getName())
+                        .goal(microcycleTemplate.getGoal())
+                        .description(microcycleTemplate.getDescription())
+                        .sequenceOrder(1)
+                        .build());
+
+                for (int week = 0; week < mesocycleTemplate.getLengthInWeeks(); week++) {
+                    for (MicrocycleTemplateWorkouts day : days) {
+                        programDays.save(ProgramDay.builder()
+                                .program(program)
+                                .dayIndex(globalDayIndex)
+                                .restDay(day.getWorkoutTemplate() == null)
+                                .workoutTemplate(day.getWorkoutTemplate())
+                                .notes(day.getNotes())
+                                .status("PLANNED")
+                                .build());
+                        globalDayIndex++;
+                    }
+                }
+                mesocycleOrder++;
+            }
+
+            assignments.save(ClientProgramAssignment.builder()
+                    .trainerAssignee(trainer)
+                    .program(program)
+                    .assignedByTrainer(trainer)
+                    .startDate(startDate)
+                    .status("ACTIVE")
+                    .assignedToTrainer(Boolean.TRUE)
+                    .build());
+            return;
         }
 
         for (Client client : selectedClients) {
             if (assignments.existsByClientAndProgram_ProgramTemplate(client, template)) {
                 throw new IllegalArgumentException("Program already assigned to client");
             }
-            LocalDate startDate = dto.startDate();
-            LocalDate cursorDate = startDate;
             int globalDayIndex = 1;
             Program program = programs.save(Program.builder()
                     .trainer(trainer)
@@ -362,60 +434,32 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
                 List<MicrocycleTemplateWorkouts> days = templateWorkouts
                         .findByMicrocycleTemplateOrderByDayIndexAsc(microcycleTemplate);
 
-                int mesocycleDays = (mesocycleTemplate.getLengthInWeeks() == null ? 0 : mesocycleTemplate.getLengthInWeeks())
-                        * (microcycleTemplate.getLengthInDays() == null ? 0 : microcycleTemplate.getLengthInDays());
-                LocalDate mesocycleStart = cursorDate;
-                LocalDate mesocycleEnd = mesocycleStart.plusDays(Math.max(mesocycleDays - 1L, 0L));
-
                 Mesocycle mesocycle = mesocycles.save(Mesocycle.builder()
                         .program(program)
                         .name(mesocycleTemplate.getName())
                         .goal(mesocycleTemplate.getGoal())
                         .description(mesocycleTemplate.getDescription())
-                        .startDate(mesocycleStart)
-                        .endDate(mesocycleEnd)
                         .sequenceOrder(mesocycleOrder)
                         .build());
 
-                Microcycle microcycle = microcycles.save(Microcycle.builder()
+                microcycles.save(Microcycle.builder()
                         .mesocycle(mesocycle)
                         .name(microcycleTemplate.getName())
                         .goal(microcycleTemplate.getGoal())
                         .description(microcycleTemplate.getDescription())
-                        .startDate(mesocycleStart)
-                        .endDate(mesocycleEnd)
                         .sequenceOrder(1)
                         .build());
 
                 for (int week = 0; week < mesocycleTemplate.getLengthInWeeks(); week++) {
                     for (MicrocycleTemplateWorkouts day : days) {
-                        LocalDateTime sessionStart = cursorDate.atTime(12, 0);
-                        LocalDateTime sessionEnd = sessionStart.plusHours(1);
-                        if (day.getWorkoutTemplate() != null) {
-                            String workoutName = day.getWorkoutTemplate().getName();
-                            TrainingSessionDto created = trainingSessionService.create(kcUserId, new TrainingSessionDto(
-                                    null,
-                                    sessionStart,
-                                    sessionEnd,
-                                    null,
-                                    null,
-                                    globalDayIndex,
-                                    "Day %d - %s".formatted(globalDayIndex, workoutName),
-                                    template.getDescription(),
-                                    "CLIENT",
-                                    day.getNotes(),
-                                    "PLANNED",
-                                    Boolean.FALSE,
-                                    List.of(client.getId()),
-                                    day.getWorkoutTemplate().getId()
-                            ));
-
-                            TrainingSession session = trainingSessions.findById(created.id())
-                                    .orElseThrow(() -> new IllegalArgumentException("Created session not found"));
-                            session.setMicrocycle(microcycle);
-                            trainingSessions.save(session);
-                        }
-                        cursorDate = cursorDate.plusDays(1);
+                        programDays.save(ProgramDay.builder()
+                                .program(program)
+                                .dayIndex(globalDayIndex)
+                                .restDay(day.getWorkoutTemplate() == null)
+                                .workoutTemplate(day.getWorkoutTemplate())
+                                .notes(day.getNotes())
+                                .status("PLANNED")
+                                .build());
                         globalDayIndex++;
                     }
                 }
@@ -428,6 +472,7 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
                     .assignedByTrainer(trainer)
                     .startDate(startDate)
                     .status("ACTIVE")
+                    .assignedToTrainer(Boolean.FALSE)
                     .build());
         }
     }
@@ -437,101 +482,146 @@ public class ProgramTemplateServiceImpl implements ProgramTemplateService {
     public List<ClientProgramDto> listClientPrograms(String kcUserId) {
         Client client = clientProfileOr404(kcUserId);
         return assignments.findByClientOrderByAssignedAtDesc(client).stream()
-                .map(assignment -> {
-                    Program program = assignment.getProgram();
-                    List<Mesocycle> orderedMesocycles = program.getMesocycles().stream()
-                            .sorted(Comparator.comparing(
-                                    meso -> meso.getSequenceOrder() == null ? Integer.MAX_VALUE : meso.getSequenceOrder()))
-                            .toList();
-                    List<Microcycle> orderedMicrocycles = orderedMesocycles.stream()
-                            .flatMap(meso -> meso.getMicrocycles().stream()
-                                    .sorted(Comparator.comparing(
-                                            micro -> micro.getSequenceOrder() == null ? Integer.MAX_VALUE : micro.getSequenceOrder())))
-                            .toList();
-
-                    if (orderedMicrocycles.isEmpty()) {
-                        return new ClientProgramDto(
-                                assignment.getId(),
-                                program.getId(),
-                                program.getName(),
-                                program.getGoal(),
-                                program.getDescription(),
-                                assignment.getStartDate(),
-                                assignment.getStartDate(),
-                                0,
-                                0,
-                                assignment.getStatus(),
-                                assignment.getAssignedAt(),
-                                List.of()
-                        );
-                    }
-
-                    List<TrainingSession> sessions = orderedMicrocycles.stream()
-                            .flatMap(microcycle -> microcycle.getTrainingSessions().stream())
-                            .filter(session -> session.getClients().stream()
-                                    .anyMatch(c -> Objects.equals(c.getId(), client.getId())))
-                            .sorted(Comparator.comparing(
-                                    session -> session.getDayIndexInCycle() == null ? Integer.MAX_VALUE : session.getDayIndexInCycle()))
-                            .toList();
-
-                    Map<Integer, TrainingSession> sessionsByDay = sessions.stream()
-                            .filter(session -> session.getDayIndexInCycle() != null)
-                            .collect(Collectors.toMap(
-                                    TrainingSession::getDayIndexInCycle,
-                                    Function.identity(),
-                                    (left, right) -> left,
-                                    LinkedHashMap::new
-                            ));
-
-                    LocalDate programStartDate = orderedMicrocycles.get(0).getStartDate();
-                    LocalDate programEndDate = orderedMicrocycles.get(orderedMicrocycles.size() - 1).getEndDate();
-                    int totalDays = (int) (programEndDate.toEpochDay() - programStartDate.toEpochDay()) + 1;
-                    int completedDays = (int) sessions.stream()
-                            .filter(session -> Boolean.TRUE.equals(session.getIsCompleted()))
-                            .count();
-
-                    List<ClientProgramDayDto> dayDtos = new ArrayList<>();
-                    for (int dayIndex = 1; dayIndex <= totalDays; dayIndex++) {
-                        TrainingSession session = sessionsByDay.get(dayIndex);
-                        if (session == null) {
-                            dayDtos.add(new ClientProgramDayDto(
-                                    dayIndex,
-                                    "Day " + dayIndex,
-                                    Boolean.TRUE,
-                                    null,
-                                    null,
-                                    null,
-                                    Boolean.FALSE
-                            ));
-                            continue;
-                        }
-
-                        dayDtos.add(new ClientProgramDayDto(
-                                dayIndex,
-                                "Day " + dayIndex,
-                                Boolean.FALSE,
-                                session.getId(),
-                                session.getWorkoutTemplate() != null ? session.getWorkoutTemplate().getId() : null,
-                                session.getWorkoutTemplate() != null ? session.getWorkoutTemplate().getName() : session.getSessionName(),
-                                Boolean.TRUE.equals(session.getIsCompleted())
-                        ));
-                    }
-
-                    return new ClientProgramDto(
-                            assignment.getId(),
-                            program.getId(),
-                            program.getName(),
-                            program.getGoal(),
-                            program.getDescription(),
-                            programStartDate,
-                            programEndDate,
-                            totalDays,
-                            completedDays,
-                            assignment.getStatus(),
-                            assignment.getAssignedAt(),
-                            dayDtos
-                    );
-                })
+                .map(this::toClientProgramDto)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClientProgramDto> listTrainerAssignedPrograms(String kcUserId) {
+        User trainer = trainerOr404(kcUserId);
+        return assignments.findByTrainerAssigneeOrderByAssignedAtDesc(trainer).stream()
+                .map(this::toClientProgramDto)
+                .toList();
+    }
+
+    @Override
+    public TrainingSessionDto startProgramDayForClient(String kcUserId, Long assignmentId, Integer dayIndex) {
+        Client client = clientProfileOr404(kcUserId);
+        ClientProgramAssignment assignment = assignments.findById(assignmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Program assignment not found"));
+        if (assignment.getClient() == null || !Objects.equals(assignment.getClient().getId(), client.getId())) {
+            throw new IllegalArgumentException("Program assignment not found");
+        }
+        return startProgramDay(assignment, dayIndex, assignment.getProgram().getTrainer().getKeycloakUserId(),
+                List.of(client.getId()), "CLIENT");
+    }
+
+    @Override
+    public TrainingSessionDto startProgramDayForTrainer(String kcUserId, Long assignmentId, Integer dayIndex) {
+        User trainer = trainerOr404(kcUserId);
+        ClientProgramAssignment assignment = assignments.findById(assignmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Program assignment not found"));
+        if (assignment.getTrainerAssignee() == null ||
+                !Objects.equals(assignment.getTrainerAssignee().getId(), trainer.getId())) {
+            throw new IllegalArgumentException("Program assignment not found");
+        }
+        return startProgramDay(assignment, dayIndex, trainer.getKeycloakUserId(), List.of(), "SOLO");
+    }
+
+    private TrainingSessionDto startProgramDay(
+            ClientProgramAssignment assignment,
+            Integer dayIndex,
+            String trainerKc,
+            List<Long> clientIds,
+            String sessionType
+    ) {
+        if (dayIndex == null || dayIndex < 1) {
+            throw new IllegalArgumentException("Day index is required");
+        }
+        Program program = assignment.getProgram();
+        ProgramDay day = programDays.findByProgramAndDayIndex(program, dayIndex)
+                .orElseThrow(() -> new IllegalArgumentException("Program day not found"));
+        if (Boolean.TRUE.equals(day.getRestDay())) {
+            throw new IllegalArgumentException("Rest days cannot be started");
+        }
+        if (day.getTrainingSession() != null) {
+            return TrainingSessionMapper.toDto(day.getTrainingSession());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime end = now.plusHours(1);
+        String workoutName = day.getWorkoutTemplate() == null ? "Workout" : day.getWorkoutTemplate().getName();
+
+        TrainingSessionDto created = trainingSessionService.create(trainerKc, new TrainingSessionDto(
+                null,
+                now,
+                end,
+                null,
+                null,
+                dayIndex,
+                "Day %d - %s".formatted(dayIndex, workoutName),
+                program.getDescription(),
+                sessionType,
+                day.getNotes(),
+                "PLANNED",
+                Boolean.FALSE,
+                clientIds,
+                List.of(),
+                day.getWorkoutTemplate() == null ? null : day.getWorkoutTemplate().getId()
+        ));
+
+        TrainingSession session = trainingSessions.findById(created.id())
+                .orElseThrow(() -> new IllegalArgumentException("Created session not found"));
+        day.setTrainingSession(session);
+        day.setStartedAt(now);
+        day.setStatus("STARTED");
+        programDays.save(day);
+        return created;
+    }
+
+    private ClientProgramDto toClientProgramDto(ClientProgramAssignment assignment) {
+        Program program = assignment.getProgram();
+        List<ProgramDay> days = programDays.findByProgramOrderByDayIndexAsc(program);
+        if (days.isEmpty()) {
+            return new ClientProgramDto(
+                    assignment.getId(),
+                    program.getId(),
+                    program.getName(),
+                    program.getGoal(),
+                    program.getDescription(),
+                    assignment.getStartDate(),
+                    assignment.getStartDate(),
+                    0,
+                    0,
+                    assignment.getStatus(),
+                    assignment.getAssignedAt(),
+                    List.of()
+            );
+        }
+
+        int completedDays = (int) days.stream()
+                .filter(day -> day.getTrainingSession() != null && Boolean.TRUE.equals(day.getTrainingSession().getIsCompleted()))
+                .count();
+
+        List<ClientProgramDayDto> dayDtos = new ArrayList<>();
+        for (ProgramDay day : days) {
+            TrainingSession session = day.getTrainingSession();
+            WorkoutTemplate workout = day.getWorkoutTemplate();
+            dayDtos.add(new ClientProgramDayDto(
+                    day.getDayIndex(),
+                    "Day " + day.getDayIndex(),
+                    Boolean.TRUE.equals(day.getRestDay()),
+                    session == null ? null : session.getId(),
+                    workout == null ? null : workout.getId(),
+                    workout == null ? null : workout.getName(),
+                    session != null && Boolean.TRUE.equals(session.getIsCompleted())
+            ));
+        }
+
+        return new ClientProgramDto(
+                assignment.getId(),
+                program.getId(),
+                program.getName(),
+                program.getGoal(),
+                program.getDescription(),
+                assignment.getStartDate(),
+                assignment.getStartDate(),
+                days.size(),
+                completedDays,
+                assignment.getStatus(),
+                assignment.getAssignedAt(),
+                dayDtos
+        );
     }
 }

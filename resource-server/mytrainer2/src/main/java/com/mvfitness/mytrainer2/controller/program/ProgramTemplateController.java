@@ -1,7 +1,9 @@
 package com.mvfitness.mytrainer2.controller.program;
 
+import com.mvfitness.mytrainer2.dto.ClientProgramDto;
 import com.mvfitness.mytrainer2.dto.ProgramAssignmentRequestDto;
 import com.mvfitness.mytrainer2.dto.ProgramTemplateDto;
+import com.mvfitness.mytrainer2.dto.TrainingSessionDto;
 import com.mvfitness.mytrainer2.service.program.ProgramTemplateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -61,5 +63,19 @@ public class ProgramTemplateController {
     ) {
         service.assignTemplate(kc(auth), id, dto);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/assigned")
+    public List<ClientProgramDto> listAssigned(JwtAuthenticationToken auth) {
+        return service.listTrainerAssignedPrograms(kc(auth));
+    }
+
+    @PostMapping("/assigned/{assignmentId}/days/{dayIndex}/start")
+    public TrainingSessionDto startProgramDay(
+            JwtAuthenticationToken auth,
+            @PathVariable Long assignmentId,
+            @PathVariable Integer dayIndex
+    ) {
+        return service.startProgramDayForTrainer(kc(auth), assignmentId, dayIndex);
     }
 }

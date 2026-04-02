@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2026-04-02-add-program-days" author="codex">
+        <createTable tableName="program_days">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_program_days"/>
+            </column>
+            <column name="program_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="day_index" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rest_day" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="workout_template_id" type="BIGINT"/>
+            <column name="notes" type="TEXT"/>
+            <column name="status" type="VARCHAR(50)"/>
+            <column name="started_at" type="DATETIME"/>
+            <column name="training_session_id" type="BIGINT"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="program_days"
+                                 baseColumnNames="program_id"
+                                 referencedTableName="programs"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_program_days_program"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="program_days"
+                                 baseColumnNames="workout_template_id"
+                                 referencedTableName="workout_templates"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_program_days_workout_template"/>
+
+        <addForeignKeyConstraint baseTableName="program_days"
+                                 baseColumnNames="training_session_id"
+                                 referencedTableName="training_sessions"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_program_days_training_session"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="program_days" indexName="idx_program_days_program_day">
+            <column name="program_id"/>
+            <column name="day_index"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

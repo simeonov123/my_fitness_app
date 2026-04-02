@@ -800,4 +800,8 @@
              relativeToChangelogFile="true"/>
     <include file="2026-04-01-add-program-template-to-programs.xml"
              relativeToChangelogFile="true"/>
+    <include file="2026-04-02-add-program-days.xml"
+             relativeToChangelogFile="true"/>
+    <include file="2026-04-02-update-program-assignments-for-solo.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>

@@ -19,9 +19,13 @@ public class ClientProgramAssignment extends BaseTimestampedEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "client_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id")
     private Client client;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trainer_id")
+    private User trainerAssignee;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_id", nullable = false)
@@ -37,6 +41,9 @@ public class ClientProgramAssignment extends BaseTimestampedEntity {
     @Column(length = 50)
     private String status;
 
+    @Column(name = "assigned_to_trainer")
+    private Boolean assignedToTrainer;
+
     @Column(name = "assigned_at", nullable = false)
     private LocalDateTime assignedAt;
 
@@ -47,6 +54,9 @@ public class ClientProgramAssignment extends BaseTimestampedEntity {
         }
         if (status == null || status.isBlank()) {
             status = "ACTIVE";
+        }
+        if (assignedToTrainer == null) {
+            assignedToTrainer = Boolean.FALSE;
         }
     }
 }

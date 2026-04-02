@@ -10,7 +10,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
-@PreAuthorize("hasRole('TRAINER')")
 @RestController
 @RequestMapping("/trainer/exercises")
 @RequiredArgsConstructor
@@ -19,6 +18,7 @@ public class ExerciseController {
     private final ExerciseService svc;
     private static String kc(JwtAuthenticationToken a){ return a.getToken().getSubject(); }
 
+    @PreAuthorize("hasRole('TRAINER')")
     @GetMapping
     public Page<ExerciseDto> list(
             JwtAuthenticationToken auth,
@@ -30,6 +30,7 @@ public class ExerciseController {
     }
 
 
+    @PreAuthorize("hasAnyRole('TRAINER','CLIENT')")
     @GetMapping("/common")
     public Page<ExerciseDto> listCommonExercises(
             JwtAuthenticationToken auth,
@@ -40,16 +41,19 @@ public class ExerciseController {
         return svc.listCommonExercises(kc(auth),q,page,size,sort);
     }
 
+    @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/{id}")
     public ExerciseDto get(JwtAuthenticationToken auth,@PathVariable Long id){
         return svc.get(kc(auth),id);
     }
 
+    @PreAuthorize("hasRole('TRAINER')")
     @PostMapping
     public ExerciseDto create(JwtAuthenticationToken auth,@RequestBody ExerciseDto dto){
         return svc.create(kc(auth),dto);
     }
 
+    @PreAuthorize("hasRole('TRAINER')")
     @PutMapping("/{id}")
     public ExerciseDto update(JwtAuthenticationToken auth,
                               @PathVariable Long id,
@@ -57,6 +61,7 @@ public class ExerciseController {
         return svc.update(kc(auth),id,dto);
     }
 
+    @PreAuthorize("hasRole('TRAINER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(JwtAuthenticationToken auth,@PathVariable Long id){
         svc.delete(kc(auth),id);
