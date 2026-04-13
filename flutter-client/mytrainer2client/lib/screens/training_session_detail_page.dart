@@ -736,6 +736,39 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
     _groups
       ..clear()
       ..addAll(grouped.values);
+
+    _ensureGroupsInitialized();
+  }
+
+  void _ensureGroupsInitialized() {
+    if (_session == null || _groups.isNotEmpty) return;
+
+    if (_isSoloSession || _session!.clientIds.isEmpty) {
+      _groups.add(
+        InstanceClientGroup(
+          workoutInstanceId: 0,
+          clientId: null,
+          clientName: 'You',
+          items: [],
+        ),
+      );
+      return;
+    }
+
+    for (var i = 0; i < _session!.clientIds.length; i++) {
+      final clientId = _session!.clientIds[i];
+      final clientName = i < _session!.clientNames.length
+          ? _session!.clientNames[i]
+          : 'Client ${i + 1}';
+      _groups.add(
+        InstanceClientGroup(
+          workoutInstanceId: 0,
+          clientId: clientId,
+          clientName: clientName,
+          items: [],
+        ),
+      );
+    }
   }
 
   /* ───────── UI ───────── */
