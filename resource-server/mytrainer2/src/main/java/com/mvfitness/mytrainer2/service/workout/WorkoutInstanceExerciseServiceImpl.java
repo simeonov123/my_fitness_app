@@ -32,6 +32,7 @@ public class WorkoutInstanceExerciseServiceImpl
         implements WorkoutInstanceExerciseService {
 
     private final WorkoutInstanceExerciseRepository repo;
+    private final WorkoutInstanceRepository         instanceRepo;
     private final TrainingSessionRepository         sessions;
     private final ExerciseRepository                exRepo;
     private final UserRepository                    users;
@@ -105,6 +106,20 @@ public class WorkoutInstanceExerciseServiceImpl
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
     }
 
+    private WorkoutInstance createWorkoutInstance(TrainingSession session, Client client) {
+        WorkoutInstance instance = WorkoutInstance.builder()
+                .trainingSession(session)
+                .client(client)
+                .workoutTemplate(session.getWorkoutTemplate())
+                .build();
+        instance = instanceRepo.save(instance);
+        session.getWorkoutInstances().add(instance);
+        if (client != null) {
+            client.getWorkoutInstances().add(instance);
+        }
+        return instance;
+    }
+
     /* ───────── API ───────── */
 
     @Override @Transactional(readOnly = true)
@@ -146,10 +161,15 @@ public class WorkoutInstanceExerciseServiceImpl
             throw new IllegalArgumentException("Completed sessions are read-only for clients");
         }
         Map<Long, WorkoutInstance> workoutInstancesById = session.getWorkoutInstances().stream()
-                .collect(Collectors.toMap(WorkoutInstance::getId, Function.identity()));
+                .collect(Collectors.toMap(WorkoutInstance::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
         Map<Long, WorkoutInstance> workoutInstancesByClientId = session.getWorkoutInstances().stream()
                 .filter(wi -> wi.getClient() != null)
-                .collect(Collectors.toMap(wi -> wi.getClient().getId(), Function.identity()));
+                .collect(Collectors.toMap(
+                        wi -> wi.getClient().getId(),
+                        Function.identity(),
+                        (left, right) -> left,
+                        LinkedHashMap::new
+                ));
         WorkoutInstance soloInstance = session.getWorkoutInstances().stream()
                 .filter(wi -> wi.getClient() == null)
                 .findFirst()
@@ -199,9 +219,23 @@ public class WorkoutInstanceExerciseServiceImpl
                 }
                 if (wi == null && dto.clientId() != null) {
                     wi = workoutInstancesByClientId.get(dto.clientId());
+                    if (wi == null) {
+                        Client sessionClient = session.getClients().stream()
+                                .filter(client -> Objects.equals(client.getId(), dto.clientId()))
+                                .findFirst()
+                                .orElseThrow(() -> new IllegalArgumentException("Workout instance not found for client entry"));
+                        wi = createWorkoutInstance(session, sessionClient);
+                        workoutInstancesById.put(wi.getId(), wi);
+                        workoutInstancesByClientId.put(sessionClient.getId(), wi);
+                    }
                 }
                 if (wi == null && dto.clientId() == null) {
                     wi = soloInstance;
+                    if (wi == null) {
+                        wi = createWorkoutInstance(session, null);
+                        workoutInstancesById.put(wi.getId(), wi);
+                        soloInstance = wi;
+                    }
                 }
             } else {
                 wi = ownInstance;

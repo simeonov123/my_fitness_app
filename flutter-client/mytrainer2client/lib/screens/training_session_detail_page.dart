@@ -13,7 +13,6 @@ import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
 import '../models/workout_instance_exercise_set.dart';
 import '../models/workout_template_exercise.dart';
-import '../models/workout_template_exercise_set.dart';
 import '../providers/auth_provider.dart';
 import '../providers/exercise_history_provider.dart';
 import '../providers/exercises_provider.dart';
