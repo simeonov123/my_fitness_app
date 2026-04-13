@@ -328,57 +328,36 @@ class _WorkoutTemplateExerciseWidgetState
     required String initialValue,
   }) async {
     final controller = TextEditingController(text: initialValue);
-    return showModalBottomSheet<String?>(
+    return showDialog<String?>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: AppDensity.space(14),
-          right: AppDensity.space(14),
-          top: AppDensity.space(14),
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + AppDensity.space(14),
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: controller,
+            maxLines: 4,
+            minLines: 3,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Add a pinned note',
+              border: OutlineInputBorder(),
+            ),
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(ctx).textTheme.titleMedium,
-            ),
-            SizedBox(height: AppDensity.space(10)),
-            TextField(
-              controller: controller,
-              maxLines: 4,
-              minLines: 3,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Add a pinned note',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: AppDensity.space(10)),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, ''),
-                  child: const Text('Clear'),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-                SizedBox(width: AppDensity.space(8)),
-                FilledButton(
-                  onPressed: () => Navigator.pop(ctx, controller.text),
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-          ],
-        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('Clear'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
@@ -934,6 +913,13 @@ class _SetValueFieldState extends State<_SetValueField> {
 
   @override
   Widget build(BuildContext context) {
+    final inputFormatters = _allowDecimals
+        ? <TextInputFormatter>[
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+          ]
+        : <TextInputFormatter>[
+            FilteringTextInputFormatter.digitsOnly,
+          ];
     return TextFormField(
       controller: _controller,
       focusNode: _focusNode,
@@ -973,9 +959,8 @@ class _SetValueFieldState extends State<_SetValueField> {
         ),
       ),
       readOnly: widget.readOnly,
-      keyboardType: kIsWeb
-          ? TextInputType.visiblePassword
-          : TextInputType.numberWithOptions(decimal: _allowDecimals),
+      keyboardType: TextInputType.numberWithOptions(decimal: _allowDecimals),
+      inputFormatters: inputFormatters,
       onTap: () {
         if (_controller.text.isNotEmpty) {
           _controller.selection = TextSelection(

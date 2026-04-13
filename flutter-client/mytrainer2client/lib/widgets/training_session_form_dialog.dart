@@ -39,6 +39,7 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
 
   List<Client> _pickedClients = [];
   WorkoutTemplate? _pickedTpl;
+  bool _emptyWorkout = false;
 
   final _form = GlobalKey<FormState>();
 
@@ -369,18 +370,25 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                     SizedBox(height: AppDensity.space(12)),
                   ],
                   FormField<WorkoutTemplate>(
-                    validator: (_) => _pickedTpl == null
-                        ? 'Choose a workout template.'
-                        : null,
+                    validator: (_) => _emptyWorkout || _pickedTpl != null
+                        ? null
+                        : 'Choose a workout template.',
                     builder: (field) => _SelectionCard(
                       icon: Icons.fitness_center_rounded,
                       title: 'Workout template',
-                      value: _pickedTpl?.name ?? 'Choose the workout structure',
+                      value: _emptyWorkout
+                          ? 'Empty workout'
+                          : (_pickedTpl?.name ?? 'Choose the workout structure'),
                       subtitle: _pickedTpl == null
-                          ? 'Browse all workouts, folders, or ungrouped templates.'
+                          ? (_emptyWorkout
+                              ? 'Start from a blank session and add exercises later.'
+                              : 'Browse all workouts, folders, or ungrouped templates.')
                           : (_pickedTpl!.folderName ?? 'Ungrouped workout'),
                       errorText: field.errorText,
                       onTap: () async {
+                        if (_emptyWorkout) {
+                          setState(() => _emptyWorkout = false);
+                        }
                         final picked = await _showWorkoutPicker(
                           workouts: tProv.items,
                           foldersSupported: folderProv.supported,
@@ -390,6 +398,26 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                           field.didChange(picked);
                         }
                       },
+                    ),
+                  ),
+                  SizedBox(height: AppDensity.space(10)),
+                  Material(
+                    color: colors.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(18),
+                    child: SwitchListTile.adaptive(
+                      value: _emptyWorkout,
+                      onChanged: (value) {
+                        setState(() {
+                          _emptyWorkout = value;
+                          if (_emptyWorkout) {
+                            _pickedTpl = null;
+                          }
+                        });
+                      },
+                      title: const Text('Start with an empty workout'),
+                      subtitle: const Text(
+                        'Create a session without a template and build it later.',
+                      ),
                     ),
                   ),
                   SizedBox(height: AppDensity.space(18)),
@@ -414,7 +442,7 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
                           onPressed: _submitting ||
                                   (_sessionType == _clientSessionType &&
                                       _pickedClients.isEmpty) ||
-                                  _pickedTpl == null
+                                  (!_emptyWorkout && _pickedTpl == null)
                               ? null
                               : _submit,
                           style: FilledButton.styleFrom(
@@ -509,8 +537,8 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
         SnackBar(
           content: Text(
             _sessionType == _soloSessionType
-                ? 'Choose a workout to create a solo session.'
-                : 'Select at least one client and one workout.',
+                ? 'Choose a workout or start empty.'
+                : 'Select at least one client and a workout, or start empty.',
           ),
         ),
       );
@@ -535,7 +563,7 @@ class _TrainingSessionFormDialogState extends State<TrainingSessionFormDialog> {
       'sessionName': _name.text.trim().isEmpty ? null : _name.text.trim(),
       'clientIds': _pickedClients.map((c) => c.id).toList(),
       'sessionType': _sessionType,
-      'workoutTemplateId': _pickedTpl!.id,
+      'workoutTemplateId': _emptyWorkout ? null : _pickedTpl!.id,
     };
     Navigator.pop(context, dto);
   }
