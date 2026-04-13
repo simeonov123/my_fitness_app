@@ -60,8 +60,8 @@ class WorkoutInstanceExercise {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'workoutInstanceId': workoutInstanceId,
+        if (id > 0) 'id': id,
+        if (workoutInstanceId > 0) 'workoutInstanceId': workoutInstanceId,
         'clientId': clientId,
         'clientName': clientName,
         'exerciseId': exercise.id,

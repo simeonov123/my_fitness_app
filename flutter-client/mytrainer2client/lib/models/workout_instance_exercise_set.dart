@@ -42,8 +42,8 @@ class WorkoutInstanceExerciseSet {
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'workoutExerciseId': workoutExerciseId,
+        if (id > 0) 'id': id,
+        if (workoutExerciseId > 0) 'workoutExerciseId': workoutExerciseId,
         'setNumber': setNumber,
         'completed': completed,
         'setContextType': setContextType,
