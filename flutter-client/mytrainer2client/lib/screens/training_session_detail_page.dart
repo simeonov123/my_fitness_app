@@ -13,6 +13,7 @@ import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
 import '../models/workout_instance_exercise_set.dart';
 import '../models/workout_template_exercise.dart';
+import '../models/workout_template_exercise_set.dart';
 import '../providers/auth_provider.dart';
 import '../providers/exercise_history_provider.dart';
 import '../providers/exercises_provider.dart';
@@ -1720,8 +1721,23 @@ extension _ExTemplate on Exercise {
         setParams: defaultSetParams,
         restSeconds: null,
         notes: '',
-        sets: const [],
+        sets: [
+          WorkoutTemplateExerciseSet(
+            id: 0,
+            workoutExerciseId: 0,
+            setNumber: 1,
+            completed: false,
+            values: {
+              for (final key in _defaultParamKeys) key: 0.0,
+            },
+          ),
+        ],
       );
+
+  List<String> get _defaultParamKeys {
+    final raw = defaultSetParams?.split(',') ?? const <String>[];
+    return raw.where((s) => s.trim().isNotEmpty).map((s) => s.trim()).toList();
+  }
 }
 
 extension _ToInstance on WorkoutTemplateExercise {
