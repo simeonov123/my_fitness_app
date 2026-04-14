@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../models/copy_workout_request.dart';
 import '../models/session.dart';
+import '../providers/auth_provider.dart';
 import '../providers/session_store.dart';
+import '../providers/training_sessions_provider.dart';
 import '../theme/app_density.dart';
+import 'copy_workout_sheet.dart';
 
 class SessionCard extends StatelessWidget {
   const SessionCard({
@@ -244,6 +249,7 @@ class SessionCard extends StatelessWidget {
   }
 
   void _actions(BuildContext ctx) {
+    final isTrainer = ctx.read<AuthProvider>().isTrainer;
     showModalBottomSheet(
       context: ctx,
       backgroundColor: Theme.of(ctx).colorScheme.surface,
@@ -267,6 +273,44 @@ class SessionCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: AppDensity.space(10)),
+          if (isTrainer)
+            ListTile(
+              leading: const Icon(Icons.content_copy_rounded),
+              title: const Text('Copy workout'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final request = await showModalBottomSheet<CopyWorkoutRequest>(
+                  context: ctx,
+                  isScrollControlled: true,
+                  backgroundColor: Theme.of(ctx).colorScheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppDensity.radius(28)),
+                    ),
+                  ),
+                  builder: (_) => CopyWorkoutSheet(
+                    initialName: session.clients.isEmpty
+                        ? 'Copied workout'
+                        : session.clients.first,
+                  ),
+                );
+                if (request == null || !ctx.mounted) return;
+                try {
+                  await ctx
+                      .read<TrainingSessionsProvider>()
+                      .copy(sourceId: session.id, request: request);
+                  if (!ctx.mounted) return;
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('Workout copied')),
+                  );
+                } catch (e) {
+                  if (!ctx.mounted) return;
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('Failed to copy workout: $e')),
+                  );
+                }
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.edit),
             title: const Text('Edit'),

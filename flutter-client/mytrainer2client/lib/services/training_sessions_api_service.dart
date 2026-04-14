@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'authenticated_http.dart' as http;
 
 import '../models/page_response.dart';
+import '../models/copy_workout_request.dart';
 import '../models/exercise_history.dart';
 import '../models/training_session.dart';
 import '../models/workout_instance_exercise.dart';
@@ -128,6 +129,27 @@ class TrainingSessionsApiService {
         await http.post(uri, headers: await _hdr(token), body: jsonEncode(dto));
     if (res.statusCode != 200 && res.statusCode != 201) {
       _fail('POST session failed', res);
+    }
+    return TrainingSession.fromJson(jsonDecode(res.body));
+  }
+
+  Future<TrainingSession> copy({
+    String? token,
+    required int sourceId,
+    required CopyWorkoutRequest request,
+  }) async {
+    final uri = Uri.parse('$_base/trainer/training-sessions/$sourceId/copy');
+    final res = await http.post(
+      uri,
+      headers: await _hdr(token),
+      body: jsonEncode({
+        'sessionName': request.sessionName,
+        'startTime': request.startTime.toIso8601String(),
+        'endTime': request.endTime.toIso8601String(),
+      }),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      _fail('POST session copy failed', res);
     }
     return TrainingSession.fromJson(jsonDecode(res.body));
   }

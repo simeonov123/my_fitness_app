@@ -1,6 +1,7 @@
 package com.mvfitness.mytrainer2.controller.session;
 
 import com.mvfitness.mytrainer2.dto.CalendarDayCountDto;
+import com.mvfitness.mytrainer2.dto.TrainingSessionCopyRequestDto;
 import com.mvfitness.mytrainer2.dto.TrainingSessionDto;
 import com.mvfitness.mytrainer2.service.session.TrainingSessionService;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +62,14 @@ public class TrainingSessionController {
     public TrainingSessionDto create(JwtAuthenticationToken auth,
                                      @RequestBody TrainingSessionDto dto) {
         return svc.create(kc(auth), dto);
+    }
+
+    @PostMapping("/{id}/copy")
+    @PreAuthorize("hasRole('TRAINER')")
+    public TrainingSessionDto copy(JwtAuthenticationToken auth,
+                                   @PathVariable Long id,
+                                   @RequestBody TrainingSessionCopyRequestDto dto) {
+        return svc.copy(kc(auth), id, dto);
     }
 
     @PutMapping("/{id}")

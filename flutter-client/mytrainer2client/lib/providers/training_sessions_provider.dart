@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/copy_workout_request.dart';
 import '../models/session.dart';
 import '../models/training_session.dart';
 import '../providers/session_store.dart';
@@ -15,6 +16,7 @@ class TrainingSessionsProvider extends ChangeNotifier {
   /* ───── currently-viewed day list ───── */
   final List<TrainingSession> _dayList = [];
   List<TrainingSession> get dayList => List.unmodifiable(_dayList);
+  DateTime? _loadedDay;
 
   bool _trainerSoloOnly = false;
 
@@ -62,6 +64,7 @@ class TrainingSessionsProvider extends ChangeNotifier {
     required DateTime day,
   }) async {
     final list = await _api.listDay(day: day);
+    _loadedDay = DateUtils.dateOnly(day);
     _dayList
       ..clear()
       ..addAll(list);
@@ -141,8 +144,16 @@ class TrainingSessionsProvider extends ChangeNotifier {
     required Map<String, dynamic> dto,
   }) async {
     final created = await _api.create(dto: dto);
-    _dayList.add(created); // if it's today it appears immediately
-    notifyListeners();
+    _integrateCreatedSession(created);
+    return created;
+  }
+
+  Future<TrainingSession> copy({
+    required int sourceId,
+    required CopyWorkoutRequest request,
+  }) async {
+    final created = await _api.copy(sourceId: sourceId, request: request);
+    _integrateCreatedSession(created);
     return created;
   }
 
@@ -173,5 +184,16 @@ class TrainingSessionsProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  void _integrateCreatedSession(TrainingSession created) {
+    final createdDay = DateUtils.dateOnly(created.start);
+    if (_loadedDay != null && DateUtils.isSameDay(_loadedDay, createdDay)) {
+      _dayList.add(created);
+      _dayList.sort((a, b) => a.start.compareTo(b.start));
+    }
+    _counts.update(createdDay, (value) => value + 1, ifAbsent: () => 1);
+    notifyListeners();
+    syncTimeline();
   }
 }

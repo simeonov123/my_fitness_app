@@ -2,6 +2,7 @@ package com.mvfitness.mytrainer2.service.session;
 
 import com.mvfitness.mytrainer2.domain.*;
 import com.mvfitness.mytrainer2.dto.CalendarDayCountDto;
+import com.mvfitness.mytrainer2.dto.TrainingSessionCopyRequestDto;
 import com.mvfitness.mytrainer2.dto.TrainingSessionDto;
 import com.mvfitness.mytrainer2.mapper.TrainingSessionMapper;
 import com.mvfitness.mytrainer2.repository.*;
@@ -215,6 +216,55 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         return saved;
     }
 
+    @Override
+    public TrainingSessionDto copy(String kc, Long sourceId, TrainingSessionCopyRequestDto d) {
+        TrainingSession source = ownedOr404(kc, sourceId);
+
+        if (d.startTime() == null || d.endTime() == null) {
+            throw new IllegalArgumentException("Start and end time are required");
+        }
+        if (!d.endTime().isAfter(d.startTime())) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+
+        source.getWorkoutInstances().forEach(instance ->
+                instance.getWorkoutInstanceExercises().forEach(exercise ->
+                        exercise.getWorkoutInstanceExerciseHasSets().forEach(set -> set.getSetData().size())));
+
+        TrainingSession copy = TrainingSession.builder()
+                .trainer(source.getTrainer())
+                .clients(new ArrayList<>(source.getClients()))
+                .workoutTemplate(source.getWorkoutTemplate())
+                .startTime(d.startTime())
+                .endTime(d.endTime())
+                .dayIndexInCycle(source.getDayIndexInCycle())
+                .sessionName(
+                        d.sessionName() == null || d.sessionName().isBlank()
+                                ? source.getSessionName()
+                                : d.sessionName().trim()
+                )
+                .sessionDescription(source.getSessionDescription())
+                .sessionType(normalizedSessionType(source.getSessionType()))
+                .trainerNotes(source.getTrainerNotes())
+                .status("PLANNED")
+                .isCompleted(Boolean.FALSE)
+                .actualStartTime(null)
+                .actualEndTime(null)
+                .build();
+
+        copy = sessions.save(copy);
+
+        if (!source.getWorkoutInstances().isEmpty()) {
+            cloneWorkoutInstances(copy, source);
+        } else if (source.getWorkoutTemplate() != null) {
+            injectDeepClone(copy, source.getWorkoutTemplate(), new ArrayList<>(copy.getClients()));
+        }
+
+        TrainingSessionDto saved = TrainingSessionMapper.toDto(sessions.save(copy));
+        realtime.publishSessionUpdated(saved);
+        return saved;
+    }
+
     /* ───────────────── update ──────────────────────────────────────── */
 
     @Override
@@ -394,6 +444,69 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                             .build();
                     ies.addSetData(copy);
                     setDataRepo.save(copy);
+                }
+            }
+        }
+    }
+
+    private void cloneWorkoutInstances(TrainingSession target, TrainingSession source) {
+        for (WorkoutInstance sourceInstance : source.getWorkoutInstances()) {
+            WorkoutInstance targetInstance = WorkoutInstance.builder()
+                    .trainingSession(target)
+                    .client(sourceInstance.getClient())
+                    .workoutTemplate(sourceInstance.getWorkoutTemplate())
+                    .performedAt(null)
+                    .notes(sourceInstance.getNotes())
+                    .build();
+            targetInstance = instanceRepo.save(targetInstance);
+            target.getWorkoutInstances().add(targetInstance);
+
+            List<WorkoutInstanceExercise> sourceExercises = sourceInstance.getWorkoutInstanceExercises().stream()
+                    .sorted((left, right) -> Integer.compare(
+                            left.getSequenceOrder() == null ? 0 : left.getSequenceOrder(),
+                            right.getSequenceOrder() == null ? 0 : right.getSequenceOrder()))
+                    .toList();
+
+            for (WorkoutInstanceExercise sourceExercise : sourceExercises) {
+                WorkoutInstanceExercise targetExercise = WorkoutInstanceExercise.builder()
+                        .workoutInstance(targetInstance)
+                        .exercise(sourceExercise.getExercise())
+                        .sequenceOrder(sourceExercise.getSequenceOrder())
+                        .setType(sourceExercise.getSetType())
+                        .setParams(sourceExercise.getSetParams())
+                        .restSeconds(sourceExercise.getRestSeconds())
+                        .notes(sourceExercise.getNotes())
+                        .build();
+                targetExercise = instanceExRepo.save(targetExercise);
+                targetInstance.getWorkoutInstanceExercises().add(targetExercise);
+
+                List<WorkoutInstanceExerciseHasSets> sourceSets = sourceExercise.getWorkoutInstanceExerciseHasSets().stream()
+                        .sorted((left, right) -> Integer.compare(
+                                left.getSetNumber() == null ? 0 : left.getSetNumber(),
+                                right.getSetNumber() == null ? 0 : right.getSetNumber()))
+                        .toList();
+
+                for (WorkoutInstanceExerciseHasSets sourceSet : sourceSets) {
+                    WorkoutInstanceExerciseHasSets targetSet = WorkoutInstanceExerciseHasSets.builder()
+                            .workoutInstanceExercise(targetExercise)
+                            .setNumber(sourceSet.getSetNumber())
+                            .completed(false)
+                            .setContextType(sourceSet.getSetContextType())
+                            .notes(sourceSet.getNotes())
+                            .stopwatchStartedAtMs(null)
+                            .restStartedAtMs(null)
+                            .build();
+                    targetSet = instanceSetRepo.save(targetSet);
+                    targetExercise.getWorkoutInstanceExerciseHasSets().add(targetSet);
+
+                    for (SetData sourceData : sourceSet.getSetData()) {
+                        SetData targetData = SetData.builder()
+                                .type(sourceData.getType())
+                                .value(sourceData.getValue())
+                                .build();
+                        targetSet.addSetData(targetData);
+                        setDataRepo.save(targetData);
+                    }
                 }
             }
         }
