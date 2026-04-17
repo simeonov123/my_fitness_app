@@ -66,9 +66,18 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
 
   /* ───────── lifecycle ───────── */
 
+  AppLifecycleListener? _appLifecycleListener;
+
   @override
   void initState() {
     super.initState();
+
+    _appLifecycleListener = AppLifecycleListener(
+      onInactive: _flushPendingChanges,
+      onPause: _flushPendingChanges,
+      onDetach: _flushPendingChanges,
+      onHide: _flushPendingChanges,
+    );
 
     // load the available exercise list **after** the first frame to avoid the
     // framework complaining about notifyListeners() during build.
@@ -87,6 +96,7 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
 
   @override
   void dispose() {
+    _appLifecycleListener?.dispose();
     _ticker?.cancel();
     _autoSaveDebounce?.cancel();
     _restCountdownTicker?.cancel();
@@ -187,6 +197,17 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
     _autoSaveDebounce = Timer(delay, () {
       unawaited(_runAutoSave());
     });
+  }
+
+  void _persistTimerStateSoon() {
+    _dirtyEx = true;
+    _scheduleAutoSave(delay: Duration.zero);
+  }
+
+  void _flushPendingChanges() {
+    if (!_dirtyMeta && !_dirtyEx) return;
+    _autoSaveDebounce?.cancel();
+    unawaited(_runAutoSave());
   }
 
   Future<void> _runAutoSave() async {
@@ -1664,6 +1685,10 @@ class _TrainingSessionDetailPageState extends State<TrainingSessionDetailPage> {
                 ],
                 onChanged: () {
                   setState(_markExercisesDirty);
+                  _syncActiveWorkoutNotification();
+                },
+                onTimerStateChanged: () {
+                  setState(_persistTimerStateSoon);
                   _syncActiveWorkoutNotification();
                 },
                 onRestTimerChanged: () {

@@ -10,6 +10,7 @@ import '../theme/app_density.dart';
 
 const _setContextOptions = <String>[
   'WARMUP',
+  'FEEDER',
   'FAILURE',
   'DROP',
   'FORCED',
@@ -19,6 +20,7 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
   final int templateId;
   final WorkoutTemplateExercise wte;
   final VoidCallback onChanged;
+  final VoidCallback? onTimerStateChanged;
   final VoidCallback? onRestTimerChanged;
   final void Function(int? restSeconds, String exerciseName)? onCompletedSet;
   final bool showCompletion;
@@ -32,6 +34,7 @@ class WorkoutTemplateExerciseWidget extends StatefulWidget {
     required this.templateId,
     required this.wte,
     required this.onChanged,
+    this.onTimerStateChanged,
     this.onRestTimerChanged,
     this.onCompletedSet,
     this.showCompletion = false,
@@ -198,6 +201,7 @@ class _WorkoutTemplateExerciseWidgetState
         _localSets[index].stopwatchStartedAtMs = null;
       });
       _notifyChanged();
+      widget.onTimerStateChanged?.call();
       return;
     }
 
@@ -206,6 +210,7 @@ class _WorkoutTemplateExerciseWidgetState
           DateTime.now().millisecondsSinceEpoch;
     });
     _notifyChanged();
+    widget.onTimerStateChanged?.call();
   }
 
   String? _liveStopwatchLabel(WorkoutTemplateExerciseSet set) {
@@ -622,6 +627,7 @@ class _WorkoutTemplateExerciseWidgetState
                                                       : null;
                                             });
                                             _notifyChanged();
+                                            widget.onTimerStateChanged?.call();
                                             if (!wasCompleted &&
                                                 (value ?? false)) {
                                               widget.onCompletedSet?.call(
@@ -803,6 +809,8 @@ class _WorkoutTemplateExerciseWidgetState
     switch (type) {
       case 'WARMUP':
         return 'Warmup';
+      case 'FEEDER':
+        return 'Feeder set';
       case 'FAILURE':
         return 'Failure';
       case 'DROP':
@@ -817,6 +825,7 @@ class _WorkoutTemplateExerciseWidgetState
   Widget _contextChip(String? type) {
     final (Color bg, Color fg, String text) = switch (type) {
       'WARMUP' => (const Color(0xFFEAF2FF), const Color(0xFF2F80FF), 'WU'),
+      'FEEDER' => (const Color(0xFFEAFBF3), const Color(0xFF1E8E5A), 'FD'),
       'FAILURE' => (const Color(0xFFE8F1FF), const Color(0xFF2B5FB8), 'F'),
       'DROP' => (const Color(0xFFF2F7FF), const Color(0xFF4B74C9), 'DS'),
       'FORCED' => (const Color(0xFFF4F8FF), const Color(0xFF5A6CCF), 'FS'),
